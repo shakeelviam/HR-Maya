@@ -16,7 +16,7 @@ const CONFIG = {
     
     // ===== AUTHORIZED ADMIN EMAILS =====
     AUTHORIZED_EMAILS: [
-        'shakeelviram@gmail.com',     // ✅ FIXED: was 'shakeelviam@gmail.com' (missing 'r')
+        'shakeel.viam@gmail.com',     // ✅ FIXED: was 'shakeelviam@gmail.com' (missing 'r')
         'info@maya.com.kw',
         'operations@maya.com.kw',     // ✅ FIXED: added missing closing quote
         'hr@maya.com.kw'
