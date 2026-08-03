@@ -1,26 +1,26 @@
-// config.js - Complete Configuration
+// config.js - Updated with both Sheet IDs
 
 const CONFIG = {
     // ===== APPS SCRIPT =====
-    // Your deployed Apps Script Web App URL
-    // After deploying your Apps Script, replace this with your actual URL
     API_URL: 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec',
     
     // ===== GOOGLE SHEETS =====
-    // Your Google Sheet ID (the one with Employees Details, Vacation, Sick Leave)
+    // Sheet 1: Main employee data
     SPREADSHEET_ID: '1k5T2DfZqACaJLbwy16-XSfnGaLq4Vg0u1epGro94c_c',
     
+    // Sheet 2: Payroll data
+    PAYROLL_SPREADSHEET_ID: '1QMYgO6B8fciT6pObX9PB3Nmc8TvqOAAYsYQF4bve69M',
+    
     // ===== GOOGLE OAUTH =====
-    // Your Google OAuth Client ID (from the JSON file)
     GOOGLE_CLIENT_ID: '323911089919-it1nrmlpmq2ojigs50g6hu11qur4r59n.apps.googleusercontent.com',
     
     // ===== AUTHORIZED ADMIN EMAILS =====
-    // Only these email addresses can access the system
     AUTHORIZED_EMAILS: [
-        'shakeelviram@gmail.com',  // Add your email
-        // 'info@maya.com.kw',
-        // 'hr@maya.com.kw',
-        // 'operations@maya.com.kw',
+        'shakeelviam@gmail.com',
+        'info@maya.com.kw',
+        'operations@maya.com.kw,
+        'hr@maya.com.kw',
+        // Add more authorized emails as needed
     ],
     
     // ===== APP SETTINGS =====
@@ -29,23 +29,23 @@ const CONFIG = {
     
     // ===== SHEET NAMES =====
     SHEETS: {
-        EMPLOYEES: 'Employees',              // Master sheet (integrated)
-        EMPLOYEES_SOURCE: 'Employees Details', // Source sheet
-        VACATION: 'Vacation',                // Vacation data source
-        SICK_LEAVE: 'Sick Leave',            // Sick leave data source
-        ATTENDANCE: 'Attendance',            // Attendance records
-        LEAVE_REQUESTS: 'Leave Requests',    // Leave requests
-        PERFORMANCE_REVIEWS: 'Performance Reviews' // Reviews
+        EMPLOYEES_SOURCE: 'Employees Details',
+        PAYROLL_SOURCE: 'Confirmed Names',
+        VACATION: 'Vacation',
+        SICK_LEAVE: 'Sick Leave',
+        ATTENDANCE: 'Attendance',
+        LEAVE_REQUESTS: 'Leave Requests',
+        PERFORMANCE_REVIEWS: 'Performance Reviews'
     },
     
-    // ===== MANAGEMENT EMPLOYEES (for ID assignment) =====
+    // ===== MANAGEMENT EMPLOYEES =====
     MANAGEMENT_EMPLOYEES: [
-        { name: 'Abdulrahman Al-Najjar', id: 'MT-00001' },
-        { name: 'Mishari Al-Mutawaq', id: 'MT-00002' },
-        { name: 'Abdulwahab Al-Najjar', id: 'MT-00003' },
-        { name: 'Abdullah Al-Samhan', id: 'MT-00004' },
-        { name: 'Mohamed Awda', id: 'MT-00005' },
-        { name: 'Ayman Mandoub', id: 'MT-00006' }
+        'Abdulrahman Al-Najjar',
+        'Mishari Al-Mutawaq',
+        'Abdulwahab Al-Najjar',
+        'Abdullah Al-Samhan',
+        'Mohamed Awda',
+        'Ayman Mandoub'
     ],
     
     // ===== DEFAULTS =====
