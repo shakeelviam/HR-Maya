@@ -1,4 +1,5 @@
-// api.js
+// api.js - API Handler
+
 class HRAPI {
     constructor() {
         this.baseUrl = CONFIG.API_URL;
@@ -39,7 +40,7 @@ class HRAPI {
         }
     }
 
-    // Employee methods
+    // ===== EMPLOYEE METHODS =====
     async getEmployees() {
         return this.request('getEmployees');
     }
@@ -56,7 +57,7 @@ class HRAPI {
         return this.request('deleteEmployee', { civilId });
     }
 
-    // Attendance methods
+    // ===== ATTENDANCE METHODS =====
     async getAttendance(params) {
         return this.request('getAttendance', params);
     }
@@ -65,7 +66,7 @@ class HRAPI {
         return this.request('markAttendance', params);
     }
 
-    // Leave methods
+    // ===== LEAVE METHODS =====
     async getLeaveRequests() {
         return this.request('getLeaveRequests');
     }
@@ -78,7 +79,7 @@ class HRAPI {
         return this.request('updateLeaveStatus', params);
     }
 
-    // Performance Review methods
+    // ===== REVIEW METHODS =====
     async getReviews() {
         return this.request('getReviews');
     }
@@ -87,13 +88,18 @@ class HRAPI {
         return this.request('addReview', params);
     }
 
-    // Sync methods
+    // ===== SYNC METHODS =====
     async syncVacationData() {
         return this.request('syncVacationData');
     }
 
     async syncSickLeaveData() {
         return this.request('syncSickLeaveData');
+    }
+
+    // ===== DASHBOARD =====
+    async getDashboardStats() {
+        return this.request('getDashboardStats');
     }
 }
 
