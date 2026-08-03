@@ -6,12 +6,12 @@ const CONFIG = {
     // Your new Google Sheet ID
     SPREADSHEET_ID: '1FDEgm7v4fogW8Nqj7FN-CCIeiizdnbCYG4cpx6Lw0sM',
     
-    // Sheet names - these will be created automatically
+    // Sheet names
     SHEETS: {
         EMPLOYEES: 'Confirmed Names',
         ATTENDANCE: 'Attendance',
-        LEAVE_REQUESTS: 'LeaveRequests',
-        PERFORMANCE_REVIEWS: 'PerformanceReviews',
+        LEAVE_REQUESTS: 'Leave Requests',
+        PERFORMANCE_REVIEWS: 'Performance Reviews',
         NEEDS_CLARIFICATION: 'Needs Clarification'
     },
     
@@ -27,7 +27,7 @@ const CONFIG = {
         FOOD_ALLOWANCE: 25
     },
     
-    // Column mappings for your sheet
+    // Complete column mappings for your sheet
     COLUMNS: {
         EMPLOYEES: [
             'Full Name',
@@ -75,6 +75,23 @@ const CONFIG = {
             'Rating',
             'Comments',
             'Goals'
+        ],
+        NEEDS_CLARIFICATION: [
+            'Name (Column A)',
+            'Suggested Full Name',
+            'Other Possible Matches',
+            'Reason',
+            'Basic salary',
+            'Food',
+            'loan',
+            'Bonus',
+            'Cut',
+            'Price Per Hour',
+            'Price Per Day',
+            'OT Hours',
+            'OT Days',
+            'Total',
+            'الفرع'
         ]
     }
 };
