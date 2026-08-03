@@ -1,4 +1,5 @@
-// app.js - Complete Version
+// app.js - Complete Version with Employee Profile
+
 class HRApp {
     constructor() {
         this.currentPage = 'dashboard';
@@ -6,7 +7,6 @@ class HRApp {
         this.attendance = [];
         this.leaves = [];
         this.reviews = [];
-        this.needsClarification = [];
         this.dataTables = {};
         this.init();
     }
@@ -68,10 +68,10 @@ class HRApp {
         const titles = {
             dashboard: 'Dashboard',
             employees: 'Employee Management',
+            profile: 'Employee Profile',
             attendance: 'Attendance Log',
             leave: 'Leave Management',
-            reviews: 'Performance Reviews',
-            clarification: 'Needs Clarification'
+            reviews: 'Performance Reviews'
         };
         document.getElementById('pageTitle').textContent = titles[page] || page;
         
@@ -99,29 +99,23 @@ class HRApp {
             const reviewResult = await api.getReviews();
             this.reviews = reviewResult.data || [];
             
-            const clarResult = await api.getNeedsClarification();
-            this.needsClarification = clarResult.data || [];
-            
             this.renderEmployees();
             this.renderAttendance();
             this.renderLeaves();
             this.renderReviews();
-            this.renderClarification();
             
         } catch (error) {
             console.error('Error loading data:', error);
         }
     }
 
-    // DASHBOARD
+    // ==================== DASHBOARD ====================
     updateDashboard() {
-        document.getElementById('totalEmployees').textContent = this.employees.length;
+        const total = this.employees.length;
+        document.getElementById('totalEmployees').textContent = total;
         
-        const today = new Date().toISOString().split('T')[0];
-        const present = this.attendance.filter(a => 
-            a.Date === today && a.Status === 'Present'
-        ).length;
-        document.getElementById('presentToday').textContent = present;
+        const active = this.employees.filter(e => e.Status === 'Active').length;
+        document.getElementById('activeEmployees').textContent = active;
         
         const pending = this.leaves.filter(l => l.Status === 'Pending').length;
         document.getElementById('pendingLeaves').textContent = pending;
@@ -142,7 +136,7 @@ class HRApp {
             recentAtt.forEach(a => {
                 attHtml += `
                     <li class="mb-2 d-flex justify-content-between">
-                        <span>${a['Employee ID'] || 'N/A'} - ${a.Date || 'N/A'}</span>
+                        <span>${a['Employee Name'] || a['Civil ID'] || 'N/A'} - ${a.Date || 'N/A'}</span>
                         <span class="badge bg-${a.Status === 'Present' ? 'success' : 'warning'}">${a.Status || 'N/A'}</span>
                     </li>
                 `;
@@ -160,7 +154,7 @@ class HRApp {
             pendingLeaves.slice(0, 5).forEach(l => {
                 leaveHtml += `
                     <li class="mb-2 d-flex justify-content-between">
-                        <span>${l['Employee ID'] || 'N/A'} - ${l.Type || 'N/A'}</span>
+                        <span>${l['Employee Name'] || l['Civil ID'] || 'N/A'} - ${l.Type || 'N/A'}</span>
                         <span class="badge bg-warning">Pending</span>
                     </li>
                 `;
@@ -170,7 +164,7 @@ class HRApp {
         document.getElementById('pendingLeaveRequests').innerHTML = leaveHtml;
     }
 
-    // EMPLOYEES
+    // ==================== EMPLOYEES ====================
     renderEmployees() {
         const tbody = document.getElementById('employeesTableBody');
         tbody.innerHTML = '';
@@ -178,49 +172,295 @@ class HRApp {
         if (this.employees.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="7" class="text-center text-muted">No employees found. Click "Add Employee" to get started.</td>
+                    <td colspan="8" class="text-center text-muted">No employees found. Click "Add Employee" to get started.</td>
                 </tr>
             `;
             return;
         }
         
         this.employees.forEach(emp => {
-            const statusClass = emp.Status === 'Active' ? 'success' : 
-                              emp.Status === 'On Leave' ? 'warning' : 'secondary';
-            const branch = emp['الفرع'] || 'N/A';
-            const basicSalary = emp['Basic salary'] || 0;
-            const totalPayable = emp['Total Payable Salary'] || 0;
+            const statusClass = emp.Status === 'Active' ? 'active' : 
+                              emp.Status === 'On Leave' ? 'on-leave' : 'inactive';
+            const remainingVacation = emp['Remaining Vacation'] || 0;
             
             tbody.innerHTML += `
                 <tr>
-                    <td>${emp['Civil ID Number'] || 'N/A'}</td>
-                    <td>${emp['Full Name'] || 'N/A'}</td>
-                    <td>${branch}</td>
-                    <td>${basicSalary}</td>
-                    <td>${totalPayable}</td>
-                    <td><span class="badge bg-${statusClass}">${emp.Status || 'Active'}</span></td>
+                    <td>${emp['Civil ID'] || 'N/A'}</td>
+                    <td>${emp['Name (English)'] || 'N/A'}</td>
+                    <td>${emp['Name (Arabic)'] || 'N/A'}</td>
+                    <td>${emp.Designation || 'N/A'}</td>
+                    <td>${emp.Salary || 0}</td>
+                    <td>${remainingVacation}</td>
+                    <td><span class="status-badge ${statusClass}">${emp.Status || 'Active'}</span></td>
                     <td>
-                        <button class="btn btn-sm btn-info" onclick="app.editEmployee('${emp['Civil ID Number'] || ''}')">
+                        <button class="btn btn-sm btn-info" onclick="app.viewProfile('${emp['Civil ID'] || ''}')" title="View Profile">
+                            <i class="bi bi-person"></i>
+                        </button>
+                        <button class="btn btn-sm btn-primary" onclick="app.editEmployee('${emp['Civil ID'] || ''}')" title="Edit">
                             <i class="bi bi-pencil"></i>
                         </button>
-                        <button class="btn btn-sm btn-danger" onclick="app.deleteEmployee('${emp['Civil ID Number'] || ''}')">
+                        <button class="btn btn-sm btn-danger" onclick="app.deleteEmployee('${emp['Civil ID'] || ''}')" title="Delete">
                             <i class="bi bi-trash"></i>
                         </button>
                     </td>
                 </tr>
             `;
         });
+        
+        // Refresh DataTable
+        if (this.dataTables.employees) {
+            this.dataTables.employees.destroy();
+        }
+        this.dataTables.employees = $('#employeesTable').DataTable({
+            pageLength: 10,
+            responsive: true,
+            order: [[0, 'desc']]
+        });
     }
 
+    // ==================== EMPLOYEE PROFILE VIEW ====================
+    viewProfile(civilId) {
+        const emp = this.employees.find(e => String(e['Civil ID']) === String(civilId));
+        if (!emp) {
+            alert('Employee not found');
+            return;
+        }
+        
+        // Navigate to profile page
+        this.navigateTo('profile');
+        
+        // Build profile HTML
+        const profileHtml = this.buildProfileHtml(emp);
+        document.getElementById('profileContent').innerHTML = profileHtml;
+    }
+
+    buildProfileHtml(emp) {
+        const statusClass = emp.Status === 'Active' ? 'active' : 
+                          emp.Status === 'On Leave' ? 'on-leave' : 'inactive';
+        
+        // Get employee's attendance records
+        const empAttendance = this.attendance.filter(a => a['Civil ID'] === emp['Civil ID']);
+        const empLeaves = this.leaves.filter(l => l['Civil ID'] === emp['Civil ID']);
+        const empReviews = this.reviews.filter(r => r['Civil ID'] === emp['Civil ID']);
+        
+        // Calculate stats
+        const totalAttendance = empAttendance.length;
+        const presentDays = empAttendance.filter(a => a.Status === 'Present').length;
+        const attendanceRate = totalAttendance > 0 ? Math.round((presentDays / totalAttendance) * 100) : 0;
+        
+        let avgRating = 0;
+        if (empReviews.length > 0) {
+            const sum = empReviews.reduce((acc, r) => acc + parseFloat(r.Rating || 0), 0);
+            avgRating = (sum / empReviews.length).toFixed(1);
+        }
+        
+        // Get initials for avatar
+        const nameParts = (emp['Name (English)'] || '').split(' ');
+        const initials = nameParts.map(n => n[0]).join('').toUpperCase() || '?';
+        
+        return `
+            <div class="profile-header">
+                <div class="row align-items-center">
+                    <div class="col-md-2 text-center">
+                        <div class="profile-avatar mx-auto">${initials}</div>
+                    </div>
+                    <div class="col-md-7">
+                        <h2>${emp['Name (English)'] || 'N/A'}</h2>
+                        <h5 class="text-muted">${emp['Name (Arabic)'] || ''}</h5>
+                        <p class="mb-1"><strong>${emp.Designation || 'N/A'}</strong></p>
+                        <span class="status-badge ${statusClass}">${emp.Status || 'Active'}</span>
+                    </div>
+                    <div class="col-md-3 text-end">
+                        <button class="btn btn-primary btn-sm me-1" onclick="app.editEmployee('${emp['Civil ID']}')">
+                            <i class="bi bi-pencil"></i> Edit
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm" onclick="app.navigateTo('employees')">
+                            <i class="bi bi-arrow-left"></i> Back
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Stats Row -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <div class="profile-stat">
+                        <div class="profile-stat-number">${emp.Salary || 0}</div>
+                        <div class="profile-stat-label">Salary</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="profile-stat">
+                        <div class="profile-stat-number">${emp['Remaining Vacation'] || 0}</div>
+                        <div class="profile-stat-label">Vacation Days Left</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="profile-stat">
+                        <div class="profile-stat-number">${emp['Sick Days Taken'] || 0}</div>
+                        <div class="profile-stat-label">Sick Days Taken</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="profile-stat">
+                        <div class="profile-stat-number">${attendanceRate}%</div>
+                        <div class="profile-stat-label">Attendance Rate</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Details Row -->
+            <div class="row g-3">
+                <!-- Personal Details -->
+                <div class="col-md-6">
+                    <div class="table-container">
+                        <h6 class="mb-3"><i class="bi bi-person"></i> Personal Details</h6>
+                        <div class="profile-info-item">
+                            <span class="profile-info-label">Civil ID</span>
+                            <span class="profile-info-value">${emp['Civil ID'] || 'N/A'}</span>
+                        </div>
+                        <div class="profile-info-item">
+                            <span class="profile-info-label">Passport No</span>
+                            <span class="profile-info-value">${emp['Passport No'] || 'N/A'}</span>
+                        </div>
+                        <div class="profile-info-item">
+                            <span class="profile-info-label">Nationality</span>
+                            <span class="profile-info-value">${emp.Nationality || 'N/A'}</span>
+                        </div>
+                        <div class="profile-info-item">
+                            <span class="profile-info-label">Date of Join</span>
+                            <span class="profile-info-value">${emp['Date of Join'] || 'N/A'}</span>
+                        </div>
+                        <div class="profile-info-item">
+                            <span class="profile-info-label">Contact (Kuwait)</span>
+                            <span class="profile-info-value">${emp['Contact Kuwait'] || 'N/A'}</span>
+                        </div>
+                        <div class="profile-info-item">
+                            <span class="profile-info-label">Contact (Home)</span>
+                            <span class="profile-info-value">${emp['Contact Home'] || 'N/A'}</span>
+                        </div>
+                        ${emp.Remarks ? `
+                        <div class="profile-info-item">
+                            <span class="profile-info-label">Remarks</span>
+                            <span class="profile-info-value">${emp.Remarks}</span>
+                        </div>` : ''}
+                    </div>
+                </div>
+                
+                <!-- Document Details -->
+                <div class="col-md-6">
+                    <div class="table-container">
+                        <h6 class="mb-3"><i class="bi bi-file-text"></i> Document Details</h6>
+                        <div class="profile-info-item">
+                            <span class="profile-info-label">Health Card Issued</span>
+                            <span class="profile-info-value">${emp['Health Card Issued'] || 'N/A'}</span>
+                        </div>
+                        <div class="profile-info-item">
+                            <span class="profile-info-label">Health Card Expiry</span>
+                            <span class="profile-info-value">${emp['Health Card Expiry'] || 'N/A'}</span>
+                        </div>
+                        <div class="profile-info-item">
+                            <span class="profile-info-label">CID Issued</span>
+                            <span class="profile-info-value">${emp['CID Issued'] || 'N/A'}</span>
+                        </div>
+                        <div class="profile-info-item">
+                            <span class="profile-info-label">CID Expiry</span>
+                            <span class="profile-info-value">${emp['CID Expiry'] || 'N/A'}</span>
+                        </div>
+                        <div class="profile-info-item">
+                            <span class="profile-info-label">Passport Issued</span>
+                            <span class="profile-info-value">${emp['Passport Issued'] || 'N/A'}</span>
+                        </div>
+                        <div class="profile-info-item">
+                            <span class="profile-info-label">Passport Expiry</span>
+                            <span class="profile-info-value">${emp['Passport Expiry'] || 'N/A'}</span>
+                        </div>
+                        <div class="profile-info-item">
+                            <span class="profile-info-label">Total Vacation Days</span>
+                            <span class="profile-info-value">${emp['Total Vacation Days'] || 0}</span>
+                        </div>
+                        <div class="profile-info-item">
+                            <span class="profile-info-label">Vacation Taken</span>
+                            <span class="profile-info-value">${emp['Vacation Taken'] || 0}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Leave History -->
+            ${empLeaves.length > 0 ? `
+            <div class="row g-3 mt-3">
+                <div class="col-12">
+                    <div class="table-container">
+                        <h6 class="mb-3"><i class="bi bi-clock-history"></i> Leave History</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Start Date</th>
+                                        <th>End Date</th>
+                                        <th>Type</th>
+                                        <th>Status</th>
+                                        <th>Reason</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${empLeaves.map(l => `
+                                        <tr>
+                                            <td>${l['Start Date'] || 'N/A'}</td>
+                                            <td>${l['End Date'] || 'N/A'}</td>
+                                            <td>${l.Type || 'N/A'}</td>
+                                            <td><span class="badge bg-${l.Status === 'Approved' ? 'success' : l.Status === 'Rejected' ? 'danger' : 'warning'}">${l.Status || 'Pending'}</span></td>
+                                            <td>${l.Reason || '-'}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>` : ''}
+            
+            <!-- Performance Reviews -->
+            ${empReviews.length > 0 ? `
+            <div class="row g-3 mt-3">
+                <div class="col-12">
+                    <div class="table-container">
+                        <h6 class="mb-3"><i class="bi bi-star"></i> Performance Reviews (Avg: ${avgRating} ★)</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Reviewer</th>
+                                        <th>Rating</th>
+                                        <th>Comments</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${empReviews.map(r => `
+                                        <tr>
+                                            <td>${r['Review Date'] || 'N/A'}</td>
+                                            <td>${r.Reviewer || 'N/A'}</td>
+                                            <td>${'★'.repeat(Math.round(r.Rating || 0))}${'☆'.repeat(5 - Math.round(r.Rating || 0))} (${r.Rating || 0})</td>
+                                            <td>${r.Comments || '-'}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>` : ''}
+        `;
+    }
+
+    // ==================== ADD/EDIT EMPLOYEE ====================
     showAddEmployeeModal() {
         document.getElementById('employeeModalTitle').textContent = 'Add Employee';
         document.getElementById('employeeForm').reset();
-        document.getElementById('empFood').value = CONFIG.DEFAULTS.FOOD_ALLOWANCE;
-        document.getElementById('empBonus').value = 0;
-        document.getElementById('empOTHours').value = 0;
-        document.getElementById('empOTDays').value = 0;
-        document.getElementById('empStatus').value = 'Active';
         document.getElementById('employeeForm').dataset.editId = '';
+        document.getElementById('empStatus').value = 'Active';
         new bootstrap.Modal(document.getElementById('employeeModal')).show();
     }
 
@@ -229,23 +469,34 @@ class HRApp {
         const editId = form.dataset.editId;
         
         const data = {
-            fullName: document.getElementById('empName').value,
+            nameArabic: document.getElementById('empNameArabic').value,
+            nameEnglish: document.getElementById('empNameEnglish').value,
             civilId: document.getElementById('empCivilId').value,
-            basicSalary: parseFloat(document.getElementById('empBasicSalary').value) || 0,
-            food: parseFloat(document.getElementById('empFood').value) || CONFIG.DEFAULTS.FOOD_ALLOWANCE,
-            accommodation: parseFloat(document.getElementById('empAccommodation').value) || 0,
-            conveyance: parseFloat(document.getElementById('empConveyance').value) || 0,
-            bonus: parseFloat(document.getElementById('empBonus').value) || 0,
-            loan: parseFloat(document.getElementById('empLoan').value) || 0,
-            otherDeductions: parseFloat(document.getElementById('empOtherDeductions').value) || 0,
-            otHours: parseFloat(document.getElementById('empOTHours').value) || 0,
-            otDays: parseFloat(document.getElementById('empOTDays').value) || 0,
-            branch: document.getElementById('empBranch').value || '',
-            status: document.getElementById('empStatus').value || 'Active'
+            passportNo: document.getElementById('empPassport').value,
+            nationality: document.getElementById('empNationality').value,
+            designation: document.getElementById('empDesignation').value,
+            salary: parseFloat(document.getElementById('empSalary').value) || 0,
+            dateOfJoin: document.getElementById('empDateOfJoin').value,
+            status: document.getElementById('empStatus').value,
+            healthCardIssued: document.getElementById('empHealthIssued').value,
+            healthCardExpiry: document.getElementById('empHealthExpiry').value,
+            cidIssued: document.getElementById('empCidIssued').value,
+            cidExpiry: document.getElementById('empCidExpiry').value,
+            passportIssued: document.getElementById('empPassportIssued').value,
+            passportExpiry: document.getElementById('empPassportExpiry').value,
+            contactKuwait: document.getElementById('empContactKuwait').value,
+            contactHome: document.getElementById('empContactHome').value,
+            totalVacationDays: parseFloat(document.getElementById('empTotalVacation').value) || 0,
+            vacationTaken: parseFloat(document.getElementById('empVacationTaken').value) || 0,
+            remainingVacation: parseFloat(document.getElementById('empRemainingVacation').value) || 0,
+            sickDaysTaken: parseFloat(document.getElementById('empSickDays').value) || 0,
+            lastVacationStart: document.getElementById('empLastVacationStart').value,
+            lastVacationEnd: document.getElementById('empLastVacationEnd').value,
+            remarks: document.getElementById('empRemarks').value
         };
         
-        if (!data.fullName || !data.civilId || !data.basicSalary) {
-            alert('Please fill in all required fields (Full Name, Civil ID, and Basic Salary)');
+        if (!data.nameEnglish || !data.nameArabic || !data.civilId || !data.salary) {
+            alert('Please fill in all required fields (Name, Civil ID, and Salary)');
             return;
         }
         
@@ -265,26 +516,37 @@ class HRApp {
     }
 
     async editEmployee(civilId) {
-        const emp = this.employees.find(e => String(e['Civil ID Number']) === String(civilId));
+        const emp = this.employees.find(e => String(e['Civil ID']) === String(civilId));
         if (!emp) {
             alert('Employee not found');
             return;
         }
         
         document.getElementById('employeeModalTitle').textContent = 'Edit Employee';
-        document.getElementById('empName').value = emp['Full Name'] || '';
-        document.getElementById('empCivilId').value = emp['Civil ID Number'] || '';
-        document.getElementById('empBasicSalary').value = emp['Basic salary'] || '';
-        document.getElementById('empFood').value = emp.Food || CONFIG.DEFAULTS.FOOD_ALLOWANCE;
-        document.getElementById('empAccommodation').value = emp['Accomodation Allowance'] || 0;
-        document.getElementById('empConveyance').value = emp['Conveyance Allowance'] || 0;
-        document.getElementById('empBonus').value = emp.Bonus || 0;
-        document.getElementById('empLoan').value = emp.Loan || 0;
-        document.getElementById('empOtherDeductions').value = emp['Other Deductions'] || 0;
-        document.getElementById('empOTHours').value = emp['OT Hours'] || 0;
-        document.getElementById('empOTDays').value = emp['OT Days'] || 0;
-        document.getElementById('empBranch').value = emp['الفرع'] || '';
+        document.getElementById('empNameEnglish').value = emp['Name (English)'] || '';
+        document.getElementById('empNameArabic').value = emp['Name (Arabic)'] || '';
+        document.getElementById('empCivilId').value = emp['Civil ID'] || '';
+        document.getElementById('empPassport').value = emp['Passport No'] || '';
+        document.getElementById('empNationality').value = emp.Nationality || '';
+        document.getElementById('empDesignation').value = emp.Designation || '';
+        document.getElementById('empSalary').value = emp.Salary || '';
+        document.getElementById('empDateOfJoin').value = emp['Date of Join'] || '';
         document.getElementById('empStatus').value = emp.Status || 'Active';
+        document.getElementById('empHealthIssued').value = emp['Health Card Issued'] || '';
+        document.getElementById('empHealthExpiry').value = emp['Health Card Expiry'] || '';
+        document.getElementById('empCidIssued').value = emp['CID Issued'] || '';
+        document.getElementById('empCidExpiry').value = emp['CID Expiry'] || '';
+        document.getElementById('empPassportIssued').value = emp['Passport Issued'] || '';
+        document.getElementById('empPassportExpiry').value = emp['Passport Expiry'] || '';
+        document.getElementById('empContactKuwait').value = emp['Contact Kuwait'] || '';
+        document.getElementById('empContactHome').value = emp['Contact Home'] || '';
+        document.getElementById('empTotalVacation').value = emp['Total Vacation Days'] || 0;
+        document.getElementById('empVacationTaken').value = emp['Vacation Taken'] || 0;
+        document.getElementById('empRemainingVacation').value = emp['Remaining Vacation'] || 0;
+        document.getElementById('empSickDays').value = emp['Sick Days Taken'] || 0;
+        document.getElementById('empLastVacationStart').value = emp['Last Vacation Start'] || '';
+        document.getElementById('empLastVacationEnd').value = emp['Last Vacation End'] || '';
+        document.getElementById('empRemarks').value = emp.Remarks || '';
         
         document.getElementById('employeeForm').dataset.editId = civilId;
         new bootstrap.Modal(document.getElementById('employeeModal')).show();
@@ -300,13 +562,13 @@ class HRApp {
         try {
             await api.deleteEmployee(civilId);
             await this.loadAllData();
-            alert('Employee deleted successfully!');
+            alert('Employee archived successfully!');
         } catch (error) {
             alert('Error deleting employee: ' + error.message);
         }
     }
 
-    // ATTENDANCE
+    // ==================== ATTENDANCE ====================
     renderAttendance() {
         const tbody = document.getElementById('attendanceTableBody');
         tbody.innerHTML = '';
@@ -314,7 +576,7 @@ class HRApp {
         if (this.attendance.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="6" class="text-center text-muted">No attendance records found.</td>
+                    <td colspan="7" class="text-center text-muted">No attendance records found.</td>
                 </tr>
             `;
             return;
@@ -326,13 +588,23 @@ class HRApp {
             tbody.innerHTML += `
                 <tr>
                     <td>${att.Date || 'N/A'}</td>
-                    <td>${att['Employee ID'] || 'N/A'}</td>
+                    <td>${att['Civil ID'] || 'N/A'}</td>
+                    <td>${att['Employee Name'] || 'N/A'}</td>
                     <td>${att['Check In'] || '-'}</td>
                     <td>${att['Check Out'] || '-'}</td>
                     <td>${att.Hours || '-'}</td>
                     <td><span class="badge bg-${statusClass}">${att.Status || 'N/A'}</span></td>
                 </tr>
             `;
+        });
+        
+        if (this.dataTables.attendance) {
+            this.dataTables.attendance.destroy();
+        }
+        this.dataTables.attendance = $('#attendanceTable').DataTable({
+            pageLength: 10,
+            responsive: true,
+            order: [[0, 'desc']]
         });
     }
 
@@ -343,12 +615,12 @@ class HRApp {
             return;
         }
         
-        const empId = prompt('Enter Employee ID (Civil ID Number):');
-        if (!empId) return;
+        const civilId = prompt('Enter Civil ID:');
+        if (!civilId) return;
         
-        const employee = this.employees.find(e => String(e['Civil ID Number']) === String(empId));
+        const employee = this.employees.find(e => String(e['Civil ID']) === String(civilId));
         if (!employee) {
-            alert('Employee not found. Please check the Civil ID Number.');
+            alert('Employee not found. Please check the Civil ID.');
             return;
         }
         
@@ -358,7 +630,8 @@ class HRApp {
         try {
             await api.markAttendance({
                 date: date,
-                employeeId: empId,
+                civilId: civilId,
+                employeeName: employee['Name (English)'] || '',
                 status: status,
                 checkIn: new Date().toLocaleTimeString()
             });
@@ -369,7 +642,7 @@ class HRApp {
         }
     }
 
-    // LEAVE
+    // ==================== LEAVE REQUESTS ====================
     renderLeaves() {
         const tbody = document.getElementById('leaveTableBody');
         tbody.innerHTML = '';
@@ -377,7 +650,7 @@ class HRApp {
         if (this.leaves.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="7" class="text-center text-muted">No leave requests found.</td>
+                    <td colspan="8" class="text-center text-muted">No leave requests found.</td>
                 </tr>
             `;
             return;
@@ -389,7 +662,8 @@ class HRApp {
             tbody.innerHTML += `
                 <tr>
                     <td>${leave['Request ID'] || 'N/A'}</td>
-                    <td>${leave['Employee ID'] || 'N/A'}</td>
+                    <td>${leave['Civil ID'] || 'N/A'}</td>
+                    <td>${leave['Employee Name'] || 'N/A'}</td>
                     <td>${leave['Start Date'] || 'N/A'}</td>
                     <td>${leave['End Date'] || 'N/A'}</td>
                     <td>${leave.Type || 'N/A'}</td>
@@ -407,6 +681,15 @@ class HRApp {
                 </tr>
             `;
         });
+        
+        if (this.dataTables.leave) {
+            this.dataTables.leave.destroy();
+        }
+        this.dataTables.leave = $('#leaveTable').DataTable({
+            pageLength: 10,
+            responsive: true,
+            order: [[0, 'desc']]
+        });
     }
 
     showLeaveRequestModal() {
@@ -417,26 +700,22 @@ class HRApp {
     }
 
     async submitLeaveRequest() {
-        const empId = document.getElementById('leaveEmpId').value;
+        const civilId = document.getElementById('leaveCivilId').value;
+        const employeeName = document.getElementById('leaveEmployeeName').value;
         const startDate = document.getElementById('leaveStart').value;
         const endDate = document.getElementById('leaveEnd').value;
         const type = document.getElementById('leaveType').value;
         const reason = document.getElementById('leaveReason').value;
         
-        if (!empId || !startDate || !endDate) {
+        if (!civilId || !employeeName || !startDate || !endDate) {
             alert('Please fill in all required fields');
-            return;
-        }
-        
-        const employee = this.employees.find(e => String(e['Civil ID Number']) === String(empId));
-        if (!employee) {
-            alert('Employee not found. Please check the Civil ID Number.');
             return;
         }
         
         try {
             await api.submitLeave({
-                employeeId: empId,
+                civilId: civilId,
+                employeeName: employeeName,
                 startDate: startDate,
                 endDate: endDate,
                 type: type,
@@ -462,7 +741,7 @@ class HRApp {
         }
     }
 
-    // REVIEWS
+    // ==================== REVIEWS ====================
     renderReviews() {
         const tbody = document.getElementById('reviewsTableBody');
         tbody.innerHTML = '';
@@ -470,7 +749,7 @@ class HRApp {
         if (this.reviews.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="6" class="text-center text-muted">No performance reviews found.</td>
+                    <td colspan="7" class="text-center text-muted">No performance reviews found.</td>
                 </tr>
             `;
             return;
@@ -481,13 +760,23 @@ class HRApp {
             tbody.innerHTML += `
                 <tr>
                     <td>${review['Review ID'] || 'N/A'}</td>
-                    <td>${review['Employee ID'] || 'N/A'}</td>
+                    <td>${review['Civil ID'] || 'N/A'}</td>
+                    <td>${review['Employee Name'] || 'N/A'}</td>
                     <td>${review['Review Date'] || 'N/A'}</td>
                     <td>${review.Reviewer || 'N/A'}</td>
                     <td>${stars} (${review.Rating || 0})</td>
                     <td>${review.Comments || '-'}</td>
                 </tr>
             `;
+        });
+        
+        if (this.dataTables.reviews) {
+            this.dataTables.reviews.destroy();
+        }
+        this.dataTables.reviews = $('#reviewsTable').DataTable({
+            pageLength: 10,
+            responsive: true,
+            order: [[0, 'desc']]
         });
     }
 
@@ -499,30 +788,28 @@ class HRApp {
     }
 
     async submitReview() {
-        const empId = document.getElementById('reviewEmpId').value;
+        const civilId = document.getElementById('reviewCivilId').value;
+        const employeeName = document.getElementById('reviewEmployeeName').value;
         const reviewDate = document.getElementById('reviewDate').value;
         const reviewer = document.getElementById('reviewer').value;
         const rating = document.getElementById('reviewRating').value;
         const comments = document.getElementById('reviewComments').value;
+        const goals = document.getElementById('reviewGoals').value;
         
-        if (!empId || !reviewDate || !reviewer || !rating) {
+        if (!civilId || !employeeName || !reviewDate || !reviewer || !rating) {
             alert('Please fill in all required fields');
-            return;
-        }
-        
-        const employee = this.employees.find(e => String(e['Civil ID Number']) === String(empId));
-        if (!employee) {
-            alert('Employee not found. Please check the Civil ID Number.');
             return;
         }
         
         try {
             await api.addReview({
-                employeeId: empId,
+                civilId: civilId,
+                employeeName: employeeName,
                 reviewDate: reviewDate,
                 reviewer: reviewer,
                 rating: parseFloat(rating) || 0,
-                comments: comments || ''
+                comments: comments || '',
+                goals: goals || ''
             });
             bootstrap.Modal.getInstance(document.getElementById('reviewModal')).hide();
             await this.loadAllData();
@@ -532,63 +819,12 @@ class HRApp {
         }
     }
 
-    // NEEDS CLARIFICATION
-    renderClarification() {
-        const tbody = document.getElementById('clarificationTableBody');
-        tbody.innerHTML = '';
-        
-        if (this.needsClarification.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="8" class="text-center text-muted">No records needing clarification.</td>
-                </tr>
-            `;
-            return;
-        }
-        
-        this.needsClarification.forEach(record => {
-            tbody.innerHTML += `
-                <tr>
-                    <td>${record['Name (Column A)'] || 'N/A'}</td>
-                    <td>${record['Suggested Full Name'] || '-'}</td>
-                    <td>${record['Other Possible Matches'] || '-'}</td>
-                    <td>${record['Reason'] || 'N/A'}</td>
-                    <td>${record['Basic salary'] || 0}</td>
-                    <td>${record['Total'] || 0}</td>
-                    <td>${record['الفرع'] || 'N/A'}</td>
-                    <td>
-                        <button class="btn btn-sm btn-primary" onclick="app.suggestName('${record['Name (Column A)']}')">
-                            <i class="bi bi-pencil"></i> Suggest
-                        </button>
-                    </td>
-                </tr>
-            `;
-        });
-    }
-
-    suggestName(name) {
-        const suggested = prompt('Enter suggested full name for: ' + name);
-        if (suggested && suggested.trim()) {
-            this.updateClarification(name, suggested.trim());
-        }
-    }
-
-    async updateClarification(name, suggestedName) {
-        try {
-            await api.updateNeedsClarification({ name, suggestedName });
-            await this.loadAllData();
-            alert('Clarification updated successfully!');
-        } catch (error) {
-            alert('Error updating clarification: ' + error.message);
-        }
-    }
-
-    // DATATABLES
+    // ==================== DATA TABLES INIT ====================
     initDataTables() {
         setTimeout(() => {
             if ($.fn.DataTable) {
                 try {
-                    ['#employeesTable', '#attendanceTable', '#leaveTable', '#reviewsTable', '#clarificationTable'].forEach(id => {
+                    ['#employeesTable', '#attendanceTable', '#leaveTable', '#reviewsTable'].forEach(id => {
                         if ($.fn.DataTable.isDataTable(id)) {
                             $(id).DataTable().destroy();
                         }
@@ -613,12 +849,6 @@ class HRApp {
                     });
                     
                     this.dataTables.reviews = $('#reviewsTable').DataTable({
-                        pageLength: 10,
-                        responsive: true,
-                        order: [[0, 'desc']]
-                    });
-                    
-                    this.dataTables.clarification = $('#clarificationTable').DataTable({
                         pageLength: 10,
                         responsive: true,
                         order: [[0, 'desc']]
