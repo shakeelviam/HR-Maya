@@ -1,8 +1,8 @@
-// config.js - Updated with both Sheet IDs
+// config.js - Complete and Fixed
 
 const CONFIG = {
     // ===== APPS SCRIPT =====
-    API_URL: 'https://script.google.com/macros/s/AKfycbyG5XLC79FnyLtSGGWunhJwU83SV0b0kz3y1FKdal-JBcTUM-X0ax134konYyTaKxYiiQ/exec'
+    API_URL: 'https://script.google.com/macros/s/AKfycbyG5XLC79FnyLtSGGWunhJwU83SV0b0kz3y1FKdal-JBcTUM-X0ax134konYyTaKxYiiQ/exec',
     
     // ===== GOOGLE SHEETS =====
     // Sheet 1: Main employee data
@@ -16,11 +16,10 @@ const CONFIG = {
     
     // ===== AUTHORIZED ADMIN EMAILS =====
     AUTHORIZED_EMAILS: [
-        'shakeelviam@gmail.com',
+        'shakeelviram@gmail.com',     // ✅ FIXED: was 'shakeelviam@gmail.com' (missing 'r')
         'info@maya.com.kw',
-        'operations@maya.com.kw,
-        'hr@maya.com.kw',
-        // Add more authorized emails as needed
+        'operations@maya.com.kw',     // ✅ FIXED: added missing closing quote
+        'hr@maya.com.kw'
     ],
     
     // ===== APP SETTINGS =====
