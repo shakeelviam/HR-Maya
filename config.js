@@ -11,7 +11,7 @@ const CONFIG = {
     SPREADSHEET_ID: '1k5T2DfZqACaJLbwy16-XSfnGaLq4Vg0u1epGro94c_c',
     
     // ===== GOOGLE OAUTH =====
-    // Your Google OAuth Client ID (from the image you shared)
+    // Your Google OAuth Client ID (from the JSON file)
     GOOGLE_CLIENT_ID: '323911089919-it1nrmlpmq2ojigs50g6hu11qur4r59n.apps.googleusercontent.com',
     
     // ===== AUTHORIZED ADMIN EMAILS =====
