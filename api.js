@@ -52,8 +52,8 @@ class HRAPI {
         return this.request('updateEmployee', employeeData);
     }
 
-    async deleteEmployee(employeeId) {
-        return this.request('deleteEmployee', { employeeId });
+    async deleteEmployee(civilId) {
+        return this.request('deleteEmployee', { civilId });
     }
 
     // Attendance methods
@@ -85,6 +85,15 @@ class HRAPI {
 
     async addReview(params) {
         return this.request('addReview', params);
+    }
+
+    // Sync methods
+    async syncVacationData() {
+        return this.request('syncVacationData');
+    }
+
+    async syncSickLeaveData() {
+        return this.request('syncSickLeaveData');
     }
 }
 
