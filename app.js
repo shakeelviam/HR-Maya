@@ -1,4 +1,4 @@
-// app.js - Complete Application
+// app.js - Complete Application with Integrated Data Fetching
 
 class HRApp {
     constructor() {
@@ -120,10 +120,12 @@ class HRApp {
         }
     }
 
+    // ==================== LOAD DATA - MODIFIED TO USE INTEGRATED DATA ====================
     async loadAllData() {
         try {
-            const empResult = await api.getEmployees();
-            this.employees = empResult.data || [];
+            // 🔥 NEW: Fetch integrated data from both sheets
+            const result = await api.getIntegratedEmployees();
+            this.employees = result.data || [];
             
             const today = new Date();
             const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -146,6 +148,14 @@ class HRApp {
             
         } catch (error) {
             console.error('Error loading data:', error);
+            // Fallback to regular employees if integrated fails
+            try {
+                const empResult = await api.getEmployees();
+                this.employees = empResult.data || [];
+                this.renderEmployees();
+            } catch (e) {
+                console.error('Fallback also failed:', e);
+            }
         }
     }
 
