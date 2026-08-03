@@ -162,6 +162,88 @@
             display: block;
         }
         
+        /* Employee Profile Styles */
+        .profile-header {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 25px;
+        }
+        
+        .profile-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: #0d6efd;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: 600;
+        }
+        
+        .profile-info-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .profile-info-item:last-child {
+            border-bottom: none;
+        }
+        
+        .profile-info-label {
+            color: #6c757d;
+            font-weight: 500;
+        }
+        
+        .profile-info-value {
+            font-weight: 500;
+        }
+        
+        .profile-stat {
+            text-align: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .profile-stat-number {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #0d6efd;
+        }
+        
+        .profile-stat-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        .status-badge.active {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-badge.inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status-badge.on-leave {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
         @media (max-width: 768px) {
             #sidebar {
                 margin-left: -250px;
@@ -212,11 +294,6 @@
                     <i class="bi bi-star-fill"></i> Performance Reviews
                 </a>
             </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#" data-page="clarification">
-                    <i class="bi bi-question-circle-fill"></i> Needs Clarification
-                </a>
-            </li>
         </ul>
     </nav>
 
@@ -257,8 +334,8 @@
                     <div class="stat-card">
                         <div class="d-flex justify-content-between align-items-start">
                             <div>
-                                <p class="text-muted mb-1">Present Today</p>
-                                <p class="stat-number" id="presentToday">0</p>
+                                <p class="text-muted mb-1">Active Employees</p>
+                                <p class="stat-number" id="activeEmployees">0</p>
                             </div>
                             <i class="bi bi-person-check stat-icon text-success"></i>
                         </div>
@@ -309,18 +386,24 @@
             <div class="table-container">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5><i class="bi bi-people"></i> Employee Management</h5>
-                    <button class="btn btn-primary btn-sm" onclick="app.showAddEmployeeModal()">
-                        <i class="bi bi-plus-circle"></i> Add Employee
-                    </button>
+                    <div>
+                        <button class="btn btn-primary btn-sm me-2" onclick="app.showAddEmployeeModal()">
+                            <i class="bi bi-plus-circle"></i> Add Employee
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm" onclick="app.loadAllData()">
+                            <i class="bi bi-arrow-repeat"></i> Refresh
+                        </button>
+                    </div>
                 </div>
                 <table id="employeesTable" class="table table-striped">
                     <thead>
                         <tr>
                             <th>Civil ID</th>
-                            <th>Full Name</th>
-                            <th>Branch</th>
-                            <th>Basic Salary</th>
-                            <th>Total Payable</th>
+                            <th>Name (English)</th>
+                            <th>Name (Arabic)</th>
+                            <th>Designation</th>
+                            <th>Salary</th>
+                            <th>Vacation Left</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
@@ -328,6 +411,13 @@
                     <tbody id="employeesTableBody">
                     </tbody>
                 </table>
+            </div>
+        </div>
+
+        <!-- Employee Profile Page -->
+        <div class="page-section" id="page-profile">
+            <div id="profileContent">
+                <!-- Profile content will be dynamically loaded here -->
             </div>
         </div>
 
@@ -349,7 +439,8 @@
                     <thead>
                         <tr>
                             <th>Date</th>
-                            <th>Employee ID</th>
+                            <th>Civil ID</th>
+                            <th>Employee Name</th>
                             <th>Check In</th>
                             <th>Check Out</th>
                             <th>Hours</th>
@@ -375,7 +466,8 @@
                     <thead>
                         <tr>
                             <th>Request ID</th>
-                            <th>Employee ID</th>
+                            <th>Civil ID</th>
+                            <th>Employee Name</th>
                             <th>Start Date</th>
                             <th>End Date</th>
                             <th>Type</th>
@@ -402,7 +494,8 @@
                     <thead>
                         <tr>
                             <th>Review ID</th>
-                            <th>Employee ID</th>
+                            <th>Civil ID</th>
+                            <th>Employee Name</th>
                             <th>Date</th>
                             <th>Reviewer</th>
                             <th>Rating</th>
@@ -410,30 +503,6 @@
                         </tr>
                     </thead>
                     <tbody id="reviewsTableBody">
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Needs Clarification Page -->
-        <div class="page-section" id="page-clarification">
-            <div class="table-container">
-                <h5><i class="bi bi-question-circle"></i> Names Needing Clarification</h5>
-                <p class="text-muted mb-3">Arabic names that need to be matched with Latin-script entries</p>
-                <table id="clarificationTable" class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Arabic Name</th>
-                            <th>Suggested Name</th>
-                            <th>Other Matches</th>
-                            <th>Reason</th>
-                            <th>Basic Salary</th>
-                            <th>Total</th>
-                            <th>Branch</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="clarificationTableBody">
                     </tbody>
                 </table>
             </div>
@@ -458,19 +527,39 @@
                         <div class="col-12">
                             <h6 class="border-bottom pb-2 mb-3">Personal Information</h6>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Full Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="empName" required>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Name (English) <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="empNameEnglish" required>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Civil ID Number <span class="text-danger">*</span></label>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Name (Arabic) <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="empNameArabic" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Civil ID <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="empCivilId" required>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Branch (الفرع)</label>
-                            <input type="text" class="form-control" id="empBranch" placeholder="e.g., الجابرية, القرين, كيفان">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Passport No</label>
+                            <input type="text" class="form-control" id="empPassport">
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Nationality</label>
+                            <input type="text" class="form-control" id="empNationality">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Designation</label>
+                            <input type="text" class="form-control" id="empDesignation">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Salary <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="empSalary" required step="0.01">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Date of Join</label>
+                            <input type="date" class="form-control" id="empDateOfJoin">
+                        </div>
+                        <div class="col-md-4 mb-3">
                             <label class="form-label">Status</label>
                             <select class="form-control" id="empStatus">
                                 <option value="Active">Active</option>
@@ -479,71 +568,74 @@
                             </select>
                         </div>
 
-                        <!-- Salary Details -->
+                        <!-- Document Dates -->
                         <div class="col-12 mt-3">
-                            <h6 class="border-bottom pb-2 mb-3">Salary Details</h6>
+                            <h6 class="border-bottom pb-2 mb-3">Document Details</h6>
                         </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Basic Salary <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control" id="empBasicSalary" required step="0.01">
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Health Card Issued</label>
+                            <input type="date" class="form-control" id="empHealthIssued">
                         </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Food Allowance</label>
-                            <input type="number" class="form-control" id="empFood" value="25" step="0.01">
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Health Card Expiry</label>
+                            <input type="date" class="form-control" id="empHealthExpiry">
                         </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Accommodation Allowance</label>
-                            <input type="number" class="form-control" id="empAccommodation" value="0" step="0.01">
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">CID Issued</label>
+                            <input type="date" class="form-control" id="empCidIssued">
                         </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Conveyance Allowance</label>
-                            <input type="number" class="form-control" id="empConveyance" value="0" step="0.01">
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">CID Expiry</label>
+                            <input type="date" class="form-control" id="empCidExpiry">
                         </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Bonus</label>
-                            <input type="number" class="form-control" id="empBonus" value="0" step="0.01">
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Passport Issued</label>
+                            <input type="date" class="form-control" id="empPassportIssued">
                         </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Loan</label>
-                            <input type="number" class="form-control" id="empLoan" value="0" step="0.01">
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Passport Expiry</label>
+                            <input type="date" class="form-control" id="empPassportExpiry">
                         </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Other Deductions</label>
-                            <input type="number" class="form-control" id="empOtherDeductions" value="0" step="0.01">
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Contact (Kuwait)</label>
+                            <input type="text" class="form-control" id="empContactKuwait">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Contact (Home)</label>
+                            <input type="text" class="form-control" id="empContactHome">
                         </div>
 
-                        <!-- Overtime Details -->
+                        <!-- Vacation & Leave -->
                         <div class="col-12 mt-3">
-                            <h6 class="border-bottom pb-2 mb-3">Overtime Details</h6>
+                            <h6 class="border-bottom pb-2 mb-3">Leave & Vacation</h6>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Total Vacation Days</label>
+                            <input type="number" class="form-control" id="empTotalVacation" value="0">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Vacation Taken</label>
+                            <input type="number" class="form-control" id="empVacationTaken" value="0">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Remaining Vacation</label>
+                            <input type="number" class="form-control" id="empRemainingVacation" value="0">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Sick Days Taken</label>
+                            <input type="number" class="form-control" id="empSickDays" value="0">
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">OT Hours</label>
-                            <input type="number" class="form-control" id="empOTHours" value="0" step="0.5">
+                            <label class="form-label">Last Vacation Start</label>
+                            <input type="date" class="form-control" id="empLastVacationStart">
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">OT Days</label>
-                            <input type="number" class="form-control" id="empOTDays" value="0" step="0.5">
+                            <label class="form-label">Last Vacation End</label>
+                            <input type="date" class="form-control" id="empLastVacationEnd">
                         </div>
-
-                        <!-- Calculated Fields (Read-only) -->
-                        <div class="col-12 mt-3">
-                            <h6 class="border-bottom pb-2 mb-3">Calculated Fields (Auto-calculated by Google Sheets)</h6>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label">Gross Salary</label>
-                            <input type="text" class="form-control" id="empGrossSalary" readonly style="background:#f8f9fa;">
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label">Total Deduction</label>
-                            <input type="text" class="form-control" id="empTotalDeduction" readonly style="background:#f8f9fa;">
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label">Total OT Payable</label>
-                            <input type="text" class="form-control" id="empTotalOT" readonly style="background:#f8f9fa;">
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label">Total Payable Salary</label>
-                            <input type="text" class="form-control" id="empTotalPayable" readonly style="background:#f8f9fa;">
+                        <div class="col-12 mb-3">
+                            <label class="form-label">Remarks</label>
+                            <textarea class="form-control" id="empRemarks" rows="2"></textarea>
                         </div>
                     </div>
                 </form>
@@ -567,9 +659,12 @@
             <div class="modal-body">
                 <form id="leaveForm">
                     <div class="mb-3">
-                        <label class="form-label">Employee ID (Civil ID Number)</label>
-                        <input type="text" class="form-control" id="leaveEmpId" required placeholder="Enter Civil ID Number">
-                        <small class="text-muted">Enter the employee's Civil ID Number as shown in the employees list</small>
+                        <label class="form-label">Civil ID</label>
+                        <input type="text" class="form-control" id="leaveCivilId" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Employee Name</label>
+                        <input type="text" class="form-control" id="leaveEmployeeName" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Start Date</label>
@@ -593,7 +688,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Reason</label>
-                        <textarea class="form-control" id="leaveReason" rows="2" placeholder="Optional reason for leave"></textarea>
+                        <textarea class="form-control" id="leaveReason" rows="2"></textarea>
                     </div>
                 </form>
             </div>
@@ -616,9 +711,12 @@
             <div class="modal-body">
                 <form id="reviewForm">
                     <div class="mb-3">
-                        <label class="form-label">Employee ID (Civil ID Number)</label>
-                        <input type="text" class="form-control" id="reviewEmpId" required placeholder="Enter Civil ID Number">
-                        <small class="text-muted">Enter the employee's Civil ID Number as shown in the employees list</small>
+                        <label class="form-label">Civil ID</label>
+                        <input type="text" class="form-control" id="reviewCivilId" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Employee Name</label>
+                        <input type="text" class="form-control" id="reviewEmployeeName" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Review Date</label>
@@ -634,11 +732,11 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Comments</label>
-                        <textarea class="form-control" id="reviewComments" rows="3" placeholder="Performance comments"></textarea>
+                        <textarea class="form-control" id="reviewComments" rows="3"></textarea>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Goals / Next Steps</label>
-                        <textarea class="form-control" id="reviewGoals" rows="2" placeholder="Future goals and objectives"></textarea>
+                        <textarea class="form-control" id="reviewGoals" rows="2"></textarea>
                     </div>
                 </form>
             </div>
