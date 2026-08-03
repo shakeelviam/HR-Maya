@@ -2,7 +2,7 @@
 
 const CONFIG = {
     // ===== APPS SCRIPT =====
-    API_URL: 'https://script.google.com/macros/s/AKfycbyG5XLC79FnyLtSGGWunhJwU83SV0b0kz3y1FKdal-JBcTUM-X0ax134konYyTaKxYiiQ/exec',
+    API_URL: 'https://script.google.com/macros/s/AKfycbyG5XLC79FnyLtSGGWunhJwU83SV0b0kz3y1FKdal-JBcTUM-X0ax134konYyTaKxYiiQ/exec,
     
     // ===== GOOGLE SHEETS =====
     // Sheet 1: Main employee data
