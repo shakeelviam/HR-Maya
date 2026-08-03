@@ -1,38 +1,29 @@
-// config.js - Complete and Fixed
-
 const CONFIG = {
-    // ===== APPS SCRIPT =====
-    API_URL: '// config.js - Complete and Fixed
-
-const CONFIG = {
-    // ===== APPS SCRIPT =====
-    API_URL: 'https://script.google.com/macros/s/AKfycbyG5XLC79FnyLtSGGWunhJwU83SV0b0kz3y1FKdal-JBcTUM-X0ax134konYyTaKxYiiQ/exec,
+    // ✅ Your NEW correct Web App URL
+    API_URL: 'https://script.google.com/macros/s/AKfycbyG5XLC79FnyLtSGGWunhJwU83SV0b0kz3y1FKdal-JBcTUM-X0ax134konYyTaKxYiiQ/exec',
     
-    // ===== GOOGLE SHEETS =====
-    // Sheet 1: Main employee data
+    // ✅ Your Sheet 1 ID (Main employee data)
     SPREADSHEET_ID: '1k5T2DfZqACaJLbwy16-XSfnGaLq4Vg0u1epGro94c_c',
     
-    // Sheet 2: Payroll data
+    // ✅ Your Sheet 2 ID (Payroll data)
     PAYROLL_SPREADSHEET_ID: '1QMYgO6B8fciT6pObX9PB3Nmc8TvqOAAYsYQF4bve69M',
     
-    // ===== GOOGLE OAUTH =====
+    // ✅ Your Google OAuth Client ID
     GOOGLE_CLIENT_ID: '323911089919-it1nrmlpmq2ojigs50g6hu11qur4r59n.apps.googleusercontent.com',
     
-    // ===== AUTHORIZED ADMIN EMAILS =====
+    // ✅ Your Authorized Emails
     AUTHORIZED_EMAILS: [
-        'shakeel.viam@gmail.com',     // ✅ FIXED: was 'shakeelviam@gmail.com' (missing 'r')
+        'shakeel.viam@gmail.com',
         'info@maya.com.kw',
-        'operations@maya.com.kw',     // ✅ FIXED: added missing closing quote
+        'operations@maya.com.kw',
         'hr@maya.com.kw'
     ],
     
-    // ===== APP SETTINGS =====
     APP_NAME: 'Maya HR Management System',
     COMPANY_NAME: 'Maya',
     
-    // ===== SHEET NAMES =====
     SHEETS: {
-        EMPLOYEES_SOURCE: 'Employees Details',
+        EMPLOYEES_SOURCE: 'Employee Details',
         PAYROLL_SOURCE: 'Confirmed Names',
         VACATION: 'Vacation',
         SICK_LEAVE: 'Sick Leave',
@@ -41,7 +32,6 @@ const CONFIG = {
         PERFORMANCE_REVIEWS: 'Performance Reviews'
     },
     
-    // ===== MANAGEMENT EMPLOYEES =====
     MANAGEMENT_EMPLOYEES: [
         'Abdulrahman Al-Najjar',
         'Mishari Al-Mutawaq',
@@ -51,58 +41,6 @@ const CONFIG = {
         'Ayman Mandoub'
     ],
     
-    // ===== DEFAULTS =====
-    DEFAULTS: {
-        EMPLOYEE_STATUS: 'Active',
-        LEAVE_STATUS: 'Pending',
-        ATTENDANCE_STATUS: 'Present'
-    }
-};,
-    
-    // ===== GOOGLE SHEETS =====
-    // Sheet 1: Main employee data
-    SPREADSHEET_ID: '1k5T2DfZqACaJLbwy16-XSfnGaLq4Vg0u1epGro94c_c',
-    
-    // Sheet 2: Payroll data
-    PAYROLL_SPREADSHEET_ID: '1QMYgO6B8fciT6pObX9PB3Nmc8TvqOAAYsYQF4bve69M',
-    
-    // ===== GOOGLE OAUTH =====
-    GOOGLE_CLIENT_ID: '323911089919-it1nrmlpmq2ojigs50g6hu11qur4r59n.apps.googleusercontent.com',
-    
-    // ===== AUTHORIZED ADMIN EMAILS =====
-    AUTHORIZED_EMAILS: [
-        'shakeel.viam@gmail.com',     // ✅ FIXED: was 'shakeelviam@gmail.com' (missing 'r')
-        'info@maya.com.kw',
-        'operations@maya.com.kw',     // ✅ FIXED: added missing closing quote
-        'hr@maya.com.kw'
-    ],
-    
-    // ===== APP SETTINGS =====
-    APP_NAME: 'Maya HR Management System',
-    COMPANY_NAME: 'Maya',
-    
-    // ===== SHEET NAMES =====
-    SHEETS: {
-        EMPLOYEES_SOURCE: 'Employees Details',
-        PAYROLL_SOURCE: 'Confirmed Names',
-        VACATION: 'Vacation',
-        SICK_LEAVE: 'Sick Leave',
-        ATTENDANCE: 'Attendance',
-        LEAVE_REQUESTS: 'Leave Requests',
-        PERFORMANCE_REVIEWS: 'Performance Reviews'
-    },
-    
-    // ===== MANAGEMENT EMPLOYEES =====
-    MANAGEMENT_EMPLOYEES: [
-        'Abdulrahman Al-Najjar',
-        'Mishari Al-Mutawaq',
-        'Abdulwahab Al-Najjar',
-        'Abdullah Al-Samhan',
-        'Mohamed Awda',
-        'Ayman Mandoub'
-    ],
-    
-    // ===== DEFAULTS =====
     DEFAULTS: {
         EMPLOYEE_STATUS: 'Active',
         LEAVE_STATUS: 'Pending',
