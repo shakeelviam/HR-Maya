@@ -1,9 +1,10 @@
-// api.js - API Handler
+// api.js - Updated with new methods
 
 class HRAPI {
     constructor() {
         this.baseUrl = CONFIG.API_URL;
         this.spreadsheetId = CONFIG.SPREADSHEET_ID;
+        this.payrollSpreadsheetId = CONFIG.PAYROLL_SPREADSHEET_ID;
     }
 
     async request(method, params = {}) {
@@ -19,7 +20,8 @@ class HRAPI {
                 },
                 body: JSON.stringify({
                     ...params,
-                    spreadsheetId: this.spreadsheetId
+                    spreadsheetId: this.spreadsheetId,
+                    payrollSpreadsheetId: this.payrollSpreadsheetId
                 })
             });
 
@@ -40,9 +42,18 @@ class HRAPI {
         }
     }
 
-    // ===== EMPLOYEE METHODS =====
+    // ===== INTEGRATED DATA (BOTH SHEETS) =====
+    async getIntegratedEmployees() {
+        return this.request('getIntegratedEmployees');
+    }
+
+    // ===== EMPLOYEE METHODS (Sheet 1) =====
     async getEmployees() {
         return this.request('getEmployees');
+    }
+
+    async getEmployeeById(employeeId) {
+        return this.request('getEmployeeById', { employeeId });
     }
 
     async addEmployee(employeeData) {
@@ -57,7 +68,34 @@ class HRAPI {
         return this.request('deleteEmployee', { civilId });
     }
 
-    // ===== ATTENDANCE METHODS =====
+    // ===== PAYROLL METHODS (Sheet 2) =====
+    async getPayrollData() {
+        return this.request('getPayrollData');
+    }
+
+    async getPayrollByCivilId(civilId) {
+        return this.request('getPayrollByCivilId', { civilId });
+    }
+
+    // ===== VACATION METHODS (Sheet 1) =====
+    async getVacationData() {
+        return this.request('getVacationData');
+    }
+
+    async syncVacationData() {
+        return this.request('syncVacationData');
+    }
+
+    // ===== SICK LEAVE METHODS (Sheet 1) =====
+    async getSickLeaveData() {
+        return this.request('getSickLeaveData');
+    }
+
+    async syncSickLeaveData() {
+        return this.request('syncSickLeaveData');
+    }
+
+    // ===== ATTENDANCE =====
     async getAttendance(params) {
         return this.request('getAttendance', params);
     }
@@ -66,7 +104,7 @@ class HRAPI {
         return this.request('markAttendance', params);
     }
 
-    // ===== LEAVE METHODS =====
+    // ===== LEAVE REQUESTS =====
     async getLeaveRequests() {
         return this.request('getLeaveRequests');
     }
@@ -79,22 +117,13 @@ class HRAPI {
         return this.request('updateLeaveStatus', params);
     }
 
-    // ===== REVIEW METHODS =====
+    // ===== REVIEWS =====
     async getReviews() {
         return this.request('getReviews');
     }
 
     async addReview(params) {
         return this.request('addReview', params);
-    }
-
-    // ===== SYNC METHODS =====
-    async syncVacationData() {
-        return this.request('syncVacationData');
-    }
-
-    async syncSickLeaveData() {
-        return this.request('syncSickLeaveData');
     }
 
     // ===== DASHBOARD =====
