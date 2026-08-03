@@ -8,7 +8,6 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
     <style>
-        /* (Keep the same CSS styles as before) */
         :root {
             --primary-color: #0d6efd;
             --sidebar-width: 250px;
@@ -213,6 +212,11 @@
                     <i class="bi bi-star-fill"></i> Performance Reviews
                 </a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" data-page="clarification">
+                    <i class="bi bi-question-circle-fill"></i> Needs Clarification
+                </a>
+            </li>
         </ul>
     </nav>
 
@@ -314,9 +318,9 @@
                         <tr>
                             <th>Civil ID</th>
                             <th>Full Name</th>
-                            <th>ID Number</th>
                             <th>Branch</th>
                             <th>Basic Salary</th>
+                            <th>Total Payable</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
@@ -410,13 +414,38 @@
                 </table>
             </div>
         </div>
+
+        <!-- Needs Clarification Page -->
+        <div class="page-section" id="page-clarification">
+            <div class="table-container">
+                <h5><i class="bi bi-question-circle"></i> Names Needing Clarification</h5>
+                <p class="text-muted mb-3">Arabic names that need to be matched with Latin-script entries</p>
+                <table id="clarificationTable" class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Arabic Name</th>
+                            <th>Suggested Name</th>
+                            <th>Other Matches</th>
+                            <th>Reason</th>
+                            <th>Basic Salary</th>
+                            <th>Total</th>
+                            <th>Branch</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="clarificationTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
 
-<!-- Modals -->
-<!-- Add/Edit Employee Modal (Updated with all fields from your sheet) -->
+<!-- ==================== MODALS ==================== -->
+
+<!-- Add/Edit Employee Modal -->
 <div class="modal fade" id="employeeModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="employeeModalTitle">Add Employee</h5>
@@ -425,45 +454,21 @@
             <div class="modal-body">
                 <form id="employeeForm">
                     <div class="row">
+                        <!-- Personal Information -->
+                        <div class="col-12">
+                            <h6 class="border-bottom pb-2 mb-3">Personal Information</h6>
+                        </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Full Name</label>
+                            <label class="form-label">Full Name <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="empName" required>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Civil ID Number</label>
+                            <label class="form-label">Civil ID Number <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="empCivilId" required>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Basic Salary</label>
-                            <input type="number" class="form-control" id="empBasicSalary" required>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Food Allowance</label>
-                            <input type="number" class="form-control" id="empFood" value="25">
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Accommodation Allowance</label>
-                            <input type="number" class="form-control" id="empAccommodation">
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Conveyance Allowance</label>
-                            <input type="number" class="form-control" id="empConveyance">
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Bonus</label>
-                            <input type="number" class="form-control" id="empBonus" value="0">
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Loan</label>
-                            <input type="number" class="form-control" id="empLoan">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Other Deductions</label>
-                            <input type="number" class="form-control" id="empOtherDeductions">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Branch (الفرع)</label>
-                            <input type="text" class="form-control" id="empBranch">
+                            <input type="text" class="form-control" id="empBranch" placeholder="e.g., الجابرية, القرين, كيفان">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Status</label>
@@ -472,6 +477,73 @@
                                 <option value="Inactive">Inactive</option>
                                 <option value="On Leave">On Leave</option>
                             </select>
+                        </div>
+
+                        <!-- Salary Details -->
+                        <div class="col-12 mt-3">
+                            <h6 class="border-bottom pb-2 mb-3">Salary Details</h6>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Basic Salary <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="empBasicSalary" required step="0.01">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Food Allowance</label>
+                            <input type="number" class="form-control" id="empFood" value="25" step="0.01">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Accommodation Allowance</label>
+                            <input type="number" class="form-control" id="empAccommodation" value="0" step="0.01">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Conveyance Allowance</label>
+                            <input type="number" class="form-control" id="empConveyance" value="0" step="0.01">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Bonus</label>
+                            <input type="number" class="form-control" id="empBonus" value="0" step="0.01">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Loan</label>
+                            <input type="number" class="form-control" id="empLoan" value="0" step="0.01">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Other Deductions</label>
+                            <input type="number" class="form-control" id="empOtherDeductions" value="0" step="0.01">
+                        </div>
+
+                        <!-- Overtime Details -->
+                        <div class="col-12 mt-3">
+                            <h6 class="border-bottom pb-2 mb-3">Overtime Details</h6>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">OT Hours</label>
+                            <input type="number" class="form-control" id="empOTHours" value="0" step="0.5">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">OT Days</label>
+                            <input type="number" class="form-control" id="empOTDays" value="0" step="0.5">
+                        </div>
+
+                        <!-- Calculated Fields (Read-only) -->
+                        <div class="col-12 mt-3">
+                            <h6 class="border-bottom pb-2 mb-3">Calculated Fields (Auto-calculated by Google Sheets)</h6>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Gross Salary</label>
+                            <input type="text" class="form-control" id="empGrossSalary" readonly style="background:#f8f9fa;">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Total Deduction</label>
+                            <input type="text" class="form-control" id="empTotalDeduction" readonly style="background:#f8f9fa;">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Total OT Payable</label>
+                            <input type="text" class="form-control" id="empTotalOT" readonly style="background:#f8f9fa;">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Total Payable Salary</label>
+                            <input type="text" class="form-control" id="empTotalPayable" readonly style="background:#f8f9fa;">
                         </div>
                     </div>
                 </form>
@@ -496,7 +568,8 @@
                 <form id="leaveForm">
                     <div class="mb-3">
                         <label class="form-label">Employee ID (Civil ID Number)</label>
-                        <input type="text" class="form-control" id="leaveEmpId" required>
+                        <input type="text" class="form-control" id="leaveEmpId" required placeholder="Enter Civil ID Number">
+                        <small class="text-muted">Enter the employee's Civil ID Number as shown in the employees list</small>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Start Date</label>
@@ -514,11 +587,13 @@
                             <option value="Personal">Personal</option>
                             <option value="Maternity">Maternity</option>
                             <option value="Paternity">Paternity</option>
+                            <option value="Emergency">Emergency</option>
+                            <option value="Unpaid">Unpaid</option>
                         </select>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Reason</label>
-                        <textarea class="form-control" id="leaveReason" rows="2"></textarea>
+                        <textarea class="form-control" id="leaveReason" rows="2" placeholder="Optional reason for leave"></textarea>
                     </div>
                 </form>
             </div>
@@ -530,7 +605,7 @@
     </div>
 </div>
 
-<!-- Review Modal -->
+<!-- Performance Review Modal -->
 <div class="modal fade" id="reviewModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -542,7 +617,8 @@
                 <form id="reviewForm">
                     <div class="mb-3">
                         <label class="form-label">Employee ID (Civil ID Number)</label>
-                        <input type="text" class="form-control" id="reviewEmpId" required>
+                        <input type="text" class="form-control" id="reviewEmpId" required placeholder="Enter Civil ID Number">
+                        <small class="text-muted">Enter the employee's Civil ID Number as shown in the employees list</small>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Review Date</label>
@@ -554,11 +630,15 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Rating (1-5)</label>
-                        <input type="number" class="form-control" id="reviewRating" min="1" max="5" required>
+                        <input type="number" class="form-control" id="reviewRating" min="1" max="5" value="3" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Comments</label>
-                        <textarea class="form-control" id="reviewComments" rows="3"></textarea>
+                        <textarea class="form-control" id="reviewComments" rows="3" placeholder="Performance comments"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Goals / Next Steps</label>
+                        <textarea class="form-control" id="reviewGoals" rows="2" placeholder="Future goals and objectives"></textarea>
                     </div>
                 </form>
             </div>
@@ -570,11 +650,13 @@
     </div>
 </div>
 
+<!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
 
+<!-- App Scripts -->
 <script src="config.js"></script>
 <script src="auth.js"></script>
 <script src="api.js"></script>
