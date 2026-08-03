@@ -49,7 +49,6 @@ class HRApp {
         // Setup date inputs
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('attendanceDate').value = today;
-        document.getElementById('empHireDate').value = today;
         document.getElementById('reviewDate').value = today;
     }
 
@@ -121,7 +120,10 @@ class HRApp {
             
         } catch (error) {
             console.error('Error loading data:', error);
-            alert('Failed to load data. Please check your connection and try again.');
+            // Don't show alert for empty sheets - just show empty tables
+            if (!error.message.includes('404') && !error.message.includes('not found')) {
+                alert('Failed to load data. Please check your connection and try again.');
+            }
         }
     }
 
@@ -152,36 +154,53 @@ class HRApp {
         // Recent attendance
         const recentAtt = this.attendance.slice(-5).reverse();
         let attHtml = '<ul class="list-unstyled">';
-        recentAtt.forEach(a => {
-            attHtml += `
-                <li class="mb-2 d-flex justify-content-between">
-                    <span>${a['Employee ID']} - ${a.Date}</span>
-                    <span class="badge bg-${a.Status === 'Present' ? 'success' : 'warning'}">${a.Status}</span>
-                </li>
-            `;
-        });
+        if (recentAtt.length === 0) {
+            attHtml += '<li class="text-muted">No recent attendance records</li>';
+        } else {
+            recentAtt.forEach(a => {
+                attHtml += `
+                    <li class="mb-2 d-flex justify-content-between">
+                        <span>${a['Employee ID'] || 'N/A'} - ${a.Date || 'N/A'}</span>
+                        <span class="badge bg-${a.Status === 'Present' ? 'success' : 'warning'}">${a.Status || 'N/A'}</span>
+                    </li>
+                `;
+            });
+        }
         attHtml += '</ul>';
-        document.getElementById('recentAttendance').innerHTML = attHtml || '<p>No recent attendance</p>';
+        document.getElementById('recentAttendance').innerHTML = attHtml;
         
         // Pending leave requests
         const pendingLeaves = this.leaves.filter(l => l.Status === 'Pending');
         let leaveHtml = '<ul class="list-unstyled">';
-        pendingLeaves.slice(0, 5).forEach(l => {
-            leaveHtml += `
-                <li class="mb-2 d-flex justify-content-between">
-                    <span>${l['Employee ID']} - ${l.Type}</span>
-                    <span class="badge bg-warning">${l.Status}</span>
-                </li>
-            `;
-        });
+        if (pendingLeaves.length === 0) {
+            leaveHtml += '<li class="text-muted">No pending leave requests</li>';
+        } else {
+            pendingLeaves.slice(0, 5).forEach(l => {
+                leaveHtml += `
+                    <li class="mb-2 d-flex justify-content-between">
+                        <span>${l['Employee ID'] || 'N/A'} - ${l.Type || 'N/A'}</span>
+                        <span class="badge bg-warning">Pending</span>
+                    </li>
+                `;
+            });
+        }
         leaveHtml += '</ul>';
-        document.getElementById('pendingLeaveRequests').innerHTML = leaveHtml || '<p>No pending requests</p>';
+        document.getElementById('pendingLeaveRequests').innerHTML = leaveHtml;
     }
 
-    // EMPLOYEE METHODS (Customized for your sheet structure)
+    // EMPLOYEE METHODS
     renderEmployees() {
         const tbody = document.getElementById('employeesTableBody');
         tbody.innerHTML = '';
+        
+        if (this.employees.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center text-muted">No employees found. Click "Add Employee" to get started.</td>
+                </tr>
+            `;
+            return;
+        }
         
         this.employees.forEach(emp => {
             const statusClass = emp.Status === 'Active' ? 'success' : 
@@ -189,17 +208,17 @@ class HRApp {
             const branch = emp['الفرع'] || 'N/A';
             tbody.innerHTML += `
                 <tr>
-                    <td>${emp['Civil ID Number'] || emp['Employee ID']}</td>
-                    <td>${emp['Full Name']}</td>
-                    <td>${emp['Civil ID Number'] || ''}</td>
-                    <td>${emp.Branch || branch}</td>
-                    <td>${emp['Basic salary'] || ''}</td>
+                    <td>${emp['Civil ID Number'] || 'N/A'}</td>
+                    <td>${emp['Full Name'] || 'N/A'}</td>
+                    <td>${emp['Civil ID Number'] || 'N/A'}</td>
+                    <td>${branch}</td>
+                    <td>${emp['Basic salary'] || '0'}</td>
                     <td><span class="badge bg-${statusClass}">${emp.Status || 'Active'}</span></td>
                     <td>
-                        <button class="btn btn-sm btn-info" onclick="app.editEmployee('${emp['Civil ID Number'] || emp['Employee ID']}')">
+                        <button class="btn btn-sm btn-info" onclick="app.editEmployee('${emp['Civil ID Number'] || ''}')">
                             <i class="bi bi-pencil"></i>
                         </button>
-                        <button class="btn btn-sm btn-danger" onclick="app.deleteEmployee('${emp['Civil ID Number'] || emp['Employee ID']}')">
+                        <button class="btn btn-sm btn-danger" onclick="app.deleteEmployee('${emp['Civil ID Number'] || ''}')">
                             <i class="bi bi-trash"></i>
                         </button>
                     </td>
@@ -211,40 +230,56 @@ class HRApp {
     showAddEmployeeModal() {
         document.getElementById('employeeModalTitle').textContent = 'Add Employee';
         document.getElementById('employeeForm').reset();
-        document.getElementById('empHireDate').value = new Date().toISOString().split('T')[0];
-        // Set default values for your sheet
-        document.getElementById('empFood').value = 25;
-        document.getElementById('empBranch').value = '';
+        document.getElementById('empFood').value = CONFIG.DEFAULTS.FOOD_ALLOWANCE;
+        document.getElementById('empBonus').value = 0;
+        document.getElementById('empStatus').value = 'Active';
+        document.getElementById('employeeForm').dataset.editId = '';
         new bootstrap.Modal(document.getElementById('employeeModal')).show();
     }
 
     async saveEmployee() {
+        const form = document.getElementById('employeeForm');
+        const editId = form.dataset.editId;
+        
         const data = {
             fullName: document.getElementById('empName').value,
             civilId: document.getElementById('empCivilId').value,
-            basicSalary: document.getElementById('empBasicSalary').value,
-            food: document.getElementById('empFood').value,
-            accommodation: document.getElementById('empAccommodation').value || '',
-            conveyance: document.getElementById('empConveyance').value || '',
-            bonus: document.getElementById('empBonus').value || 0,
-            loan: document.getElementById('empLoan').value || '',
-            otherDeductions: document.getElementById('empOtherDeductions').value || '',
+            basicSalary: parseFloat(document.getElementById('empBasicSalary').value) || 0,
+            food: parseFloat(document.getElementById('empFood').value) || CONFIG.DEFAULTS.FOOD_ALLOWANCE,
+            accommodation: parseFloat(document.getElementById('empAccommodation').value) || 0,
+            conveyance: parseFloat(document.getElementById('empConveyance').value) || 0,
+            bonus: parseFloat(document.getElementById('empBonus').value) || 0,
+            loan: parseFloat(document.getElementById('empLoan').value) || 0,
+            otherDeductions: parseFloat(document.getElementById('empOtherDeductions').value) || 0,
             branch: document.getElementById('empBranch').value || '',
             status: document.getElementById('empStatus').value || 'Active'
         };
         
+        // Validate required fields
+        if (!data.fullName || !data.civilId || !data.basicSalary) {
+            alert('Please fill in all required fields (Full Name, Civil ID, and Basic Salary)');
+            return;
+        }
+        
         try {
-            await api.addEmployee(data);
+            if (editId) {
+                // Update existing employee
+                data.employeeId = editId;
+                await api.updateEmployee(data);
+            } else {
+                // Add new employee
+                await api.addEmployee(data);
+            }
             bootstrap.Modal.getInstance(document.getElementById('employeeModal')).hide();
             await this.loadAllData();
-            alert('Employee added successfully!');
+            alert(editId ? 'Employee updated successfully!' : 'Employee added successfully!');
         } catch (error) {
-            alert('Error adding employee: ' + error.message);
+            alert('Error saving employee: ' + error.message);
         }
     }
 
     async editEmployee(civilId) {
-        const emp = this.employees.find(e => e['Civil ID Number'] == civilId || e['Employee ID'] == civilId);
+        const emp = this.employees.find(e => e['Civil ID Number'] == civilId);
         if (!emp) {
             alert('Employee not found');
             return;
@@ -254,21 +289,24 @@ class HRApp {
         document.getElementById('empName').value = emp['Full Name'] || '';
         document.getElementById('empCivilId').value = emp['Civil ID Number'] || '';
         document.getElementById('empBasicSalary').value = emp['Basic salary'] || '';
-        document.getElementById('empFood').value = emp.Food || 25;
-        document.getElementById('empAccommodation').value = emp['Accomodation Allowance'] || '';
-        document.getElementById('empConveyance').value = emp['Conveyance Allowance'] || '';
+        document.getElementById('empFood').value = emp.Food || CONFIG.DEFAULTS.FOOD_ALLOWANCE;
+        document.getElementById('empAccommodation').value = emp['Accomodation Allowance'] || 0;
+        document.getElementById('empConveyance').value = emp['Conveyance Allowance'] || 0;
         document.getElementById('empBonus').value = emp.Bonus || 0;
-        document.getElementById('empLoan').value = emp.Loan || '';
-        document.getElementById('empOtherDeductions').value = emp['Other Deductions'] || '';
+        document.getElementById('empLoan').value = emp.Loan || 0;
+        document.getElementById('empOtherDeductions').value = emp['Other Deductions'] || 0;
         document.getElementById('empBranch').value = emp['الفرع'] || '';
         document.getElementById('empStatus').value = emp.Status || 'Active';
         
-        // Store employee ID for update
         document.getElementById('employeeForm').dataset.editId = civilId;
         new bootstrap.Modal(document.getElementById('employeeModal')).show();
     }
 
     async deleteEmployee(civilId) {
+        if (!civilId) {
+            alert('Invalid employee ID');
+            return;
+        }
         if (!confirm('Are you sure you want to delete this employee?')) return;
         
         try {
@@ -285,17 +323,26 @@ class HRApp {
         const tbody = document.getElementById('attendanceTableBody');
         tbody.innerHTML = '';
         
+        if (this.attendance.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center text-muted">No attendance records found.</td>
+                </tr>
+            `;
+            return;
+        }
+        
         this.attendance.forEach(att => {
             const statusClass = att.Status === 'Present' ? 'success' : 
                               att.Status === 'Leave' ? 'warning' : 'secondary';
             tbody.innerHTML += `
                 <tr>
-                    <td>${att.Date}</td>
-                    <td>${att['Employee ID']}</td>
+                    <td>${att.Date || 'N/A'}</td>
+                    <td>${att['Employee ID'] || 'N/A'}</td>
                     <td>${att['Check In'] || '-'}</td>
                     <td>${att['Check Out'] || '-'}</td>
                     <td>${att.Hours || '-'}</td>
-                    <td><span class="badge bg-${statusClass}">${att.Status}</span></td>
+                    <td><span class="badge bg-${statusClass}">${att.Status || 'N/A'}</span></td>
                 </tr>
             `;
         });
@@ -303,8 +350,20 @@ class HRApp {
 
     async markAttendance() {
         const date = document.getElementById('attendanceDate').value;
+        if (!date) {
+            alert('Please select a date');
+            return;
+        }
+        
         const empId = prompt('Enter Employee ID (Civil ID Number):');
         if (!empId) return;
+        
+        // Check if employee exists
+        const employee = this.employees.find(e => e['Civil ID Number'] == empId);
+        if (!employee) {
+            alert('Employee not found. Please check the Civil ID Number.');
+            return;
+        }
         
         const status = prompt('Status (Present/Absent/Leave):', 'Present');
         if (!status) return;
@@ -328,17 +387,26 @@ class HRApp {
         const tbody = document.getElementById('leaveTableBody');
         tbody.innerHTML = '';
         
+        if (this.leaves.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center text-muted">No leave requests found.</td>
+                </tr>
+            `;
+            return;
+        }
+        
         this.leaves.forEach(leave => {
             const statusClass = leave.Status === 'Approved' ? 'success' : 
                               leave.Status === 'Rejected' ? 'danger' : 'warning';
             tbody.innerHTML += `
                 <tr>
-                    <td>${leave['Request ID']}</td>
-                    <td>${leave['Employee ID']}</td>
-                    <td>${leave['Start Date']}</td>
-                    <td>${leave['End Date']}</td>
-                    <td>${leave.Type}</td>
-                    <td><span class="badge bg-${statusClass}">${leave.Status}</span></td>
+                    <td>${leave['Request ID'] || 'N/A'}</td>
+                    <td>${leave['Employee ID'] || 'N/A'}</td>
+                    <td>${leave['Start Date'] || 'N/A'}</td>
+                    <td>${leave['End Date'] || 'N/A'}</td>
+                    <td>${leave.Type || 'N/A'}</td>
+                    <td><span class="badge bg-${statusClass}">${leave.Status || 'Pending'}</span></td>
                     <td>
                         ${leave.Status === 'Pending' ? `
                             <button class="btn btn-sm btn-success" onclick="app.updateLeave('${leave['Request ID']}', 'Approved')">
@@ -356,16 +424,36 @@ class HRApp {
 
     showLeaveRequestModal() {
         document.getElementById('leaveForm').reset();
+        document.getElementById('leaveStart').value = new Date().toISOString().split('T')[0];
+        document.getElementById('leaveEnd').value = new Date().toISOString().split('T')[0];
         new bootstrap.Modal(document.getElementById('leaveModal')).show();
     }
 
     async submitLeaveRequest() {
+        const empId = document.getElementById('leaveEmpId').value;
+        const startDate = document.getElementById('leaveStart').value;
+        const endDate = document.getElementById('leaveEnd').value;
+        const type = document.getElementById('leaveType').value;
+        const reason = document.getElementById('leaveReason').value;
+        
+        if (!empId || !startDate || !endDate) {
+            alert('Please fill in all required fields');
+            return;
+        }
+        
+        // Check if employee exists
+        const employee = this.employees.find(e => e['Civil ID Number'] == empId);
+        if (!employee) {
+            alert('Employee not found. Please check the Civil ID Number.');
+            return;
+        }
+        
         const data = {
-            employeeId: document.getElementById('leaveEmpId').value,
-            startDate: document.getElementById('leaveStart').value,
-            endDate: document.getElementById('leaveEnd').value,
-            type: document.getElementById('leaveType').value,
-            reason: document.getElementById('leaveReason').value
+            employeeId: empId,
+            startDate: startDate,
+            endDate: endDate,
+            type: type,
+            reason: reason || ''
         };
         
         try {
@@ -395,15 +483,24 @@ class HRApp {
         const tbody = document.getElementById('reviewsTableBody');
         tbody.innerHTML = '';
         
+        if (this.reviews.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center text-muted">No performance reviews found.</td>
+                </tr>
+            `;
+            return;
+        }
+        
         this.reviews.forEach(review => {
-            const stars = '★'.repeat(Math.round(review.Rating)) + '☆'.repeat(5 - Math.round(review.Rating));
+            const stars = '★'.repeat(Math.round(review.Rating || 0)) + '☆'.repeat(5 - Math.round(review.Rating || 0));
             tbody.innerHTML += `
                 <tr>
-                    <td>${review['Review ID']}</td>
-                    <td>${review['Employee ID']}</td>
-                    <td>${review['Review Date']}</td>
-                    <td>${review.Reviewer}</td>
-                    <td>${stars} (${review.Rating})</td>
+                    <td>${review['Review ID'] || 'N/A'}</td>
+                    <td>${review['Employee ID'] || 'N/A'}</td>
+                    <td>${review['Review Date'] || 'N/A'}</td>
+                    <td>${review.Reviewer || 'N/A'}</td>
+                    <td>${stars} (${review.Rating || 0})</td>
                     <td>${review.Comments || '-'}</td>
                 </tr>
             `;
@@ -413,16 +510,35 @@ class HRApp {
     showReviewModal() {
         document.getElementById('reviewForm').reset();
         document.getElementById('reviewDate').value = new Date().toISOString().split('T')[0];
+        document.getElementById('reviewRating').value = 3;
         new bootstrap.Modal(document.getElementById('reviewModal')).show();
     }
 
     async submitReview() {
+        const empId = document.getElementById('reviewEmpId').value;
+        const reviewDate = document.getElementById('reviewDate').value;
+        const reviewer = document.getElementById('reviewer').value;
+        const rating = document.getElementById('reviewRating').value;
+        const comments = document.getElementById('reviewComments').value;
+        
+        if (!empId || !reviewDate || !reviewer || !rating) {
+            alert('Please fill in all required fields');
+            return;
+        }
+        
+        // Check if employee exists
+        const employee = this.employees.find(e => e['Civil ID Number'] == empId);
+        if (!employee) {
+            alert('Employee not found. Please check the Civil ID Number.');
+            return;
+        }
+        
         const data = {
-            employeeId: document.getElementById('reviewEmpId').value,
-            reviewDate: document.getElementById('reviewDate').value,
-            reviewer: document.getElementById('reviewer').value,
-            rating: document.getElementById('reviewRating').value,
-            comments: document.getElementById('reviewComments').value
+            employeeId: empId,
+            reviewDate: reviewDate,
+            reviewer: reviewer,
+            rating: parseFloat(rating) || 0,
+            comments: comments || ''
         };
         
         try {
@@ -441,28 +557,54 @@ class HRApp {
         setTimeout(() => {
             if ($.fn.DataTable) {
                 try {
+                    // Destroy existing DataTables if they exist
+                    if ($.fn.DataTable.isDataTable('#employeesTable')) {
+                        $('#employeesTable').DataTable().destroy();
+                    }
+                    if ($.fn.DataTable.isDataTable('#attendanceTable')) {
+                        $('#attendanceTable').DataTable().destroy();
+                    }
+                    if ($.fn.DataTable.isDataTable('#leaveTable')) {
+                        $('#leaveTable').DataTable().destroy();
+                    }
+                    if ($.fn.DataTable.isDataTable('#reviewsTable')) {
+                        $('#reviewsTable').DataTable().destroy();
+                    }
+                    
                     this.dataTables.employees = $('#employeesTable').DataTable({
                         pageLength: 10,
                         responsive: true,
-                        order: [[0, 'desc']]
+                        order: [[0, 'desc']],
+                        language: {
+                            emptyTable: "No employees found"
+                        }
                     });
                     
                     this.dataTables.attendance = $('#attendanceTable').DataTable({
                         pageLength: 10,
                         responsive: true,
-                        order: [[0, 'desc']]
+                        order: [[0, 'desc']],
+                        language: {
+                            emptyTable: "No attendance records found"
+                        }
                     });
                     
                     this.dataTables.leave = $('#leaveTable').DataTable({
                         pageLength: 10,
                         responsive: true,
-                        order: [[0, 'desc']]
+                        order: [[0, 'desc']],
+                        language: {
+                            emptyTable: "No leave requests found"
+                        }
                     });
                     
                     this.dataTables.reviews = $('#reviewsTable').DataTable({
                         pageLength: 10,
                         responsive: true,
-                        order: [[0, 'desc']]
+                        order: [[0, 'desc']],
+                        language: {
+                            emptyTable: "No reviews found"
+                        }
                     });
                 } catch (error) {
                     console.warn('DataTables init error:', error);
@@ -477,3 +619,12 @@ let app;
 document.addEventListener('DOMContentLoaded', () => {
     app = new HRApp();
 });
+
+// Global function for auth button
+function handleAuthClick() {
+    if (auth.isAuthenticated) {
+        auth.signOut();
+    } else {
+        auth.authenticate();
+    }
+}
