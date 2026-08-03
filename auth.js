@@ -5,16 +5,13 @@ class AuthManager {
         this.token = null;
         this.isAuthenticated = false;
         this.user = null;
-        this.authorizedEmails = [
-            'admin@maya.com',        // Add your admin emails here
-            'hr@maya.com',
-            // Add more authorized emails
-        ];
-        this.clientId = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com'; // Replace with your Client ID
+        this.clientId = CONFIG.GOOGLE_CLIENT_ID;
+        this.authorizedEmails = CONFIG.AUTHORIZED_EMAILS;
+        this._onLoginCallback = null;
     }
 
+    // ===== INITIALIZE GOOGLE AUTH =====
     async initialize() {
-        // Load Google Identity Services
         await this.loadGoogleLibrary();
         this.initializeGoogleAuth();
     }
@@ -29,11 +26,21 @@ class AuthManager {
             script.id = 'google-library';
             script.src = 'https://accounts.google.com/gsi/client';
             script.onload = resolve;
+            script.onerror = () => {
+                console.error('Failed to load Google Identity Services');
+                resolve();
+            };
             document.head.appendChild(script);
         });
     }
 
     initializeGoogleAuth() {
+        if (!window.google || !window.google.accounts) {
+            console.warn('Google Identity Services not loaded yet');
+            setTimeout(() => this.initializeGoogleAuth(), 500);
+            return;
+        }
+
         window.google.accounts.id.initialize({
             client_id: this.clientId,
             callback: (response) => this.handleCredentialResponse(response),
@@ -42,18 +49,29 @@ class AuthManager {
     }
 
     renderLoginButton(containerId) {
+        if (!window.google || !window.google.accounts) {
+            console.warn('Google Identity Services not loaded yet');
+            setTimeout(() => this.renderLoginButton(containerId), 500);
+            return;
+        }
+
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
         window.google.accounts.id.renderButton(
-            document.getElementById(containerId),
+            container,
             {
                 type: 'standard',
                 theme: 'outline',
                 size: 'large',
                 text: 'signin_with',
-                logo_alignment: 'left'
+                logo_alignment: 'left',
+                width: '100%'
             }
         );
     }
 
+    // ===== HANDLE LOGIN RESPONSE =====
     async handleCredentialResponse(response) {
         try {
             // Decode the ID token
@@ -61,7 +79,7 @@ class AuthManager {
             
             // Check if email is authorized
             if (!this.authorizedEmails.includes(payload.email)) {
-                alert('Access Denied. You are not authorized to use this system.');
+                alert('Access Denied.\nYou are not authorized to use this system.\n\nPlease contact your HR administrator.');
                 this.signOut();
                 return;
             }
@@ -69,9 +87,9 @@ class AuthManager {
             // Store user info
             this.user = {
                 email: payload.email,
-                name: payload.name,
-                picture: payload.picture,
-                emailVerified: payload.email_verified
+                name: payload.name || payload.email.split('@')[0],
+                picture: payload.picture || '',
+                emailVerified: payload.email_verified || false
             };
             
             this.token = response.credential;
@@ -81,8 +99,10 @@ class AuthManager {
             localStorage.setItem('hr_user', JSON.stringify(this.user));
             localStorage.setItem('hr_token', this.token);
             
-            // Update UI and reload app
-            this.onLoginSuccess();
+            // Call the login callback
+            if (this._onLoginCallback) {
+                this._onLoginCallback(this.user);
+            }
             
         } catch (error) {
             console.error('Authentication failed:', error);
@@ -101,8 +121,8 @@ class AuthManager {
         return JSON.parse(jsonPayload);
     }
 
+    // ===== CHECK EXISTING AUTH =====
     checkAuth() {
-        // Check if user is already authenticated
         const storedUser = localStorage.getItem('hr_user');
         const storedToken = localStorage.getItem('hr_token');
         
@@ -111,6 +131,13 @@ class AuthManager {
                 this.user = JSON.parse(storedUser);
                 this.token = storedToken;
                 this.isAuthenticated = true;
+                
+                // Verify email is still authorized
+                if (!this.authorizedEmails.includes(this.user.email)) {
+                    this.signOut();
+                    return false;
+                }
+                
                 return true;
             } catch (e) {
                 this.signOut();
@@ -120,21 +147,21 @@ class AuthManager {
         return false;
     }
 
-    onLoginSuccess() {
-        // This will be called by the main app
-        if (this._onLoginCallback) {
-            this._onLoginCallback(this.user);
-        }
-    }
-
+    // ===== LOGIN CALLBACK =====
     onLogin(callback) {
         this._onLoginCallback = callback;
     }
 
+    // ===== SIGN OUT =====
     async signOut() {
         // Sign out from Google
-        if (window.google) {
-            window.google.accounts.id.disableAutoSelect();
+        if (window.google && window.google.accounts) {
+            try {
+                window.google.accounts.id.disableAutoSelect();
+                window.google.accounts.id.revoke(this.token, () => {});
+            } catch (e) {
+                // Ignore errors during sign out
+            }
         }
         
         this.token = null;
@@ -148,6 +175,7 @@ class AuthManager {
         location.reload();
     }
 
+    // ===== GETTERS =====
     getToken() {
         return this.token;
     }
@@ -163,4 +191,5 @@ class AuthManager {
     }
 }
 
+// Create global auth instance
 const auth = new AuthManager();
