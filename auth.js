@@ -2,6 +2,19 @@
 // auth.js - GOOGLE AUTHENTICATION & AUTHORIZATION
 // ============================================================
 
+// Initialize Google Sign-In immediately when script loads
+function initGoogleAuth() {
+    google.accounts.id.initialize({
+        client_id: CONFIG.GOOGLE_CLIENT_ID,
+        callback: handleCredentialResponse
+    });
+    google.accounts.id.renderButton(
+        document.getElementById("googleLoginButton"),
+        { theme: "outline", size: "large" }
+    );
+    google.accounts.id.prompt(); 
+}
+
 // Google Identity Services (GIS) Callback
 function handleCredentialResponse(response) {
     const responsePayload = decodeJwtResponse(response.credential);
@@ -49,16 +62,3 @@ function handleSignOut() {
     document.getElementById('userAvatarPlaceholder').style.display = 'flex';
     document.getElementById('userEmail').innerText = 'Loading...';
 }
-
-// Initialize Google Sign-In on page load
-window.onload = function () {
-    google.accounts.id.initialize({
-        client_id: CONFIG.GOOGLE_CLIENT_ID,
-        callback: handleCredentialResponse
-    });
-    google.accounts.id.renderButton(
-        document.getElementById("googleLoginButton"),
-        { theme: "outline", size: "large" }
-    );
-    google.accounts.id.prompt(); 
-};
