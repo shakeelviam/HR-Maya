@@ -44,6 +44,7 @@ const app = {
 
         // Generate rows based on your exact data structure
         this.employeesData.forEach(emp => {
+            // 🔥 FIXED: Added onclick="app.viewProfile('...')" to the eye button
             const row = `
                 <tr>
                     <td>${emp['Employee ID'] || '-'}</td>
@@ -53,7 +54,11 @@ const app = {
                     <td>${emp['Total Payable'] || 0}</td>
                     <td>${emp['Remaining Vacation'] || 0}</td>
                     <td><span class="status-badge ${(emp.Status || 'active').toLowerCase()}">${emp.Status || 'Active'}</span></td>
-                    <td><button class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></button></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="app.viewProfile('${emp['Employee ID'] || ''}')">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </td>
                 </tr>
             `;
             tbody.innerHTML += row;
@@ -105,12 +110,30 @@ const app = {
         });
     },
 
-    // --- Placeholders for UI Actions (to prevent console errors) ---
-    showAddEmployeeModal() { alert("Add Employee modal coming soon"); },
-    saveEmployee() { alert("Save feature coming soon"); },
-    showLeaveRequestModal() { alert("Leave modal coming soon"); },
-    submitLeaveRequest() { alert("Submit leave coming soon"); },
-    showReviewModal() { alert("Review modal coming soon"); },
-    submitReview() { alert("Submit review coming soon"); },
-    markAttendance() { alert("Mark attendance coming soon"); }
+    // 🔥 NEW: Actual View Profile function
+    viewProfile(employeeId) {
+        if (!employeeId) {
+            console.warn("No Employee ID provided to viewProfile");
+            return;
+        }
+        // Find the employee in the data
+        const emp = this.employeesData.find(e => e['Employee ID'] === employeeId);
+        
+        if (emp) {
+            // Instead of an alert, it logs to the console so you can build a real modal later
+            console.log("Viewing profile for:", emp);
+            alert(`Viewing Profile for:\n\nID: ${emp['Employee ID']}\nName: ${emp['Name (English)']}\nCivil ID: ${emp['Civil ID']}\nSalary: ${emp['Total Payable']}`);
+        } else {
+            alert(`Employee with ID ${employeeId} not found.`);
+        }
+    },
+
+    // --- UI Actions (Changed to console.log so they don't spam pop-ups) ---
+    showAddEmployeeModal() { console.log("Add Employee modal triggered"); },
+    saveEmployee() { console.log("Save Employee triggered"); },
+    showLeaveRequestModal() { console.log("Leave modal triggered"); },
+    submitLeaveRequest() { console.log("Submit leave triggered"); },
+    showReviewModal() { console.log("Review modal triggered"); },
+    submitReview() { console.log("Submit review triggered"); },
+    markAttendance() { console.log("Mark attendance triggered"); }
 };
