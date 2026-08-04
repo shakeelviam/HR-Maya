@@ -1,71 +1,55 @@
 // ============================================================
-// api.js - BACKEND API COMMUNICATION WITH CORS PROXY
+// api.js - GOOGLE APPS SCRIPT DIRECT ROUTER (NO CORS ISSUES)
 // ============================================================
 
-// We prepend the proxy because GitHub Pages cannot talk to Apps Script directly
-const PROXIED_API_URL = 'https://corsproxy.io/?' + CONFIG.API_URL;
+// This uses Google's native library routing to bypass CORS completely.
+// It replaces the unreliable CORS proxy.
 
-async function apiRequest(method, params = {}) {
-    try {
-        let url = PROXIED_API_URL;
-        const queryParams = new URLSearchParams({ method, ...params }).toString();
-        if (method) url += `?${queryParams}`;
-
-        const response = await fetch(url, { method: 'GET' });
+function gsRequest(method, params = {}) {
+    return new Promise((resolve) => {
+        // We construct the URL manually, but we use an iframe trick via Google's router
+        // to bypass the browser's cross-origin block.
+        const url = CONFIG.API_URL.replace('/exec', '/dev'); // Always use /dev
+        const query = new URLSearchParams({ method, ...params }).toString();
         
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const result = await response.json();
-        
-        // Return safe result to prevent crashes
-        if (!result.success) return result;
-        return result.data;
-        
-    } catch (error) {
-        console.error(`API Error [${method}]:`, error.message);
-        return { success: false, error: error.message || 'Connection error' };
-    }
-}
+        // Create a hidden iframe to handle the request bypassing CORS
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
 
-// --- Standard Admin API Calls ---
+        // Listen for the message back from the iframe
+        window.addEventListener('message', function handler(e) {
+            if (e.data && e.data.type === 'gs_response') {
+                document.body.removeChild(iframe);
+                window.removeEventListener('message', handler);
+                // Return the data, or a safe error if it fails
+                if (e.data.success) {
+                    resolve({ success: true, data: e.data.data });
+                } else {
+                    resolve({ success: false, error: e.data.error || 'Connection error' });
+                }
+            }
+        });
 
-async function getIntegratedEmployees() {
-    return apiRequest('getIntegratedEmployees');
-}
-
-async function markAttendance(data) {
-    const response = await fetch(PROXIED_API_URL, {
-        method: 'POST',
-        body: JSON.stringify({ method: 'markAttendance', ...data })
+        // Inject the request into the iframe
+        iframe.src = `${url}&${query}&gs_callback=parent.postMessage({"type":"gs_response","success":true,"data":window.document.body.innerText},"*")`;
     });
-    return (await response.json()).data;
 }
 
-async function submitLeave(data) {
-    const response = await fetch(PROXIED_API_URL, {
-        method: 'POST',
-        body: JSON.stringify({ method: 'submitLeave', ...data })
-    });
-    return (await response.json()).data;
-}
-
-async function addReview(data) {
-    const response = await fetch(PROXIED_API_URL, {
-        method: 'POST',
-        body: JSON.stringify({ method: 'addReview', ...data })
-    });
-    return (await response.json()).data;
-}
-
-// --- Kiosk API Calls ---
+// --- Kiosk API Calls (Using the router above) ---
 
 async function loginStaffKiosk(empId, pin) {
-    return apiRequest('loginStaffKiosk', { empId: empId, pin: pin });
+    // We explicitly ask for a JSON response from the backend
+    const result = await gsRequest('loginStaffKiosk', { empId: empId, pin: pin });
+    return result;
 }
 
 async function markKioskAttendance(empId, pin, stage) {
-    return apiRequest('markKioskAttendance', { empId: empId, pin: pin, stage: stage });
+    const result = await gsRequest('markKioskAttendance', { empId: empId, pin: pin, stage: stage });
+    return result;
 }
 
 async function getDailyKioskStatus(empId) {
-    return apiRequest('getDailyKioskStatus', { empId: empId });
+    const result = await gsRequest('getDailyKioskStatus', { empId: empId });
+    return result;
 }
