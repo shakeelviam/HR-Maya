@@ -54,3 +54,19 @@ async function addReview(data) {
     });
     return (await response.json()).data;
 }
+
+// ============================================================
+// 🟢 ADDED 3 NEW KIOSK API FUNCTIONS HERE
+// ============================================================
+
+async function loginStaffKiosk(empId, pin) {
+    return apiRequest('loginStaffKiosk', { empId: empId, pin: pin });
+}
+
+async function markKioskAttendance(empId, pin, stage) {
+    return apiRequest('markKioskAttendance', { empId: empId, pin: pin, stage: stage });
+}
+
+async function getDailyKioskStatus(empId) {
+    return apiRequest('getDailyKioskStatus', { empId: empId });
+}
