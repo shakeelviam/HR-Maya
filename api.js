@@ -1,9 +1,9 @@
 // ============================================================
-// api.js - BACKEND API COMMUNICATION (NO PROXY)
+// api.js - BACKEND API COMMUNICATION WITH CORS PROXY
 // ============================================================
 
-// We connect directly to Version 23. No proxy required.
-const PROXIED_API_URL = CONFIG.API_URL;
+// We prepend the proxy because GitHub Pages cannot talk to Apps Script directly
+const PROXIED_API_URL = 'https://corsproxy.io/?' + CONFIG.API_URL;
 
 async function apiRequest(method, params = {}) {
     try {
@@ -16,17 +16,17 @@ async function apiRequest(method, params = {}) {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const result = await response.json();
         
-        if (!result.success) return result; // Return the error object safely
-        return result.data; // Return the data on success
+        // Return safe result to prevent crashes
+        if (!result.success) return result;
+        return result.data;
         
     } catch (error) {
         console.error(`API Error [${method}]:`, error.message);
-        // Return a safe object so the frontend never crashes
         return { success: false, error: error.message || 'Connection error' };
     }
 }
 
-// --- Specific API Calls ---
+// --- Standard Admin API Calls ---
 
 async function getIntegratedEmployees() {
     return apiRequest('getIntegratedEmployees');
