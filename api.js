@@ -1,9 +1,9 @@
 // ============================================================
-// api.js - BACKEND API COMMUNICATION WITH CORS PROXY
+// api.js - BACKEND API COMMUNICATION (NO PROXY)
 // ============================================================
 
-// ℹ️ We prepend a public CORS proxy here so GitHub Pages can talk to Google Scripts
-const PROXIED_API_URL = 'https://corsproxy.io/?' + CONFIG.API_URL;
+// We connect directly to Version 23. No proxy required.
+const PROXIED_API_URL = CONFIG.API_URL;
 
 async function apiRequest(method, params = {}) {
     try {
@@ -16,12 +16,13 @@ async function apiRequest(method, params = {}) {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const result = await response.json();
         
-        if (!result.success) throw new Error(result.error || 'Unknown API error');
-        return result.data;
+        if (!result.success) return result; // Return the error object safely
+        return result.data; // Return the data on success
         
     } catch (error) {
         console.error(`API Error [${method}]:`, error.message);
-        throw error; // Re-throw so app.js can catch it
+        // Return a safe object so the frontend never crashes
+        return { success: false, error: error.message || 'Connection error' };
     }
 }
 
@@ -55,9 +56,7 @@ async function addReview(data) {
     return (await response.json()).data;
 }
 
-// ============================================================
-// 🟢 ADDED 3 NEW KIOSK API FUNCTIONS HERE
-// ============================================================
+// --- Kiosk API Calls ---
 
 async function loginStaffKiosk(empId, pin) {
     return apiRequest('loginStaffKiosk', { empId: empId, pin: pin });
