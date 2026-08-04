@@ -24,6 +24,12 @@ async function kioskLogin() {
     try {
         const result = await loginStaffKiosk(empId, pin);
 
+        // 🟢 FIX: Guard clause to prevent the 'undefined' crash
+        if (!result) {
+            errorEl.innerText = 'Connection error. Please check your network.';
+            return;
+        }
+
         if (result.success) {
             currentEmpId = empId;
             currentEmpPin = pin;
@@ -37,8 +43,8 @@ async function kioskLogin() {
             errorEl.innerText = result.error || 'Invalid credentials.';
         }
     } catch (error) {
-        errorEl.innerText = 'Connection error. Please check your network.';
         console.error(error);
+        errorEl.innerText = 'Connection error. Please check your network.';
     } finally {
         loginBtn.disabled = false;
         loginBtn.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> Clock In / Out';
