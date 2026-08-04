@@ -42,17 +42,17 @@ const app = {
             return;
         }
 
-        // Generate rows
+        // Generate rows based on your exact data structure
         this.employeesData.forEach(emp => {
             const row = `
                 <tr>
                     <td>${emp['Employee ID'] || '-'}</td>
                     <td>${emp['Name (English)'] || 'Unknown'}</td>
                     <td>${emp['Name (Arabic)'] || '-'}</td>
-                    <td>Staff</td>
+                    <td>${emp['Civil ID'] || '-'}</td>
                     <td>${emp['Total Payable'] || 0}</td>
                     <td>${emp['Remaining Vacation'] || 0}</td>
-                    <td><span class="status-badge ${(emp.Status || '').toLowerCase()}">${emp.Status || 'Active'}</span></td>
+                    <td><span class="status-badge ${(emp.Status || 'active').toLowerCase()}">${emp.Status || 'Active'}</span></td>
                     <td><button class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></button></td>
                 </tr>
             `;
@@ -78,7 +78,7 @@ const app = {
         const active = this.employeesData.filter(e => e.Status === 'Active').length;
         document.getElementById('totalEmployees').innerText = total;
         document.getElementById('activeEmployees').innerText = active;
-        // Leave placeholders for data not yet fetched
+        // Leave placeholders for data not yet fetched via the Dashboard API
         document.getElementById('pendingLeaves').innerText = '0';
         document.getElementById('avgRating').innerText = '0.0';
     },
