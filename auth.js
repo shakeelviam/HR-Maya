@@ -1,17 +1,25 @@
 // ============================================================
-// auth.js - GOOGLE AUTHENTICATION
+// auth.js - GOOGLE AUTHENTICATION & AUTHORIZATION
 // ============================================================
 
 // Google Identity Services (GIS) Callback
 function handleCredentialResponse(response) {
     const responsePayload = decodeJwtResponse(response.credential);
-    
-    // Switch UI from Login to Main App
+    const userEmail = responsePayload.email;
+
+    // 🔒 SECURITY CHECK: Is this email authorized?
+    if (!CONFIG.AUTHORIZED_EMAILS.includes(userEmail)) {
+        alert(`Access Denied.\n"${userEmail}" is not an authorized email for ${CONFIG.APP_NAME}.`);
+        handleSignOut();
+        return;
+    }
+
+    // ✅ Authorized: Switch UI from Login to Main App
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('mainApp').style.display = 'block';
     
-    // Set user email and avatar
-    document.getElementById('userEmail').innerText = responsePayload.email;
+    // Set user info in top bar
+    document.getElementById('userEmail').innerText = userEmail;
     if (responsePayload.picture) {
         document.getElementById('userAvatar').src = responsePayload.picture;
         document.getElementById('userAvatar').style.display = 'inline-block';
@@ -40,18 +48,17 @@ function handleSignOut() {
     document.getElementById('userAvatar').style.display = 'none';
     document.getElementById('userAvatarPlaceholder').style.display = 'flex';
     document.getElementById('userEmail').innerText = 'Loading...';
-    // Note: Fully signing out requires revoking the token, which is a separate process.
 }
 
 // Initialize Google Sign-In on page load
 window.onload = function () {
     google.accounts.id.initialize({
-        client_id: CONFIG.CLIENT_ID,
+        client_id: CONFIG.GOOGLE_CLIENT_ID,
         callback: handleCredentialResponse
     });
     google.accounts.id.renderButton(
         document.getElementById("googleLoginButton"),
         { theme: "outline", size: "large" }
     );
-    google.accounts.id.prompt(); // Auto-prompt the login popup
+    google.accounts.id.prompt(); 
 };
