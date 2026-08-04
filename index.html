@@ -125,10 +125,6 @@
                     <div class="col-md-3"><div class="stat-card"><div class="d-flex justify-content-between align-items-start"><div><p class="text-muted mb-1">Pending Leaves</p><p class="stat-number" id="pendingLeaves">0</p></div><i class="bi bi-clock-history stat-icon text-warning"></i></div></div></div>
                     <div class="col-md-3"><div class="stat-card"><div class="d-flex justify-content-between align-items-start"><div><p class="text-muted mb-1">Avg Rating</p><p class="stat-number" id="avgRating">0</p></div><i class="bi bi-star-fill stat-icon text-info"></i></div></div></div>
                 </div>
-                <div class="row">
-                    <div class="col-md-6"><div class="table-container"><h5><i class="bi bi-clock"></i> Recent Attendance</h5><div id="recentAttendance"></div></div></div>
-                    <div class="col-md-6"><div class="table-container"><h5><i class="bi bi-bell"></i> Pending Leave Requests</h5><div id="pendingLeaveRequests"></div></div></div>
-                </div>
             </div>
 
             <!-- EMPLOYEES -->
@@ -168,14 +164,10 @@
             <div class="page-section" id="page-attendance">
                 <div class="table-container">
                     <h5><i class="bi bi-calendar-check"></i> Attendance Log</h5>
-                    <div class="row mb-3">
-                        <div class="col-md-4"><input type="date" class="form-control" id="attendanceDate"></div>
-                        <div class="col-md-4"><button class="btn btn-primary" onclick="app.markAttendance()"><i class="bi bi-plus-circle"></i> Mark Attendance</button></div>
+                    <div>
+                        <button class="btn btn-primary" onclick="app.showAttendanceModal()"><i class="bi bi-plus-circle"></i> Mark Attendance</button>
                     </div>
-                    <table id="attendanceTable" class="table table-striped">
-                        <thead><tr><th>Date</th><th>Employee ID</th><th>Employee Name</th><th>Check In</th><th>Check Out</th><th>Hours</th><th>Status</th></tr></thead>
-                        <tbody id="attendanceTableBody"></tbody>
-                    </table>
+                    <div class="mt-3 text-muted small">Use the "Mark Attendance" button above to log employee stages (Check In, Break Out, etc.).</div>
                 </div>
             </div>
 
@@ -210,7 +202,11 @@
     </div>
 </div>
 
-<!-- MODALS -->
+<!-- ============================================================ -->
+<!--                         MODALS                                -->
+<!-- ============================================================ -->
+
+<!-- ADD EMPLOYEE MODAL -->
 <div class="modal fade" id="employeeModal" tabindex="-1">
     <div class="modal-dialog modal-xl"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="employeeModalTitle">Add Employee</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
     <div class="modal-body"><form id="employeeForm"><div class="row">
@@ -245,23 +241,111 @@
     <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button><button type="button" class="btn btn-primary" onclick="app.saveEmployee()">Save Employee</button></div></div></div>
 </div>
 
-<div class="modal fade" id="leaveModal" tabindex="-1">
-    <div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">New Leave Request</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-    <div class="modal-body"><form id="leaveForm">
-        <!-- Added these 2 divs for Validation Logic to show error messages -->
-        <div id="leaveBalanceDisplay" class="mb-2 text-success fw-bold"></div>
-        <div id="leaveErrorDisplay" class="mb-2"></div>
-        
-        <div class="mb-3"><label class="form-label">Employee ID</label><input type="text" class="form-control" id="leaveEmpId" required></div>
-        <div class="mb-3"><label class="form-label">Employee Name</label><input type="text" class="form-control" id="leaveEmployeeName" required></div>
-        <div class="mb-3"><label class="form-label">Start Date</label><input type="date" class="form-control" id="leaveStart" required></div>
-        <div class="mb-3"><label class="form-label">End Date</label><input type="date" class="form-control" id="leaveEnd" required></div>
-        <div class="mb-3"><label class="form-label">Leave Type</label><select class="form-control" id="leaveType"><option value="Annual">Annual</option><option value="Sick">Sick</option><option value="Personal">Personal</option><option value="Maternity">Maternity</option><option value="Paternity">Paternity</option><option value="Emergency">Emergency</option><option value="Unpaid">Unpaid</option></select></div>
-        <div class="mb-3"><label class="form-label">Reason</label><textarea class="form-control" id="leaveReason" rows="2"></textarea></div>
-    </form></div>
-    <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button><button type="button" class="btn btn-primary" onclick="app.submitLeaveRequest()">Submit Request</button></div></div></div>
+<!-- ATTENDANCE MODAL (NEW) -->
+<div class="modal fade" id="attendanceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-calendar-check"></i> Mark Attendance</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="attendanceForm">
+                    <div class="mb-3">
+                        <label class="form-label">Search / Select Employee</label>
+                        <input type="text" class="form-control" id="attendanceEmployeeSearch" placeholder="Type ID or Name to search..." onkeyup="app.filterAttendanceEmployeeList()">
+                        <select class="form-select mt-2" id="attendanceEmployeeSelect" size="4" onchange="app.selectAttendanceEmployee()">
+                            <option value="" disabled selected>Select an employee...</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Selected Employee</label>
+                        <input type="text" class="form-control" id="attendanceEmployeeName" readonly placeholder="Employee Name will appear here">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Date</label>
+                        <input type="date" class="form-control" id="attendanceDate">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Stage</label>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="app.setAttendanceStage('Check In')">Check In</button>
+                            <button type="button" class="btn btn-outline-warning btn-sm" onclick="app.setAttendanceStage('Break Out')">Break Out</button>
+                            <button type="button" class="btn btn-outline-info btn-sm" onclick="app.setAttendanceStage('Break In')">Break In</button>
+                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="app.setAttendanceStage('Check Out')">Check Out</button>
+                        </div>
+                        <input type="text" class="form-control mt-2" id="attendanceStage" readonly placeholder="Select a stage above">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="app.submitAttendance()">Submit Attendance</button>
+            </div>
+        </div>
+    </div>
 </div>
 
+<!-- LEAVE REQUEST MODAL (UPDATED) -->
+<div class="modal fade" id="leaveModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-clock"></i> New Leave Request</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="leaveForm">
+                    <div class="mb-3">
+                        <label class="form-label">Search / Select Employee</label>
+                        <input type="text" class="form-control" id="leaveEmployeeSearch" placeholder="Type ID or Name to search..." onkeyup="app.filterLeaveEmployeeList()">
+                        <select class="form-select mt-2" id="leaveEmployeeSelect" size="4" onchange="app.selectLeaveEmployee()">
+                            <option value="" disabled selected>Select an employee...</option>
+                        </select>
+                    </div>
+                    <div class="mb-3 p-2 bg-light rounded">
+                        <div class="d-flex justify-content-between">
+                            <span><strong>Employee Name:</strong> <span id="leaveEmployeeName">-</span></span>
+                            <span><strong>Available Balance:</strong> <span id="leaveBalanceDisplay" class="text-success fw-bold">0 days</span></span>
+                        </div>
+                        <div id="leaveErrorDisplay" class="mt-1 text-danger small"></div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Start Date</label>
+                        <input type="date" class="form-control" id="leaveStart" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">End Date</label>
+                        <input type="date" class="form-control" id="leaveEnd" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Leave Type</label>
+                        <select class="form-control" id="leaveType">
+                            <option value="Annual">Annual</option>
+                            <option value="Sick">Sick</option>
+                            <option value="Personal">Personal</option>
+                            <option value="Maternity">Maternity</option>
+                            <option value="Paternity">Paternity</option>
+                            <option value="Emergency">Emergency</option>
+                            <option value="Unpaid">Unpaid</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Reason</label>
+                        <textarea class="form-control" id="leaveReason" rows="2"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="app.submitLeaveRequest()">Submit Request</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- PERFORMANCE REVIEW MODAL -->
 <div class="modal fade" id="reviewModal" tabindex="-1">
     <div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Add Performance Review</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
     <div class="modal-body"><form id="reviewForm">
@@ -297,7 +381,6 @@
 
 <!-- 4. Initialization Trigger (Safely waits for Google library) -->
 <script>
-    // Function to safely initialize Google Auth once the library is loaded
     function safeInitGoogle() {
         if (typeof google !== 'undefined' && typeof initGoogleAuth === 'function') {
             initGoogleAuth();
@@ -305,11 +388,7 @@
         }
         return false;
     }
-
-    // Try initializing immediately
     if (!safeInitGoogle()) {
-        // If Google library hasn't loaded yet (which happens often on GitHub Pages),
-        // set a listener to try again after the page fully loads.
         window.addEventListener('load', function() {
             safeInitGoogle();
         });
