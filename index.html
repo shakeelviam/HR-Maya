@@ -8,603 +8,190 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
     <style>
-        :root {
-            --primary-color: #0d6efd;
-            --sidebar-width: 250px;
-        }
+        :root { --primary-color: #0d6efd; --sidebar-width: 250px; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f9fa; height: 100vh; }
         
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        #loginScreen { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%); padding: 20px; }
+        .login-card { background: white; border-radius: 20px; padding: 50px 40px; max-width: 420px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.3); text-align: center; }
+        .login-card .logo-icon { font-size: 4rem; color: #0d6efd; }
+        .login-card h2 { font-weight: 600; margin-top: 10px; color: #1a1a2e; }
+        .login-card p.subtitle { color: #6c757d; margin-bottom: 30px; }
+        .login-card hr { margin: 25px 0; }
+        .login-card .google-btn-wrapper { display: flex; justify-content: center; }
+        .login-card .footer-text { font-size: 0.8rem; color: #6c757d; margin-top: 15px; }
         
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f8f9fa;
-            height: 100vh;
-        }
+        #mainApp { display: none; width: 100%; }
+        .wrapper { display: flex; width: 100%; align-items: stretch; }
+        #sidebar { min-width: var(--sidebar-width); max-width: var(--sidebar-width); background: linear-gradient(180deg, #0d6efd 0%, #0a58ca 100%); color: #fff; transition: all 0.3s; min-height: 100vh; padding-top: 20px; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+        #sidebar .brand { padding: 20px 30px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; }
+        #sidebar .brand h3 { font-weight: 300; letter-spacing: 1px; }
+        #sidebar .brand i { font-size: 2rem; }
+        #sidebar .nav-link { color: rgba(255,255,255,0.8); padding: 12px 30px; transition: all 0.3s; border-left: 3px solid transparent; cursor: pointer; }
+        #sidebar .nav-link:hover { color: #fff; background: rgba(255,255,255,0.1); border-left-color: #fff; }
+        #sidebar .nav-link.active { color: #fff; background: rgba(255,255,255,0.15); border-left-color: #fff; }
+        #sidebar .nav-link i { margin-right: 10px; width: 20px; text-align: center; }
+        #content { width: 100%; padding: 20px; min-height: 100vh; transition: all 0.3s; }
+        .top-bar { background: white; padding: 12px 25px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 25px; }
+        .top-bar .user-info { display: flex; align-items: center; gap: 12px; }
+        .top-bar .user-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid #e9ecef; }
+        .top-bar .user-avatar-placeholder { width: 36px; height: 36px; border-radius: 50%; background: #0d6efd; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.9rem; }
+        .top-bar .user-email { font-size: 0.9rem; color: #6c757d; }
+        .stat-card { background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); transition: transform 0.3s; }
+        .stat-card:hover { transform: translateY(-5px); }
+        .stat-card .stat-icon { font-size: 2.5rem; opacity: 0.7; }
+        .stat-card .stat-number { font-size: 2rem; font-weight: 600; }
+        .table-container { background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .page-section { display: none; }
+        .page-section.active { display: block; }
         
-        /* ===== LOGIN SCREEN ===== */
-        #loginScreen {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
-            padding: 20px;
-        }
+        .profile-header { background: white; border-radius: 10px; padding: 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 25px; }
+        .profile-avatar { width: 100px; height: 100px; border-radius: 50%; background: #0d6efd; color: white; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: 600; margin: 0 auto; }
+        .profile-info-item { padding: 8px 0; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; }
+        .profile-info-item:last-child { border-bottom: none; }
+        .profile-info-label { color: #6c757d; font-weight: 500; }
+        .profile-info-value { font-weight: 500; }
+        .profile-stat { text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px; }
+        .profile-stat-number { font-size: 1.8rem; font-weight: 600; color: #0d6efd; }
+        .profile-stat-label { color: #6c757d; font-size: 0.9rem; }
+        .status-badge { padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 500; }
+        .status-badge.active { background: #d4edda; color: #155724; }
+        .status-badge.inactive { background: #f8d7da; color: #721c24; }
+        .status-badge.on-leave { background: #fff3cd; color: #856404; }
         
-        .login-card {
-            background: white;
-            border-radius: 20px;
-            padding: 50px 40px;
-            max-width: 420px;
-            width: 100%;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            text-align: center;
-        }
-        
-        .login-card .logo-icon {
-            font-size: 4rem;
-            color: #0d6efd;
-        }
-        
-        .login-card h2 {
-            font-weight: 600;
-            margin-top: 10px;
-            color: #1a1a2e;
-        }
-        
-        .login-card p.subtitle {
-            color: #6c757d;
-            margin-bottom: 30px;
-        }
-        
-        .login-card hr {
-            margin: 25px 0;
-        }
-        
-        .login-card .google-btn-wrapper {
-            display: flex;
-            justify-content: center;
-        }
-        
-        .login-card .footer-text {
-            font-size: 0.8rem;
-            color: #6c757d;
-            margin-top: 15px;
-        }
-        
-        /* ===== MAIN APP ===== */
-        #mainApp {
-            display: none;
-            width: 100%;
-        }
-        
-        .wrapper {
-            display: flex;
-            width: 100%;
-            align-items: stretch;
-        }
-        
-        #sidebar {
-            min-width: var(--sidebar-width);
-            max-width: var(--sidebar-width);
-            background: linear-gradient(180deg, #0d6efd 0%, #0a58ca 100%);
-            color: #fff;
-            transition: all 0.3s;
-            min-height: 100vh;
-            padding-top: 20px;
-            position: sticky;
-            top: 0;
-            height: 100vh;
-            overflow-y: auto;
-        }
-        
-        #sidebar .brand {
-            padding: 20px 30px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            margin-bottom: 20px;
-        }
-        
-        #sidebar .brand h3 {
-            font-weight: 300;
-            letter-spacing: 1px;
-        }
-        
-        #sidebar .brand i {
-            font-size: 2rem;
-        }
-        
-        #sidebar .nav-link {
-            color: rgba(255,255,255,0.8);
-            padding: 12px 30px;
-            transition: all 0.3s;
-            border-left: 3px solid transparent;
-            cursor: pointer;
-        }
-        
-        #sidebar .nav-link:hover {
-            color: #fff;
-            background: rgba(255,255,255,0.1);
-            border-left-color: #fff;
-        }
-        
-        #sidebar .nav-link.active {
-            color: #fff;
-            background: rgba(255,255,255,0.15);
-            border-left-color: #fff;
-        }
-        
-        #sidebar .nav-link i {
-            margin-right: 10px;
-            width: 20px;
-            text-align: center;
-        }
-        
-        #content {
-            width: 100%;
-            padding: 20px;
-            min-height: 100vh;
-            transition: all 0.3s;
-        }
-        
-        .top-bar {
-            background: white;
-            padding: 12px 25px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            margin-bottom: 25px;
-        }
-        
-        .top-bar .user-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        
-        .top-bar .user-avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid #e9ecef;
-        }
-        
-        .top-bar .user-avatar-placeholder {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: #0d6efd;
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-        
-        .top-bar .user-email {
-            font-size: 0.9rem;
-            color: #6c757d;
-        }
-        
-        .stat-card {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            transition: transform 0.3s;
-        }
-        
-        .stat-card:hover {
-            transform: translateY(-5px);
-        }
-        
-        .stat-card .stat-icon {
-            font-size: 2.5rem;
-            opacity: 0.7;
-        }
-        
-        .stat-card .stat-number {
-            font-size: 2rem;
-            font-weight: 600;
-        }
-        
-        .table-container {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
-        
-        .page-section {
-            display: none;
-        }
-        
-        .page-section.active {
-            display: block;
-        }
-        
-        /* Profile Styles */
-        .profile-header {
-            background: white;
-            border-radius: 10px;
-            padding: 25px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            margin-bottom: 25px;
-        }
-        
-        .profile-avatar {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            background: #0d6efd;
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2.5rem;
-            font-weight: 600;
-            margin: 0 auto;
-        }
-        
-        .profile-info-item {
-            padding: 8px 0;
-            border-bottom: 1px solid #f0f0f0;
-            display: flex;
-            justify-content: space-between;
-        }
-        
-        .profile-info-item:last-child {
-            border-bottom: none;
-        }
-        
-        .profile-info-label {
-            color: #6c757d;
-            font-weight: 500;
-        }
-        
-        .profile-info-value {
-            font-weight: 500;
-        }
-        
-        .profile-stat {
-            text-align: center;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 8px;
-        }
-        
-        .profile-stat-number {
-            font-size: 1.8rem;
-            font-weight: 600;
-            color: #0d6efd;
-        }
-        
-        .profile-stat-label {
-            color: #6c757d;
-            font-size: 0.9rem;
-        }
-        
-        .status-badge {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 500;
-        }
-        
-        .status-badge.active {
-            background: #d4edda;
-            color: #155724;
-        }
-        
-        .status-badge.inactive {
-            background: #f8d7da;
-            color: #721c24;
-        }
-        
-        .status-badge.on-leave {
-            background: #fff3cd;
-            color: #856404;
-        }
-        
-        /* Mobile */
         @media (max-width: 768px) {
-            #sidebar {
-                margin-left: -250px;
-                position: fixed;
-                z-index: 1000;
-                height: 100vh;
-            }
-            #sidebar.active {
-                margin-left: 0;
-            }
-            #content {
-                width: 100%;
-                padding: 15px;
-            }
-            .login-card {
-                padding: 30px 20px;
-            }
-            .profile-avatar {
-                width: 70px;
-                height: 70px;
-                font-size: 1.8rem;
-            }
+            #sidebar { margin-left: -250px; position: fixed; z-index: 1000; height: 100vh; }
+            #sidebar.active { margin-left: 0; }
+            #content { width: 100%; padding: 15px; }
+            .login-card { padding: 30px 20px; }
+            .profile-avatar { width: 70px; height: 70px; font-size: 1.8rem; }
         }
     </style>
 </head>
 <body>
 
-<!-- ============================================================ -->
-<!--                     LOGIN SCREEN                              -->
-<!-- ============================================================ -->
+<!-- LOGIN SCREEN -->
 <div id="loginScreen">
     <div class="login-card">
         <i class="bi bi-building logo-icon"></i>
         <h2>Maya HR</h2>
         <p class="subtitle">Human Resources Management System</p>
         <hr>
-        
-        <!-- ✅ ONLY THIS DIV IS NEEDED - THE BUTTON IS RENDERED BY auth.js -->
         <div id="googleLoginButton"></div>
-        <!-- ✅ END -->
-        
         <p class="footer-text">
             <i class="bi bi-shield-lock"></i> 
             Only authorized company email addresses can access this system.
         </p>
     </div>
-</div><!-- ============================================================ -->
-<!--                     MAIN APP                                  -->
-<!-- ============================================================ -->
+</div>
+
+<!-- MAIN APP -->
 <div id="mainApp">
     <div class="wrapper">
-        <!-- Sidebar -->
         <nav id="sidebar">
             <div class="brand text-center">
                 <i class="bi bi-building"></i>
                 <h3>Maya HR</h3>
                 <p class="small opacity-75">Human Resources</p>
             </div>
-            
             <ul class="nav flex-column">
-                <li class="nav-item">
-                    <a class="nav-link active" data-page="dashboard">
-                        <i class="bi bi-grid-1x2-fill"></i> Dashboard
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" data-page="employees">
-                        <i class="bi bi-people-fill"></i> Employees
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" data-page="attendance">
-                        <i class="bi bi-calendar-check-fill"></i> Attendance
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" data-page="leave">
-                        <i class="bi bi-clock-fill"></i> Leave Management
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" data-page="reviews">
-                        <i class="bi bi-star-fill"></i> Performance Reviews
-                    </a>
-                </li>
+                <li class="nav-item"><a class="nav-link active" data-page="dashboard"><i class="bi bi-grid-1x2-fill"></i> Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link" data-page="employees"><i class="bi bi-people-fill"></i> Employees</a></li>
+                <li class="nav-item"><a class="nav-link" data-page="attendance"><i class="bi bi-calendar-check-fill"></i> Attendance</a></li>
+                <li class="nav-item"><a class="nav-link" data-page="leave"><i class="bi bi-clock-fill"></i> Leave Management</a></li>
+                <li class="nav-item"><a class="nav-link" data-page="reviews"><i class="bi bi-star-fill"></i> Performance Reviews</a></li>
             </ul>
         </nav>
 
-        <!-- Content -->
         <div id="content">
-            <!-- Top Bar -->
             <div class="top-bar d-flex justify-content-between align-items-center">
                 <div>
-                    <button class="btn btn-outline-secondary d-md-none" id="sidebarToggle">
-                        <i class="bi bi-list"></i>
-                    </button>
+                    <button class="btn btn-outline-secondary d-md-none" id="sidebarToggle"><i class="bi bi-list"></i></button>
                     <h4 class="d-inline-block ms-2" id="pageTitle">Dashboard</h4>
                 </div>
                 <div class="user-info">
                     <img id="userAvatar" class="user-avatar" src="" alt="Avatar" style="display:none;">
                     <div id="userAvatarPlaceholder" class="user-avatar-placeholder">?</div>
                     <span id="userEmail" class="user-email">Loading...</span>
-                    <button class="btn btn-outline-danger btn-sm" onclick="handleSignOut()">
-                        <i class="bi bi-box-arrow-right"></i> Sign Out
-                    </button>
+                    <button class="btn btn-outline-danger btn-sm" onclick="handleSignOut()"><i class="bi bi-box-arrow-right"></i> Sign Out</button>
                 </div>
             </div>
 
-            <!-- ===== DASHBOARD ===== -->
+            <!-- DASHBOARD -->
             <div class="page-section active" id="page-dashboard">
                 <div class="row g-4 mb-4">
-                    <div class="col-md-3">
-                        <div class="stat-card">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div>
-                                    <p class="text-muted mb-1">Total Employees</p>
-                                    <p class="stat-number" id="totalEmployees">0</p>
-                                </div>
-                                <i class="bi bi-people stat-icon text-primary"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="stat-card">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div>
-                                    <p class="text-muted mb-1">Active Employees</p>
-                                    <p class="stat-number" id="activeEmployees">0</p>
-                                </div>
-                                <i class="bi bi-person-check stat-icon text-success"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="stat-card">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div>
-                                    <p class="text-muted mb-1">Pending Leaves</p>
-                                    <p class="stat-number" id="pendingLeaves">0</p>
-                                </div>
-                                <i class="bi bi-clock-history stat-icon text-warning"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="stat-card">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div>
-                                    <p class="text-muted mb-1">Avg Rating</p>
-                                    <p class="stat-number" id="avgRating">0</p>
-                                </div>
-                                <i class="bi bi-star-fill stat-icon text-info"></i>
-                            </div>
-                        </div>
-                    </div>
+                    <div class="col-md-3"><div class="stat-card"><div class="d-flex justify-content-between align-items-start"><div><p class="text-muted mb-1">Total Employees</p><p class="stat-number" id="totalEmployees">0</p></div><i class="bi bi-people stat-icon text-primary"></i></div></div></div>
+                    <div class="col-md-3"><div class="stat-card"><div class="d-flex justify-content-between align-items-start"><div><p class="text-muted mb-1">Active Employees</p><p class="stat-number" id="activeEmployees">0</p></div><i class="bi bi-person-check stat-icon text-success"></i></div></div></div>
+                    <div class="col-md-3"><div class="stat-card"><div class="d-flex justify-content-between align-items-start"><div><p class="text-muted mb-1">Pending Leaves</p><p class="stat-number" id="pendingLeaves">0</p></div><i class="bi bi-clock-history stat-icon text-warning"></i></div></div></div>
+                    <div class="col-md-3"><div class="stat-card"><div class="d-flex justify-content-between align-items-start"><div><p class="text-muted mb-1">Avg Rating</p><p class="stat-number" id="avgRating">0</p></div><i class="bi bi-star-fill stat-icon text-info"></i></div></div></div>
                 </div>
-                
                 <div class="row">
-                    <div class="col-md-6">
-                        <div class="table-container">
-                            <h5><i class="bi bi-clock"></i> Recent Attendance</h5>
-                            <div id="recentAttendance"></div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="table-container">
-                            <h5><i class="bi bi-bell"></i> Pending Leave Requests</h5>
-                            <div id="pendingLeaveRequests"></div>
-                        </div>
-                    </div>
+                    <div class="col-md-6"><div class="table-container"><h5><i class="bi bi-clock"></i> Recent Attendance</h5><div id="recentAttendance"></div></div></div>
+                    <div class="col-md-6"><div class="table-container"><h5><i class="bi bi-bell"></i> Pending Leave Requests</h5><div id="pendingLeaveRequests"></div></div></div>
                 </div>
             </div>
 
-            <!-- ===== EMPLOYEES ===== -->
+            <!-- EMPLOYEES -->
             <div class="page-section" id="page-employees">
                 <div class="table-container">
                     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                         <h5><i class="bi bi-people"></i> Employee Management</h5>
                         <div>
-                            <button class="btn btn-primary btn-sm me-2" onclick="app.showAddEmployeeModal()">
-                                <i class="bi bi-plus-circle"></i> Add Employee
-                            </button>
-                            <button class="btn btn-outline-secondary btn-sm" onclick="app.loadAllData()">
-                                <i class="bi bi-arrow-repeat"></i> Refresh
-                            </button>
+                            <button class="btn btn-primary btn-sm me-2" onclick="app.showAddEmployeeModal()"><i class="bi bi-plus-circle"></i> Add Employee</button>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="app.loadAllData()"><i class="bi bi-arrow-repeat"></i> Refresh</button>
                         </div>
                     </div>
                     <table id="employeesTable" class="table table-striped">
                         <thead>
-                            <tr>
-                                <th>Employee ID</th>
-                                <th>Name (English)</th>
-                                <th>Name (Arabic)</th>
-                                <th>Designation</th>
-                                <th>Salary</th>
-                                <th>Vacation Left</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
+                            <tr><th>Employee ID</th><th>Name (English)</th><th>Name (Arabic)</th><th>Designation</th><th>Salary</th><th>Vacation Left</th><th>Status</th><th>Actions</th></tr>
                         </thead>
-                        <tbody id="employeesTableBody">
-                        </tbody>
+                        <tbody id="employeesTableBody"></tbody>
                     </table>
                 </div>
             </div>
 
-            <!-- ===== EMPLOYEE PROFILE ===== -->
-            <div class="page-section" id="page-profile">
-                <div id="profileContent"></div>
-            </div>
+            <!-- PROFILE -->
+            <div class="page-section" id="page-profile"><div id="profileContent"></div></div>
 
-            <!-- ===== ATTENDANCE ===== -->
+            <!-- ATTENDANCE -->
             <div class="page-section" id="page-attendance">
                 <div class="table-container">
                     <h5><i class="bi bi-calendar-check"></i> Attendance Log</h5>
                     <div class="row mb-3">
-                        <div class="col-md-4">
-                            <input type="date" class="form-control" id="attendanceDate">
-                        </div>
-                        <div class="col-md-4">
-                            <button class="btn btn-primary" onclick="app.markAttendance()">
-                                <i class="bi bi-plus-circle"></i> Mark Attendance
-                            </button>
-                        </div>
+                        <div class="col-md-4"><input type="date" class="form-control" id="attendanceDate"></div>
+                        <div class="col-md-4"><button class="btn btn-primary" onclick="app.markAttendance()"><i class="bi bi-plus-circle"></i> Mark Attendance</button></div>
                     </div>
                     <table id="attendanceTable" class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Employee ID</th>
-                                <th>Employee Name</th>
-                                <th>Check In</th>
-                                <th>Check Out</th>
-                                <th>Hours</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="attendanceTableBody">
-                        </tbody>
+                        <thead><tr><th>Date</th><th>Employee ID</th><th>Employee Name</th><th>Check In</th><th>Check Out</th><th>Hours</th><th>Status</th></tr></thead>
+                        <tbody id="attendanceTableBody"></tbody>
                     </table>
                 </div>
             </div>
 
-            <!-- ===== LEAVE MANAGEMENT ===== -->
+            <!-- LEAVE -->
             <div class="page-section" id="page-leave">
                 <div class="table-container">
                     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                         <h5><i class="bi bi-clock"></i> Leave Requests</h5>
-                        <button class="btn btn-primary btn-sm" onclick="app.showLeaveRequestModal()">
-                            <i class="bi bi-plus-circle"></i> New Request
-                        </button>
+                        <button class="btn btn-primary btn-sm" onclick="app.showLeaveRequestModal()"><i class="bi bi-plus-circle"></i> New Request</button>
                     </div>
                     <table id="leaveTable" class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Request ID</th>
-                                <th>Employee ID</th>
-                                <th>Employee Name</th>
-                                <th>Start Date</th>
-                                <th>End Date</th>
-                                <th>Type</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="leaveTableBody">
-                        </tbody>
+                        <thead><tr><th>Request ID</th><th>Employee ID</th><th>Employee Name</th><th>Start Date</th><th>End Date</th><th>Type</th><th>Status</th><th>Actions</th></tr></thead>
+                        <tbody id="leaveTableBody"></tbody>
                     </table>
                 </div>
             </div>
 
-            <!-- ===== PERFORMANCE REVIEWS ===== -->
+            <!-- REVIEWS -->
             <div class="page-section" id="page-reviews">
                 <div class="table-container">
                     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                         <h5><i class="bi bi-star"></i> Performance Reviews</h5>
-                        <button class="btn btn-primary btn-sm" onclick="app.showReviewModal()">
-                            <i class="bi bi-plus-circle"></i> Add Review
-                        </button>
+                        <button class="btn btn-primary btn-sm" onclick="app.showReviewModal()"><i class="bi bi-plus-circle"></i> Add Review</button>
                     </div>
                     <table id="reviewsTable" class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Review ID</th>
-                                <th>Employee ID</th>
-                                <th>Employee Name</th>
-                                <th>Date</th>
-                                <th>Reviewer</th>
-                                <th>Rating</th>
-                                <th>Comments</th>
-                            </tr>
-                        </thead>
-                        <tbody id="reviewsTableBody">
-                        </tbody>
+                        <thead><tr><th>Review ID</th><th>Employee ID</th><th>Employee Name</th><th>Date</th><th>Reviewer</th><th>Rating</th><th>Comments</th></tr></thead>
+                        <tbody id="reviewsTableBody"></tbody>
                     </table>
                 </div>
             </div>
@@ -612,259 +199,75 @@
     </div>
 </div>
 
-<!-- ============================================================ -->
-<!--                        MODALS                                 -->
-<!-- ============================================================ -->
-
-<!-- Add/Edit Employee Modal -->
+<!-- MODALS -->
 <div class="modal fade" id="employeeModal" tabindex="-1">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="employeeModalTitle">Add Employee</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="employeeForm">
-                    <div class="row">
-                        <!-- Personal Information -->
-                        <div class="col-12">
-                            <h6 class="border-bottom pb-2 mb-3">Personal Information</h6>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Name (English) <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="empNameEnglish" required>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Name (Arabic) <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="empNameArabic" required>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Civil ID <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="empCivilId" required>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Passport No</label>
-                            <input type="text" class="form-control" id="empPassport">
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Nationality</label>
-                            <input type="text" class="form-control" id="empNationality">
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Designation</label>
-                            <input type="text" class="form-control" id="empDesignation">
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Salary <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control" id="empSalary" required step="0.01">
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Date of Join</label>
-                            <input type="date" class="form-control" id="empDateOfJoin">
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Status</label>
-                            <select class="form-control" id="empStatus">
-                                <option value="Active">Active</option>
-                                <option value="Inactive">Inactive</option>
-                                <option value="On Leave">On Leave</option>
-                            </select>
-                        </div>
-
-                        <!-- Document Details -->
-                        <div class="col-12 mt-3">
-                            <h6 class="border-bottom pb-2 mb-3">Document Details</h6>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label">Health Card Issued</label>
-                            <input type="date" class="form-control" id="empHealthIssued">
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label">Health Card Expiry</label>
-                            <input type="date" class="form-control" id="empHealthExpiry">
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label">CID Issued</label>
-                            <input type="date" class="form-control" id="empCidIssued">
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label">CID Expiry</label>
-                            <input type="date" class="form-control" id="empCidExpiry">
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label">Passport Issued</label>
-                            <input type="date" class="form-control" id="empPassportIssued">
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label">Passport Expiry</label>
-                            <input type="date" class="form-control" id="empPassportExpiry">
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label">Contact (Kuwait)</label>
-                            <input type="text" class="form-control" id="empContactKuwait">
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label">Contact (Home)</label>
-                            <input type="text" class="form-control" id="empContactHome">
-                        </div>
-
-                        <!-- Vacation & Leave -->
-                        <div class="col-12 mt-3">
-                            <h6 class="border-bottom pb-2 mb-3">Leave & Vacation</h6>
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label">Total Vacation Days</label>
-                            <input type="number" class="form-control" id="empTotalVacation" value="0">
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label">Vacation Taken</label>
-                            <input type="number" class="form-control" id="empVacationTaken" value="0">
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label">Remaining Vacation</label>
-                            <input type="number" class="form-control" id="empRemainingVacation" value="0">
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label">Sick Days Taken</label>
-                            <input type="number" class="form-control" id="empSickDays" value="0">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Last Vacation Start</label>
-                            <input type="date" class="form-control" id="empLastVacationStart">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Last Vacation End</label>
-                            <input type="date" class="form-control" id="empLastVacationEnd">
-                        </div>
-                        <div class="col-12 mb-3">
-                            <label class="form-label">Remarks</label>
-                            <textarea class="form-control" id="empRemarks" rows="2"></textarea>
-                        </div>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" onclick="app.saveEmployee()">Save Employee</button>
-            </div>
-        </div>
-    </div>
+    <div class="modal-dialog modal-xl"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="employeeModalTitle">Add Employee</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body"><form id="employeeForm"><div class="row">
+        <div class="col-12"><h6 class="border-bottom pb-2 mb-3">Personal Information</h6></div>
+        <div class="col-md-4 mb-3"><label class="form-label">Name (English) <span class="text-danger">*</span></label><input type="text" class="form-control" id="empNameEnglish" required></div>
+        <div class="col-md-4 mb-3"><label class="form-label">Name (Arabic) <span class="text-danger">*</span></label><input type="text" class="form-control" id="empNameArabic" required></div>
+        <div class="col-md-4 mb-3"><label class="form-label">Civil ID <span class="text-danger">*</span></label><input type="text" class="form-control" id="empCivilId" required></div>
+        <div class="col-md-4 mb-3"><label class="form-label">Passport No</label><input type="text" class="form-control" id="empPassport"></div>
+        <div class="col-md-4 mb-3"><label class="form-label">Nationality</label><input type="text" class="form-control" id="empNationality"></div>
+        <div class="col-md-4 mb-3"><label class="form-label">Designation</label><input type="text" class="form-control" id="empDesignation"></div>
+        <div class="col-md-4 mb-3"><label class="form-label">Salary <span class="text-danger">*</span></label><input type="number" class="form-control" id="empSalary" required step="0.01"></div>
+        <div class="col-md-4 mb-3"><label class="form-label">Date of Join</label><input type="date" class="form-control" id="empDateOfJoin"></div>
+        <div class="col-md-4 mb-3"><label class="form-label">Status</label><select class="form-control" id="empStatus"><option value="Active">Active</option><option value="Inactive">Inactive</option><option value="On Leave">On Leave</option></select></div>
+        <div class="col-12 mt-3"><h6 class="border-bottom pb-2 mb-3">Document Details</h6></div>
+        <div class="col-md-3 mb-3"><label class="form-label">Health Card Issued</label><input type="date" class="form-control" id="empHealthIssued"></div>
+        <div class="col-md-3 mb-3"><label class="form-label">Health Card Expiry</label><input type="date" class="form-control" id="empHealthExpiry"></div>
+        <div class="col-md-3 mb-3"><label class="form-label">CID Issued</label><input type="date" class="form-control" id="empCidIssued"></div>
+        <div class="col-md-3 mb-3"><label class="form-label">CID Expiry</label><input type="date" class="form-control" id="empCidExpiry"></div>
+        <div class="col-md-3 mb-3"><label class="form-label">Passport Issued</label><input type="date" class="form-control" id="empPassportIssued"></div>
+        <div class="col-md-3 mb-3"><label class="form-label">Passport Expiry</label><input type="date" class="form-control" id="empPassportExpiry"></div>
+        <div class="col-md-3 mb-3"><label class="form-label">Contact (Kuwait)</label><input type="text" class="form-control" id="empContactKuwait"></div>
+        <div class="col-md-3 mb-3"><label class="form-label">Contact (Home)</label><input type="text" class="form-control" id="empContactHome"></div>
+        <div class="col-12 mt-3"><h6 class="border-bottom pb-2 mb-3">Leave & Vacation</h6></div>
+        <div class="col-md-3 mb-3"><label class="form-label">Total Vacation Days</label><input type="number" class="form-control" id="empTotalVacation" value="0"></div>
+        <div class="col-md-3 mb-3"><label class="form-label">Vacation Taken</label><input type="number" class="form-control" id="empVacationTaken" value="0"></div>
+        <div class="col-md-3 mb-3"><label class="form-label">Remaining Vacation</label><input type="number" class="form-control" id="empRemainingVacation" value="0"></div>
+        <div class="col-md-3 mb-3"><label class="form-label">Sick Days Taken</label><input type="number" class="form-control" id="empSickDays" value="0"></div>
+        <div class="col-md-6 mb-3"><label class="form-label">Last Vacation Start</label><input type="date" class="form-control" id="empLastVacationStart"></div>
+        <div class="col-md-6 mb-3"><label class="form-label">Last Vacation End</label><input type="date" class="form-control" id="empLastVacationEnd"></div>
+        <div class="col-12 mb-3"><label class="form-label">Remarks</label><textarea class="form-control" id="empRemarks" rows="2"></textarea></div>
+    </div></form></div>
+    <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button><button type="button" class="btn btn-primary" onclick="app.saveEmployee()">Save Employee</button></div></div></div>
 </div>
 
-<!-- Leave Request Modal -->
 <div class="modal fade" id="leaveModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">New Leave Request</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="leaveForm">
-                    <div class="mb-3">
-                        <label class="form-label">Employee ID</label>
-                        <input type="text" class="form-control" id="leaveEmpId" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Employee Name</label>
-                        <input type="text" class="form-control" id="leaveEmployeeName" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Start Date</label>
-                        <input type="date" class="form-control" id="leaveStart" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">End Date</label>
-                        <input type="date" class="form-control" id="leaveEnd" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Leave Type</label>
-                        <select class="form-control" id="leaveType">
-                            <option value="Annual">Annual</option>
-                            <option value="Sick">Sick</option>
-                            <option value="Personal">Personal</option>
-                            <option value="Maternity">Maternity</option>
-                            <option value="Paternity">Paternity</option>
-                            <option value="Emergency">Emergency</option>
-                            <option value="Unpaid">Unpaid</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Reason</label>
-                        <textarea class="form-control" id="leaveReason" rows="2"></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" onclick="app.submitLeaveRequest()">Submit Request</button>
-            </div>
-        </div>
-    </div>
+    <div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">New Leave Request</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body"><form id="leaveForm">
+        <div class="mb-3"><label class="form-label">Employee ID</label><input type="text" class="form-control" id="leaveEmpId" required></div>
+        <div class="mb-3"><label class="form-label">Employee Name</label><input type="text" class="form-control" id="leaveEmployeeName" required></div>
+        <div class="mb-3"><label class="form-label">Start Date</label><input type="date" class="form-control" id="leaveStart" required></div>
+        <div class="mb-3"><label class="form-label">End Date</label><input type="date" class="form-control" id="leaveEnd" required></div>
+        <div class="mb-3"><label class="form-label">Leave Type</label><select class="form-control" id="leaveType"><option value="Annual">Annual</option><option value="Sick">Sick</option><option value="Personal">Personal</option><option value="Maternity">Maternity</option><option value="Paternity">Paternity</option><option value="Emergency">Emergency</option><option value="Unpaid">Unpaid</option></select></div>
+        <div class="mb-3"><label class="form-label">Reason</label><textarea class="form-control" id="leaveReason" rows="2"></textarea></div>
+    </form></div>
+    <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button><button type="button" class="btn btn-primary" onclick="app.submitLeaveRequest()">Submit Request</button></div></div></div>
 </div>
 
-<!-- Performance Review Modal -->
 <div class="modal fade" id="reviewModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Add Performance Review</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="reviewForm">
-                    <div class="mb-3">
-                        <label class="form-label">Employee ID</label>
-                        <input type="text" class="form-control" id="reviewEmpId" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Employee Name</label>
-                        <input type="text" class="form-control" id="reviewEmployeeName" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Review Date</label>
-                        <input type="date" class="form-control" id="reviewDate" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Reviewer</label>
-                        <input type="text" class="form-control" id="reviewer" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Rating (1-5)</label>
-                        <input type="number" class="form-control" id="reviewRating" min="1" max="5" value="3" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Comments</label>
-                        <textarea class="form-control" id="reviewComments" rows="3"></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Goals / Next Steps</label>
-                        <textarea class="form-control" id="reviewGoals" rows="2"></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" onclick="app.submitReview()">Save Review</button>
-            </div>
-        </div>
-    </div>
+    <div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Add Performance Review</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body"><form id="reviewForm">
+        <div class="mb-3"><label class="form-label">Employee ID</label><input type="text" class="form-control" id="reviewEmpId" required></div>
+        <div class="mb-3"><label class="form-label">Employee Name</label><input type="text" class="form-control" id="reviewEmployeeName" required></div>
+        <div class="mb-3"><label class="form-label">Review Date</label><input type="date" class="form-control" id="reviewDate" required></div>
+        <div class="mb-3"><label class="form-label">Reviewer</label><input type="text" class="form-control" id="reviewer" required></div>
+        <div class="mb-3"><label class="form-label">Rating (1-5)</label><input type="number" class="form-control" id="reviewRating" min="1" max="5" value="3" required></div>
+        <div class="mb-3"><label class="form-label">Comments</label><textarea class="form-control" id="reviewComments" rows="3"></textarea></div>
+        <div class="mb-3"><label class="form-label">Goals / Next Steps</label><textarea class="form-control" id="reviewGoals" rows="2"></textarea></div>
+    </form></div>
+    <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button><button type="button" class="btn btn-primary" onclick="app.submitReview()">Save Review</button></div></div></div>
 </div>
 
-<!-- ============================================================ -->
-<!--                        SCRIPTS                               -->
-<!-- ============================================================ -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js">
-</script>
-<script src="https://code.jquery.com/jquery-3.7.1.min.js">
-</script>
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js">
-</script>
-<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js">
-</script>
+<!-- SCRIPTS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
 
-<!-- App Scripts -->
+<!-- App Scripts - ORDER MATTERS HERE -->
 <script src="config.js"></script>
 <script src="auth.js"></script>
 <script src="api.js"></script>
