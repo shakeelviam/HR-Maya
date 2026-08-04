@@ -1,10 +1,13 @@
 // ============================================================
-// api.js - BACKEND API COMMUNICATION
+// api.js - BACKEND API COMMUNICATION WITH CORS PROXY
 // ============================================================
+
+// ℹ️ We prepend a public CORS proxy here so GitHub Pages can talk to Google Scripts
+const PROXIED_API_URL = 'https://corsproxy.io/?' + CONFIG.API_URL;
 
 async function apiRequest(method, params = {}) {
     try {
-        let url = CONFIG.API_BASE_URL;
+        let url = PROXIED_API_URL;
         const queryParams = new URLSearchParams({ method, ...params }).toString();
         if (method) url += `?${queryParams}`;
 
@@ -29,7 +32,7 @@ async function getIntegratedEmployees() {
 }
 
 async function markAttendance(data) {
-    const response = await fetch(CONFIG.API_BASE_URL, {
+    const response = await fetch(PROXIED_API_URL, {
         method: 'POST',
         body: JSON.stringify({ method: 'markAttendance', ...data })
     });
@@ -37,7 +40,7 @@ async function markAttendance(data) {
 }
 
 async function submitLeave(data) {
-    const response = await fetch(CONFIG.API_BASE_URL, {
+    const response = await fetch(PROXIED_API_URL, {
         method: 'POST',
         body: JSON.stringify({ method: 'submitLeave', ...data })
     });
@@ -45,7 +48,7 @@ async function submitLeave(data) {
 }
 
 async function addReview(data) {
-    const response = await fetch(CONFIG.API_BASE_URL, {
+    const response = await fetch(PROXIED_API_URL, {
         method: 'POST',
         body: JSON.stringify({ method: 'addReview', ...data })
     });
