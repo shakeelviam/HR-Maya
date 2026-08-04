@@ -44,7 +44,6 @@ const app = {
 
         // Generate rows based on your exact data structure
         this.employeesData.forEach(emp => {
-            // 🔥 FIXED: Added onclick="app.viewProfile('...')" to the eye button
             const row = `
                 <tr>
                     <td>${emp['Employee ID'] || '-'}</td>
@@ -110,7 +109,7 @@ const app = {
         });
     },
 
-    // 🔥 NEW: Actual View Profile function
+    // 6. View Profile - Opens dedicated profile page
     viewProfile(employeeId) {
         if (!employeeId) {
             console.warn("No Employee ID provided to viewProfile");
@@ -120,20 +119,66 @@ const app = {
         const emp = this.employeesData.find(e => e['Employee ID'] === employeeId);
         
         if (emp) {
-            // Instead of an alert, it logs to the console so you can build a real modal later
             console.log("Viewing profile for:", emp);
-            alert(`Viewing Profile for:\n\nID: ${emp['Employee ID']}\nName: ${emp['Name (English)']}\nCivil ID: ${emp['Civil ID']}\nSalary: ${emp['Total Payable']}`);
+
+            // 1. Switch Sidebar to Profile section
+            document.querySelectorAll('#sidebar .nav-link').forEach(l => l.classList.remove('active'));
+            document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+            document.getElementById('page-profile').classList.add('active');
+            document.getElementById('pageTitle').innerText = 'Employee Profile';
+
+            // 2. Generate HTML for the profile
+            const profileHTML = `
+                <div class="profile-header">
+                    <div class="row">
+                        <div class="col-md-3 text-center border-end">
+                            <div class="profile-avatar">${(emp['Name (English)'] || '?').charAt(0)}</div>
+                            <h5 class="mt-3">${emp['Name (English)'] || 'Unknown'}</h5>
+                            <p class="text-muted">${emp['Employee ID'] || '-'}</p>
+                            <span class="status-badge ${(emp.Status || 'active').toLowerCase()}">${emp.Status || 'Active'}</span>
+                        </div>
+                        <div class="col-md-9">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <h6 class="text-primary"><i class="bi bi-person"></i> Personal Details</h6>
+                                    <div class="profile-info-item"><span class="profile-info-label">Name (Arabic)</span><span class="profile-info-value">${emp['Name (Arabic)'] || '-'}</span></div>
+                                    <div class="profile-info-item"><span class="profile-info-label">Civil ID</span><span class="profile-info-value">${emp['Civil ID'] || '-'}</span></div>
+                                    <div class="profile-info-item"><span class="profile-info-label">Salary</span><span class="profile-info-value">${emp['Total Payable'] || 0}</span></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="text-success"><i class="bi bi-calendar-check"></i> Leave & Vacation</h6>
+                                    <div class="profile-info-item"><span class="profile-info-label">Vacation Taken</span><span class="profile-info-value text-danger">${emp['Vacation Taken'] || 0} days</span></div>
+                                    <div class="profile-info-item"><span class="profile-info-label">Remaining Vacation</span><span class="profile-info-value text-success fw-bold">${emp['Remaining Vacation'] || 0} days</span></div>
+                                    <div class="profile-info-item"><span class="profile-info-label">Sick Days Taken</span><span class="profile-info-value text-warning">${emp['Sick Days Taken'] || 0} days</span></div>
+                                    <div class="profile-info-item"><span class="profile-info-label">Remarks</span><span class="profile-info-value text-muted">${emp['Vacation Remarks'] || 'None'}</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // 3. Inject it into the profile page
+            document.getElementById('profileContent').innerHTML = profileHTML;
+
         } else {
             alert(`Employee with ID ${employeeId} not found.`);
         }
     },
 
-    // --- UI Actions (Changed to console.log so they don't spam pop-ups) ---
+    // --- UI Actions ---
     showAddEmployeeModal() { console.log("Add Employee modal triggered"); },
     saveEmployee() { console.log("Save Employee triggered"); },
-    showLeaveRequestModal() { console.log("Leave modal triggered"); },
+    
+    showLeaveRequestModal() { 
+        alert("To apply for leave, please click the 'View' (Eye) button on the Employees page and check the Leave section."); 
+    },
+    
     submitLeaveRequest() { console.log("Submit leave triggered"); },
     showReviewModal() { console.log("Review modal triggered"); },
     submitReview() { console.log("Submit review triggered"); },
-    markAttendance() { console.log("Mark attendance triggered"); }
+    
+    markAttendance() { 
+        alert("To view or mark attendance, please click the 'View' (Eye) button on the Employees page to see individual logs."); 
+    }
 };
