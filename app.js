@@ -1,5 +1,5 @@
 // ============================================================
-// app.js - UI LOGIC AND RENDERING
+// app.js - UI LOGIC AND RENDERING (FINAL VERSION)
 // ============================================================
 
 const app = {
@@ -17,8 +17,6 @@ const app = {
     async loadAllData() {
         console.log("Fetching data from API...");
         const tbody = document.getElementById('employeesTableBody');
-        
-        // Show loading state
         tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">Loading data...</td></tr>';
 
         try {
@@ -42,7 +40,6 @@ const app = {
             return;
         }
 
-        // Generate rows based on your exact data structure
         this.employeesData.forEach(emp => {
             const row = `
                 <tr>
@@ -63,11 +60,8 @@ const app = {
             tbody.innerHTML += row;
         });
 
-        // Init/Refresh DataTables
         if ($.fn.dataTable) {
-            if (this.employeesTable) {
-                this.employeesTable.destroy();
-            }
+            if (this.employeesTable) this.employeesTable.destroy();
             this.employeesTable = $('#employeesTable').DataTable({
                 pageLength: 10,
                 responsive: true,
@@ -82,7 +76,6 @@ const app = {
         const active = this.employeesData.filter(e => e.Status === 'Active').length;
         document.getElementById('totalEmployees').innerText = total;
         document.getElementById('activeEmployees').innerText = active;
-        // Leave placeholders for data not yet fetched via the Dashboard API
         document.getElementById('pendingLeaves').innerText = '0';
         document.getElementById('avgRating').innerText = '0.0';
     },
@@ -92,42 +85,34 @@ const app = {
         document.querySelectorAll('#sidebar .nav-link').forEach(link => {
             link.addEventListener('click', function(e) {
                 e.preventDefault();
-                // Toggle active class on sidebar
                 document.querySelectorAll('#sidebar .nav-link').forEach(l => l.classList.remove('active'));
                 this.classList.add('active');
                 
-                // Show the correct page section
                 const pageId = this.dataset.page;
                 document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
                 const targetSection = document.getElementById(`page-${pageId}`);
                 if(targetSection) targetSection.classList.add('active');
                 
-                // Update title
                 document.getElementById('pageTitle').innerText = 
                     pageId.charAt(0).toUpperCase() + pageId.slice(1);
             });
         });
     },
 
-    // 6. View Profile - Opens dedicated profile page
+    // ============================================================
+    // 6. EMPLOYEE PROFILE - SHOWS ALL DATA
+    // ============================================================
     viewProfile(employeeId) {
-        if (!employeeId) {
-            console.warn("No Employee ID provided to viewProfile");
-            return;
-        }
-        // Find the employee in the data
+        if (!employeeId) return;
         const emp = this.employeesData.find(e => e['Employee ID'] === employeeId);
         
         if (emp) {
-            console.log("Viewing profile for:", emp);
-
-            // 1. Switch Sidebar to Profile section
             document.querySelectorAll('#sidebar .nav-link').forEach(l => l.classList.remove('active'));
             document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
             document.getElementById('page-profile').classList.add('active');
             document.getElementById('pageTitle').innerText = 'Employee Profile';
 
-            // 2. Generate HTML for the profile
+            // Render all available data into a detailed profile
             const profileHTML = `
                 <div class="profile-header">
                     <div class="row">
@@ -136,6 +121,7 @@ const app = {
                             <h5 class="mt-3">${emp['Name (English)'] || 'Unknown'}</h5>
                             <p class="text-muted">${emp['Employee ID'] || '-'}</p>
                             <span class="status-badge ${(emp.Status || 'active').toLowerCase()}">${emp.Status || 'Active'}</span>
+                            <p class="mt-2 text-muted small">Branch: ${emp.Branch || 'N/A'}</p>
                         </div>
                         <div class="col-md-9">
                             <div class="row g-3">
@@ -143,66 +129,141 @@ const app = {
                                     <h6 class="text-primary"><i class="bi bi-person"></i> Personal Details</h6>
                                     <div class="profile-info-item"><span class="profile-info-label">Name (Arabic)</span><span class="profile-info-value">${emp['Name (Arabic)'] || '-'}</span></div>
                                     <div class="profile-info-item"><span class="profile-info-label">Civil ID</span><span class="profile-info-value">${emp['Civil ID'] || '-'}</span></div>
-                                    <div class="profile-info-item"><span class="profile-info-label">Salary</span><span class="profile-info-value">${emp['Total Payable'] || 0}</span></div>
+                                    <div class="profile-info-item"><span class="profile-info-label">Designation</span><span class="profile-info-value">${emp.Designation || 'Staff'}</span></div>
+                                    
+                                    <h6 class="text-primary mt-3"><i class="bi bi-currency-exchange"></i> Salary Details</h6>
+                                    <div class="profile-info-item"><span class="profile-info-label">Basic Salary</span><span class="profile-info-value">${emp['Basic Salary'] || 0}</span></div>
+                                    <div class="profile-info-item"><span class="profile-info-label">Food Allowance</span><span class="profile-info-value">${emp['Food Allowance'] || 0}</span></div>
+                                    <div class="profile-info-item"><span class="profile-info-label">Accommodation</span><span class="profile-info-value">${emp.Accommodation || 0}</span></div>
+                                    <div class="profile-info-item"><span class="profile-info-label">Conveyance</span><span class="profile-info-value">${emp.Conveyance || 0}</span></div>
+                                    <div class="profile-info-item"><span class="profile-info-label">Gross Salary</span><span class="profile-info-value fw-bold">${emp['Gross Salary'] || 0}</span></div>
+                                    <div class="profile-info-item"><span class="profile-info-label">Total Payable</span><span class="profile-info-value text-success fw-bold">${emp['Total Payable'] || 0}</span></div>
                                 </div>
+                                
                                 <div class="col-md-6">
                                     <h6 class="text-success"><i class="bi bi-calendar-check"></i> Leave & Vacation</h6>
+                                    <div class="profile-info-item"><span class="profile-info-label">Total Vacation Allowed</span><span class="profile-info-value">30 Days (Standard)</span></div>
                                     <div class="profile-info-item"><span class="profile-info-label">Vacation Taken</span><span class="profile-info-value text-danger">${emp['Vacation Taken'] || 0} days</span></div>
                                     <div class="profile-info-item"><span class="profile-info-label">Remaining Vacation</span><span class="profile-info-value text-success fw-bold">${emp['Remaining Vacation'] || 0} days</span></div>
                                     <div class="profile-info-item"><span class="profile-info-label">Sick Days Taken</span><span class="profile-info-value text-warning">${emp['Sick Days Taken'] || 0} days</span></div>
-                                    <div class="profile-info-item"><span class="profile-info-label">Remarks</span><span class="profile-info-value text-muted">${emp['Vacation Remarks'] || 'None'}</span></div>
+                                    
+                                    <h6 class="text-success mt-3"><i class="bi bi-chat-text"></i> Remarks & History</h6>
+                                    <div class="profile-info-item"><span class="profile-info-label">Vacation Remarks</span><span class="profile-info-value text-muted">${emp['Vacation Remarks'] || 'None'}</span></div>
+                                    <div class="profile-info-item"><span class="profile-info-label">Sick Remarks</span><span class="profile-info-value text-muted">${emp['Sick Remarks'] || 'None'}</span></div>
+                                    <div class="profile-info-item"><span class="profile-info-label">Price Per Day</span><span class="profile-info-value">${emp['Price Per Day'] || '0'}</span></div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             `;
-
-            // 3. Inject it into the profile page
             document.getElementById('profileContent').innerHTML = profileHTML;
-
         } else {
             alert(`Employee with ID ${employeeId} not found.`);
         }
     },
 
-    // --- MODALS & ACTIONS (RESTORED TO WORKING STATE) ---
-    
-    // Add Employee Modal
-    showAddEmployeeModal() { 
-        $('#employeeModal').modal('show'); 
-    },
-    saveEmployee() { 
-        console.log("Save Employee triggered");
-        // You can add the actual save logic here later
-    },
+    // ============================================================
+    // 7. MODALS & LEAVE VALIDATION LOGIC
+    // ============================================================
 
-    // Leave Request Modal
+    // Open Leave Request Modal
     showLeaveRequestModal() { 
-        $('#leaveModal').modal('show'); 
+        var modal = document.getElementById('leaveModal');
+        var backdrop = document.createElement('div');
+        backdrop.className = 'modal-backdrop fade show';
+        document.body.appendChild(backdrop);
+        modal.style.display = 'block';
+        modal.classList.add('show');
+        document.body.classList.add('modal-open');
+        
+        // Reset the form when opening
+        document.getElementById('leaveForm').reset();
+        document.getElementById('leaveBalanceDisplay').innerText = '';
+        document.getElementById('leaveErrorDisplay').innerText = '';
     },
+
+    // Submit Leave Request with VALIDATION
     submitLeaveRequest() { 
-        console.log("Submit leave triggered"); 
-        // You can add the actual submit logic here later
+        const empId = document.getElementById('leaveEmpId').value.trim();
+        const empName = document.getElementById('leaveEmployeeName').value.trim();
+        const startDate = new Date(document.getElementById('leaveStart').value);
+        const endDate = new Date(document.getElementById('leaveEnd').value);
+        const reason = document.getElementById('leaveReason').value.trim();
+
+        if (!empId || !empName || !startDate || !endDate) {
+            alert("Please fill in all required fields.");
+            return;
+        }
+
+        if (endDate < startDate) {
+            alert("End date cannot be before start date.");
+            return;
+        }
+
+        // Calculate days requested
+        const timeDiff = endDate.getTime() - startDate.getTime();
+        const daysRequested = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1; // inclusive count
+
+        // Find employee data
+        const emp = this.employeesData.find(e => e['Employee ID'] === empId);
+        if (!emp) {
+            alert("Invalid Employee ID.");
+            return;
+        }
+
+        const remaining = emp['Remaining Vacation'] || 0;
+
+        // LOGIC: Validate against available balance
+        if (daysRequested > remaining) {
+            document.getElementById('leaveErrorDisplay').innerText = 
+                `ERROR: You cannot apply for ${daysRequested} days. Only ${remaining} days available.`;
+            document.getElementById('leaveErrorDisplay').style.color = 'red';
+            return;
+        }
+
+        // Success: Proceed with submission
+        alert(`Leave Approved!\n${empName} requested ${daysRequested} days.\nRemaining balance will be: ${remaining - daysRequested}`);
+        document.getElementById('leaveErrorDisplay').innerText = '';
+        
+        // Add logic here to call API.submitLeave() in the future.
+        // To close modal manually:
+        // document.getElementById('leaveModal').classList.remove('show');
+        // document.getElementById('leaveModal').style.display = 'none';
+        // document.body.classList.remove('modal-open');
     },
 
-    // Performance Review Modal
+    // Open Add Employee Modal
+    showAddEmployeeModal() { 
+        var modal = document.getElementById('employeeModal');
+        var backdrop = document.createElement('div');
+        backdrop.className = 'modal-backdrop fade show';
+        document.body.appendChild(backdrop);
+        modal.style.display = 'block';
+        modal.classList.add('show');
+        document.body.classList.add('modal-open');
+    },
+    saveEmployee() { alert("Save Employee feature coming soon"); },
+
+    // Open Review Modal
     showReviewModal() { 
-        $('#reviewModal').modal('show'); 
+        var modal = document.getElementById('reviewModal');
+        var backdrop = document.createElement('div');
+        backdrop.className = 'modal-backdrop fade show';
+        document.body.appendChild(backdrop);
+        modal.style.display = 'block';
+        modal.classList.add('show');
+        document.body.classList.add('modal-open');
     },
-    submitReview() { 
-        console.log("Submit review triggered"); 
-        // You can add the actual submit logic here later
-    },
+    submitReview() { alert("Submit review feature coming soon"); },
 
-    // Mark Attendance Action
+    // Mark Attendance (Placeholder)
     markAttendance() { 
         const dateInput = document.getElementById('attendanceDate');
         if (!dateInput || !dateInput.value) {
             alert("Please select a date first.");
             return;
         }
-        console.log(`Marking attendance for date: ${dateInput.value}`);
-        // You can add the actual API call here later
+        alert(`Attendance marked for date: ${dateInput.value}`);
     }
 };
