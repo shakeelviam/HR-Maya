@@ -22,9 +22,7 @@ async function kioskLogin() {
     loginBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Verifying...';
 
     try {
-        const url = `${CONFIG.API_URL}?method=loginStaffKiosk&empId=${encodeURIComponent(empId)}&pin=${encodeURIComponent(pin)}`;
-        const response = await fetch(url);
-        const result = await response.json();
+        const result = await loginStaffKiosk(empId, pin);
 
         if (result.success) {
             currentEmpId = empId;
@@ -49,7 +47,6 @@ async function kioskLogin() {
 
 // 2. Button Action
 async function kioskAction(stage) {
-    const errorEl = document.getElementById('kioskError');
     if (!currentEmpId) return;
 
     // Simple client-side locking to prevent double clicking
@@ -57,18 +54,13 @@ async function kioskAction(stage) {
     allBtns.forEach(b => b.disabled = true);
 
     try {
-        const url = `${CONFIG.API_URL}?method=markKioskAttendance&empId=${encodeURIComponent(currentEmpId)}&pin=${encodeURIComponent(currentEmpPin)}&stage=${encodeURIComponent(stage)}`;
-        const response = await fetch(url);
-        const result = await response.json();
+        const result = await markKioskAttendance(currentEmpId, currentEmpPin, stage);
 
         if (result.success) {
-            // Show a quick success alert / toast
             alert(result.message);
-            // Refresh the button states
             updateButtons(result.stage);
         } else {
             alert(result.error || 'Action failed.');
-            // Refresh just in case to sync with server state
             refreshDashboardState();
         }
     } catch (error) {
@@ -113,9 +105,7 @@ function kioskLogout() {
 async function refreshDashboardState() {
     if (!currentEmpId) return;
     try {
-        const url = `${CONFIG.API_URL}?method=getDailyKioskStatus&empId=${encodeURIComponent(currentEmpId)}`;
-        const response = await fetch(url);
-        const result = await response.json();
+        const result = await getDailyKioskStatus(currentEmpId);
         if (result.success) {
             updateButtons(result.currentStage);
         }
