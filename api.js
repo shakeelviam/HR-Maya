@@ -1,55 +1,48 @@
 // ============================================================
-// api.js - GOOGLE APPS SCRIPT DIRECT ROUTER (NO CORS ISSUES)
+// api.js - DIRECT FETCH TO APPS SCRIPT /exec (matches dashboard)
 // ============================================================
-
-// This uses Google's native library routing to bypass CORS completely.
-// It replaces the unreliable CORS proxy.
+// Why this replaces the old iframe/postMessage "CORS bypass":
+//   - The old code targeted /dev, which only responds to the script
+//     OWNER while logged in — an anonymous staff tablet just gets
+//     Google's login page, never JSON.
+//   - The appended gs_callback=... param was JSONP-style and Apps
+//     Script never executes it, so the promise never resolved.
+//   - script.google.com will not hand readable content to a
+//     cross-origin iframe on github.io anyway.
+//
+// This version uses the EXACT pattern app.js (the dashboard) already
+// uses successfully: a simple GET to /exec. Apps Script serves simple
+// GET requests with permissive CORS, so this works from GitHub Pages
+// with no backend change and no redeployment.
 
 function gsRequest(method, params = {}) {
-    return new Promise((resolve) => {
-        // We construct the URL manually, but we use an iframe trick via Google's router
-        // to bypass the browser's cross-origin block.
-        const url = CONFIG.API_URL.replace('/exec', '/dev'); // Always use /dev
-        const query = new URLSearchParams({ method, ...params }).toString();
-        
-        // Create a hidden iframe to handle the request bypassing CORS
-        const iframe = document.createElement('iframe');
-        iframe.style.display = 'none';
-        document.body.appendChild(iframe);
+    // Force the deployed /exec endpoint. /exec works for anonymous
+    // kiosk users; /dev never will. This coercion means the kiosk keeps
+    // working even if config.js is ever toggled back to /dev by mistake.
+    const url = CONFIG.API_URL.replace('/dev', '/exec');
+    const query = new URLSearchParams({ method, ...params }).toString();
 
-        // Listen for the message back from the iframe
-        window.addEventListener('message', function handler(e) {
-            if (e.data && e.data.type === 'gs_response') {
-                document.body.removeChild(iframe);
-                window.removeEventListener('message', handler);
-                // Return the data, or a safe error if it fails
-                if (e.data.success) {
-                    resolve({ success: true, data: e.data.data });
-                } else {
-                    resolve({ success: false, error: e.data.error || 'Connection error' });
-                }
-            }
-        });
-
-        // Inject the request into the iframe
-        iframe.src = `${url}&${query}&gs_callback=parent.postMessage({"type":"gs_response","success":true,"data":window.document.body.innerText},"*")`;
-    });
+    return fetch(`${url}?${query}`)
+        .then(res => res.json())
+        .catch(err => ({
+            success: false,
+            error: (err && err.message) ? err.message : 'Connection error'
+        }));
 }
 
-// --- Kiosk API Calls (Using the router above) ---
+// --- Kiosk API calls -----------------------------------------
+// These return the backend's raw JSON object directly (it already
+// contains .success, .name, .id, .currentStatus, .stage, .error, etc.),
+// which is exactly what kiosk.js expects. No wrapping.
 
-async function loginStaffKiosk(empId, pin) {
-    // We explicitly ask for a JSON response from the backend
-    const result = await gsRequest('loginStaffKiosk', { empId: empId, pin: pin });
-    return result;
+function loginStaffKiosk(empId, pin) {
+    return gsRequest('loginStaffKiosk', { empId: empId, pin: pin });
 }
 
-async function markKioskAttendance(empId, pin, stage) {
-    const result = await gsRequest('markKioskAttendance', { empId: empId, pin: pin, stage: stage });
-    return result;
+function markKioskAttendance(empId, pin, stage) {
+    return gsRequest('markKioskAttendance', { empId: empId, pin: pin, stage: stage });
 }
 
-async function getDailyKioskStatus(empId) {
-    const result = await gsRequest('getDailyKioskStatus', { empId: empId });
-    return result;
+function getDailyKioskStatus(empId) {
+    return gsRequest('getDailyKioskStatus', { empId: empId });
 }
