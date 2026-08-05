@@ -1,6 +1,6 @@
 const CONFIG = {
     // 🔥 CHANGE THIS BACK TO /dev to test!
-    API_URL: 'https://script.google.com/macros/s/AKfycbyG5XLC79FnyLtSGGWunhJwU83SV0b0kz3y1FKdal-JBcTUM-X0ax134konYyTaKxYiiQ/dev',
+    API_URL: 'https://script.google.com/macros/s/AKfycbyG5XLC79FnyLtSGGWunhJwU83SV0b0kz3y1FKdal-JBcTUM-X0ax134konYyTaKxYiiQ/exec',
     
     // ✅ Your Google OAuth Client ID
     GOOGLE_CLIENT_ID: '323911089919-it1nrmlpmq2ojigs50g6hu11qur4r59n.apps.googleusercontent.com',
