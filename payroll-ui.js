@@ -5,26 +5,31 @@
 //     <script src="payroll-ui.js"></script>
 //
 // It injects its own sidebar link and page — no other index.html edits.
-// Requires the backend method computeMonthlyPayroll() to be live in Code.gs
-// (and its case added to handleRequest), then a redeploy.
+// Requires computeMonthlyPayroll() (rolling-period version) live in
+// Code.gs/Payroll.gs, already deployed as of Version 29.
+//
+// CHANGED FROM YOUR PREVIOUS VERSION: month/year dropdowns replaced
+// with a Period End date picker, matching the new rolling-period
+// system in Payroll.gs. Period Start is only needed for the very
+// first run ever (Payroll.gs looks up every run after that
+// automatically from Payroll_Control) — so it's a collapsed,
+// optional field that only matters the first time.
 // ============================================================
 
 (function () {
   // Same /exec base the dashboard already uses in app.js
   const EXEC_URL = 'https://script.google.com/macros/s/AKfycbyG5XLC79FnyLtSGGWunhJwU83SV0b0kz3y1FKdal-JBcTUM-X0ax134konYyTaKxYiiQ/exec';
 
-  const MONTHS = ['January','February','March','April','May','June',
-                  'July','August','September','October','November','December'];
-
-  function monthOptions() {
-    const cur = new Date().getMonth(); // 0-11
-    return MONTHS.map((m, i) => `<option value="${i + 1}"${i === cur ? ' selected' : ''}>${m}</option>`).join('');
+  // yyyy-mm-dd (HTML date input) -> dd-mm-yyyy (what Payroll.gs expects)
+  function toDdMmYyyy(isoDate) {
+    if (!isoDate) return '';
+    const [y, m, d] = isoDate.split('-');
+    return `${d}-${m}-${y}`;
   }
-  function yearOptions() {
-    const y = new Date().getFullYear();
-    let o = '';
-    for (let yr = y; yr >= y - 3; yr--) o += `<option value="${yr}">${yr}</option>`;
-    return o;
+
+  function todayIso() {
+    const d = new Date();
+    return d.toISOString().split('T')[0];
   }
 
   // --- Inject the nav link + page section once the DOM is ready ---
@@ -39,7 +44,6 @@
       if (att && att.closest('li')) att.closest('li').insertAdjacentElement('afterend', li);
       else navList.appendChild(li);
 
-      // app.setupSidebarNavigation() has already run, so wire this link ourselves
       li.querySelector('.nav-link').addEventListener('click', function (e) {
         e.preventDefault();
         document.querySelectorAll('#sidebar .nav-link').forEach(l => l.classList.remove('active'));
@@ -59,22 +63,34 @@
       section.id = 'page-payroll';
       section.innerHTML =
         '<div class="table-container">' +
-          '<h5 class="mb-3"><i class="bi bi-cash-stack"></i> Monthly Payroll</h5>' +
-          '<div class="row g-2 align-items-end mb-3">' +
-            '<div class="col-auto"><label class="form-label small mb-1">Month</label>' +
-              '<select id="payrollMonth" class="form-select form-select-sm">' + monthOptions() + '</select></div>' +
-            '<div class="col-auto"><label class="form-label small mb-1">Year</label>' +
-              '<select id="payrollYear" class="form-select form-select-sm">' + yearOptions() + '</select></div>' +
+          '<h5 class="mb-3"><i class="bi bi-cash-stack"></i> Run Payroll</h5>' +
+          '<div class="row g-2 align-items-end mb-2">' +
+            '<div class="col-auto"><label class="form-label small mb-1">Period End</label>' +
+              '<input type="date" id="payrollPeriodEnd" class="form-control form-control-sm" value="' + todayIso() + '"></div>' +
             '<div class="col-auto">' +
               '<button id="payrollRunBtn" class="btn btn-primary btn-sm" onclick="app.runPayroll()">' +
                 '<i class="bi bi-calculator"></i> Run Payroll</button></div>' +
           '</div>' +
+          '<div class="mb-3">' +
+            '<a href="#" id="payrollFirstRunToggle" class="small text-muted">First payroll run ever? Click here to set a start date</a>' +
+            '<div id="payrollFirstRunRow" class="row g-2 align-items-end mt-2" style="display:none;">' +
+              '<div class="col-auto"><label class="form-label small mb-1">Period Start (first run only)</label>' +
+                '<input type="date" id="payrollPeriodStart" class="form-control form-control-sm"></div>' +
+            '</div>' +
+          '</div>' +
           '<div id="payrollStatus" class="mb-2"></div>' +
           '<div id="payrollFlags"></div>' +
-          '<div class="text-muted small">Results are written to a dated tab (e.g. "Payroll 08-2026") in the HR sheet. ' +
-            'Re-running a month rebuilds only that tab.</div>' +
+          '<div class="text-muted small">Every run after the first only needs Period End — the start date ' +
+            'is picked up automatically from where the last run left off (see the Payroll_Control tab). ' +
+            'Results are written to a dated tab (e.g. "Payroll 21Jul-20Aug").</div>' +
         '</div>';
       anchor.parentElement.appendChild(section);
+
+      document.getElementById('payrollFirstRunToggle').addEventListener('click', function (e) {
+        e.preventDefault();
+        const row = document.getElementById('payrollFirstRunRow');
+        row.style.display = row.style.display === 'none' ? 'flex' : 'none';
+      });
     }
   });
 
@@ -83,11 +99,16 @@
     if (typeof app === 'undefined') return setTimeout(attach, 50);
 
     app.runPayroll = async function () {
-      const month  = document.getElementById('payrollMonth').value;
-      const year   = document.getElementById('payrollYear').value;
+      const periodEndIso = document.getElementById('payrollPeriodEnd').value;
+      const periodStartIso = document.getElementById('payrollPeriodStart').value;
       const btn    = document.getElementById('payrollRunBtn');
       const status = document.getElementById('payrollStatus');
       const flags  = document.getElementById('payrollFlags');
+
+      if (!periodEndIso) {
+        status.innerHTML = '<div class="alert alert-warning mb-0">Please pick a Period End date.</div>';
+        return;
+      }
 
       const original = btn.innerHTML;
       btn.disabled = true;
@@ -96,8 +117,11 @@
       flags.innerHTML = '';
 
       try {
-        const url = EXEC_URL + '?method=computeMonthlyPayroll&month=' +
-                    encodeURIComponent(month) + '&year=' + encodeURIComponent(year);
+        let url = EXEC_URL + '?method=computeMonthlyPayroll&periodEnd=' + encodeURIComponent(toDdMmYyyy(periodEndIso));
+        if (periodStartIso) {
+          url += '&periodStart=' + encodeURIComponent(toDdMmYyyy(periodStartIso));
+        }
+
         const res = await fetch(url);
         if (!res.ok) throw new Error('HTTP ' + res.status);
         const data = await res.json();
@@ -105,7 +129,8 @@
 
         status.innerHTML =
           '<div class="alert alert-success mb-0"><i class="bi bi-check-circle"></i> ' +
-          'Payroll written to tab <strong>' + data.tab + '</strong> — ' + data.employees + ' employees' +
+          'Payroll written to tab <strong>' + data.tab + '</strong> (' + data.periodStart + ' to ' + data.periodEnd + ') — ' +
+          data.employees + ' employees' +
           (data.flaggedEmployees
             ? ', <strong>' + data.flaggedEmployees + '</strong> with attendance issues.'
             : ', no attendance issues.') +
@@ -117,14 +142,21 @@
             '</td><td class="text-danger small">' + f.detail + '</td></tr>').join('');
           flags.innerHTML =
             '<div class="mt-3"><h6 class="text-danger"><i class="bi bi-exclamation-triangle"></i> ' +
-            'Attendance issues — paid 0 OT for these days</h6>' +
+            'Attendance issues — paid 0 OT for these shifts</h6>' +
             '<table class="table table-sm table-bordered"><thead><tr>' +
-            '<th>Employee ID</th><th>Name</th><th>Problem day(s)</th></tr></thead><tbody>' +
+            '<th>Employee ID</th><th>Name</th><th>Problem</th></tr></thead><tbody>' +
             body + '</tbody></table>' +
-            '<div class="text-muted small">Fix the punches, then run payroll again to pick up the changes.</div></div>';
+            '<div class="text-muted small">Fix the punches (Attendance_Log or amendAttendance), then run payroll again to pick up the changes.</div></div>';
         }
       } catch (err) {
-        status.innerHTML = '<div class="alert alert-danger mb-0"><i class="bi bi-x-circle"></i> ' + err.message + '</div>';
+        // Surface the "provide periodStart" first-run error clearly, pointing at the field.
+        if (err.message && err.message.toLowerCase().includes('periodstart')) {
+          status.innerHTML = '<div class="alert alert-danger mb-0"><i class="bi bi-x-circle"></i> ' + err.message +
+            ' Use "First payroll run ever?" above to set one.</div>';
+          document.getElementById('payrollFirstRunRow').style.display = 'flex';
+        } else {
+          status.innerHTML = '<div class="alert alert-danger mb-0"><i class="bi bi-x-circle"></i> ' + err.message + '</div>';
+        }
       } finally {
         btn.disabled = false;
         btn.innerHTML = original;
