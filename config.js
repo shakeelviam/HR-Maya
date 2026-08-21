@@ -11,7 +11,8 @@ const CONFIG = {
         'info@maya.com.kw',
         'operations@maya.com.kw',
         'hr@maya.com.kw',
-        'm.nady194@gmail.com'
+        'm.nady194@gmail.com',
+        'a_a_al_samhan@icloud.com'
     ],
     
     APP_NAME: 'Maya HR Management System',
