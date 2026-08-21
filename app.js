@@ -72,7 +72,7 @@ const app = {
             if (this.employeesTable) this.employeesTable.destroy();
             this.employeesTable = $('#employeesTable').DataTable({ pageLength: 10, responsive: true, order: [[0, 'asc']] });
         }
-        this.setupEmployeeFilters();
+        try { this.setupEmployeeFilters(); } catch (e) { console.warn('Employee filter setup skipped:', e); }
     },
 
     // ---- EMPLOYEE LIST FILTERS (Status + Branch), on top of the built-in search ----
@@ -91,10 +91,9 @@ const app = {
             });
             this._empFilterPushed = true;
         }
-        // Inject the filter bar once, just above the table.
+        // Inject the filter bar once, above the table's DataTables wrapper.
         const container = document.querySelector('#page-employees .table-container');
-        const table = document.getElementById('employeesTable');
-        if (container && table && !document.getElementById('empFilterBar')) {
+        if (container && !document.getElementById('empFilterBar')) {
             const bar = document.createElement('div');
             bar.id = 'empFilterBar';
             bar.className = 'row g-2 align-items-end mb-3';
@@ -106,7 +105,13 @@ const app = {
                     '<select id="empFilterBranch" class="form-select form-select-sm" onchange="app.applyEmployeeFilter()">' +
                         '<option value="">All</option></select></div>' +
                 '<div class="col-auto"><button class="btn btn-outline-secondary btn-sm" onclick="app.clearEmployeeFilter()"><i class="bi bi-x-circle"></i> Clear</button></div>';
-            container.insertBefore(bar, table);
+            // Anchor to the DataTables wrapper if present, else the table, else the container top.
+            const table = document.getElementById('employeesTable');
+            const wrapper = document.getElementById('employeesTable_wrapper');
+            const anchor = (wrapper && wrapper.parentNode === container) ? wrapper
+                         : (table && table.parentNode === container) ? table : null;
+            if (anchor) container.insertBefore(bar, anchor);
+            else container.insertBefore(bar, container.firstChild);
         }
         // (Re)populate Branch options from current data, preserving selection.
         const bsel = document.getElementById('empFilterBranch');
