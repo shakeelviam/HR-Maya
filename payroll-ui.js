@@ -86,6 +86,8 @@
               '<i class="bi bi-table"></i> Prepare Inputs</button>' +
             '<button id="payrollRunBtn" class="btn btn-primary btn-sm" onclick="app.runPayroll()">' +
               '<i class="bi bi-calculator"></i> Run Payroll</button>' +
+            '<button id="payrollCancelBtn" class="btn btn-outline-danger btn-sm" onclick="app.cancelPayroll()">' +
+              '<i class="bi bi-arrow-counterclockwise"></i> Cancel Last Run</button>' +
           '</div>' +
           '<div id="payrollStatus" class="mb-2"></div>' +
           '<div id="payrollFlags"></div>' +
@@ -144,6 +146,22 @@
 
   (function attach() {
     if (typeof app === 'undefined') return setTimeout(attach, 50);
+
+    // ---- Cancel / Amend the most recent run ----
+    app.cancelPayroll = async function () {
+      const status = document.getElementById('payrollStatus');
+      const flags = document.getElementById('payrollFlags');
+      if (!confirm('Cancel the most recent payroll run?\n\nThis deletes its Payroll_Control entry and its period tab, and rewinds the cursor so you can re-run that period (e.g. after adding staff or fixing OT). Encashments and leave balances are not affected.')) return;
+      const btn = document.getElementById('payrollCancelBtn');
+      const orig = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Cancelling…';
+      flags.innerHTML = '';
+      try {
+        const data = await callApi('method=cancelPayrollRun');
+        status.innerHTML = '<div class="alert alert-warning mb-0"><i class="bi bi-arrow-counterclockwise"></i> ' + data.message + '</div>';
+      } catch (err) {
+        status.innerHTML = '<div class="alert alert-danger mb-0"><i class="bi bi-x-circle"></i> ' + err.message + '</div>';
+      } finally { btn.disabled = false; btn.innerHTML = orig; }
+    };
 
     // ---- Prepare Inputs ----
     app.preparePayrollInputs = async function () {
