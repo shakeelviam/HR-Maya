@@ -25,9 +25,9 @@ const app = {
 
         try {
             // ✅ FIXED: Manually appending the URL to bypass proxy issues
-            const url = 'https://script.google.com/macros/s/AKfycbyG5XLC79FnyLtSGGWunhJwU83SV0b0kz3y1FKdal-JBcTUM-X0ax134konYyTaKxYiiQ/exec?method=getEmployeesFull';
+            const url = 'https://script.google.com/macros/s/AKfycbyG5XLC79FnyLtSGGWunhJwU83SV0b0kz3y1FKdal-JBcTUM-X0ax134konYyTaKxYiiQ/exec?method=getEmployeesFull&_=' + Date.now();
             
-            const response = await fetch(url);
+            const response = await fetch(url, { cache: 'no-store' });
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             
             const result = await response.json();
@@ -240,7 +240,7 @@ const app = {
     async editEmployee(employeeId) {
         if (!employeeId) return;
         try {
-            const res = await fetch(this.EXEC_URL + '?method=getEmployeeById&employeeId=' + encodeURIComponent(employeeId));
+            const res = await fetch(this.EXEC_URL + '?method=getEmployeeById&employeeId=' + encodeURIComponent(employeeId) + '&_=' + Date.now(), { cache: 'no-store' });
             const d = await res.json();
             if (!d.success) throw new Error(d.error || 'Not found');
             const r = d.data || {};
