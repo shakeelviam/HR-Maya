@@ -17,6 +17,7 @@
 
   // TODO: add the OT compiler's email(s) here later, e.g. ['compiler@maya.com.kw']
   const OT_ALLOWED = [];
+  let OT_ROSTER = [];
 
   function todayIso() { return new Date().toISOString().split('T')[0]; }
   function toDdMmYyyy(iso) { if (!iso) return ''; const [y, m, d] = iso.split('-'); return d + '-' + m + '-' + y; }
@@ -49,6 +50,7 @@
         const pg = document.getElementById('page-ot');
         if (pg) pg.classList.add('active');
         document.getElementById('pageTitle').innerText = 'Overtime';
+        if (typeof app !== 'undefined' && app.otLoadRoster) app.otLoadRoster();
       });
     }
 
@@ -66,8 +68,11 @@
             '<div class="row g-2 align-items-end">' +
               '<div class="col-auto"><label class="form-label small mb-1">Date</label>' +
                 '<input type="date" id="otDate" class="form-control form-control-sm" value="' + todayIso() + '"></div>' +
-              '<div class="col-auto"><label class="form-label small mb-1">Employee ID</label>' +
-                '<input type="text" id="otEmp" class="form-control form-control-sm" placeholder="MT-00001"></div>' +
+              '<div class="col-auto position-relative"><label class="form-label small mb-1">Employee (name / ID / Civil ID)</label>' +
+                '<input type="text" id="otEmpSearch" class="form-control form-control-sm" style="min-width:240px" placeholder="Type name, MT-ID or Civil ID" autocomplete="off">' +
+                '<input type="hidden" id="otEmp">' +
+                '<select id="otEmpResults" class="form-select form-select-sm mt-1" size="5" style="display:none;position:absolute;z-index:30;min-width:240px" onchange="app.otPickEmployee(this.value)"></select>' +
+                '<div id="otEmpPicked" class="small text-success mt-1"></div></div>' +
               '<div class="col-auto"><label class="form-label small mb-1">OT Hours</label>' +
                 '<input type="number" id="otHours" class="form-control form-control-sm" step="0.25" min="0" style="width:110px"></div>' +
               '<div class="col-auto"><label class="form-label small mb-1">Remark</label>' +
@@ -93,6 +98,21 @@
           '</div>' +
         '</div>';
       anchor.parentElement.appendChild(s);
+
+      // Employee search wiring (name / ID / Civil ID)
+      const se = document.getElementById('otEmpSearch');
+      if (se) se.addEventListener('input', function () {
+        const q = this.value.trim().toLowerCase();
+        const sel = document.getElementById('otEmpResults');
+        document.getElementById('otEmp').value = '';
+        document.getElementById('otEmpPicked').innerText = '';
+        if (!q) { sel.style.display = 'none'; return; }
+        const hits = OT_ROSTER.filter(r =>
+          r.name.toLowerCase().includes(q) || r.id.toLowerCase().includes(q) || (r.civilId && r.civilId.includes(q))
+        ).slice(0, 15);
+        sel.innerHTML = hits.map(r => '<option value="' + r.id + '">' + r.id + ' — ' + r.name + (r.civilId ? ' — ' + r.civilId : '') + '</option>').join('');
+        sel.style.display = hits.length ? 'block' : 'none';
+      });
     }
   });
 
@@ -112,6 +132,19 @@
       return true;
     }
 
+    app.otLoadRoster = async function () {
+      try { const d = await callApi('method=getRoster'); OT_ROSTER = d.data || []; } catch (e) { OT_ROSTER = []; }
+    };
+
+    app.otPickEmployee = function (id) {
+      if (!id) return;
+      const r = OT_ROSTER.find(x => x.id === id);
+      document.getElementById('otEmp').value = id;
+      const sel = document.getElementById('otEmpResults'); if (sel) sel.style.display = 'none';
+      const se = document.getElementById('otEmpSearch'); if (se && r) se.value = r.name;
+      const p = document.getElementById('otEmpPicked'); if (p && r) p.innerText = '✓ ' + r.id + ' — ' + r.name;
+    };
+
     app.addOt = async function () {
       if (!guard()) return;
       const status = document.getElementById('otAddStatus');
@@ -119,7 +152,7 @@
       const empId = document.getElementById('otEmp').value.trim();
       const hours = document.getElementById('otHours').value;
       const remark = document.getElementById('otRemark').value.trim();
-      if (!dateIso || !empId || !hours) { status.innerHTML = '<div class="alert alert-warning mb-0">Date, Employee and OT Hours are required.</div>'; return; }
+      if (!dateIso || !empId || !hours) { status.innerHTML = '<div class="alert alert-warning mb-0">Date, Employee (pick from search) and OT Hours are required.</div>'; return; }
       const btn = document.getElementById('otAddBtn'); const orig = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
       try {
         const qs = 'method=addOtEntry&date=' + encodeURIComponent(toDdMmYyyy(dateIso)) +
