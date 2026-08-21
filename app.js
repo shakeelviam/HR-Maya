@@ -23,7 +23,7 @@ const app = {
 
         try {
             // ✅ FIXED: Manually appending the URL to bypass proxy issues
-            const url = 'https://script.google.com/macros/s/AKfycbyG5XLC79FnyLtSGGWunhJwU83SV0b0kz3y1FKdal-JBcTUM-X0ax134konYyTaKxYiiQ/exec?method=getIntegratedEmployees';
+            const url = 'https://script.google.com/macros/s/AKfycbyG5XLC79FnyLtSGGWunhJwU83SV0b0kz3y1FKdal-JBcTUM-X0ax134konYyTaKxYiiQ/exec?method=getEmployeesFull';
             
             const response = await fetch(url);
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -60,7 +60,7 @@ const app = {
                     <td>${emp['Total Payable'] || 0}</td>
                     <td>${emp['Remaining Vacation'] || 0}</td>
                     <td><span class="status-badge ${(emp.Status || 'active').toLowerCase()}">${emp.Status || 'Active'}</span></td>
-                    <td><button class="btn btn-sm btn-outline-primary" onclick="app.viewProfile('${emp['Employee ID'] || ''}')"><i class="bi bi-eye"></i></button></td>
+                    <td><button class="btn btn-sm btn-outline-primary me-1" onclick="app.viewProfile('${emp['Employee ID'] || ''}')" title="View"><i class="bi bi-eye"></i></button><button class="btn btn-sm btn-outline-secondary" onclick="app.editEmployee('${emp['Employee ID'] || ''}')" title="Edit"><i class="bi bi-pencil"></i></button></td>
                 </tr>
             `;
             tbody.innerHTML += row;
@@ -159,11 +159,72 @@ const app = {
     // ✅ REQUESTED CHANGES: ADD EMPLOYEE MODAL
     // ============================================================
 
-    showAddEmployeeModal() { 
-        $('#employeeModal').modal('show'); 
+    // ---- ADD / EDIT EMPLOYEE (auto ID + PIN) ----
+    EXEC_URL: 'https://script.google.com/macros/s/AKfycbyG5XLC79FnyLtSGGWunhJwU83SV0b0kz3y1FKdal-JBcTUM-X0ax134konYyTaKxYiiQ/exec',
+    editingEmployeeId: '',
+
+    resetEmployeeForm() {
+        this.editingEmployeeId = '';
+        const f = document.getElementById('employeeForm');
+        if (f) f.reset();
+        const title = document.getElementById('employeeModalTitle');
+        if (title) title.innerText = 'Add Employee';
     },
-    saveEmployee() { 
-        alert("Save Employee feature coming soon"); 
+
+    showAddEmployeeModal() {
+        this.resetEmployeeForm();
+        $('#employeeModal').modal('show');
+    },
+
+    async editEmployee(employeeId) {
+        if (!employeeId) return;
+        try {
+            const res = await fetch(this.EXEC_URL + '?method=getEmployeeById&employeeId=' + encodeURIComponent(employeeId));
+            const d = await res.json();
+            if (!d.success) throw new Error(d.error || 'Not found');
+            const r = d.data || {};
+            const g = (k) => (r[k] != null ? r[k] : '');
+            this.resetEmployeeForm();
+            document.getElementById('empNameEnglish').value = g('Name (English)');
+            document.getElementById('empNameArabic').value = g('Name (Arabic)');
+            document.getElementById('empCivilId').value = g('Civil ID');
+            document.getElementById('empSalary').value = g('Basic Salary');
+            const st = document.getElementById('empStatus'); if (st) st.value = g('Status') || 'Active';
+            this.editingEmployeeId = employeeId;
+            const title = document.getElementById('employeeModalTitle');
+            if (title) title.innerText = 'Edit Employee — ' + employeeId + (r['PIN'] ? '  (PIN ' + r['PIN'] + ')' : '');
+            $('#employeeModal').modal('show');
+        } catch (err) { alert('Could not load ' + employeeId + ': ' + err.message); }
+    },
+
+    async saveEmployee() {
+        const nameEng = (document.getElementById('empNameEnglish').value || '').trim();
+        const basic = document.getElementById('empSalary').value;
+        const eid = this.editingEmployeeId;
+        if (!eid && !nameEng) { alert('Name (English) is required.'); return; }
+        if (!eid && !basic && !confirm('No Basic Salary entered — this employee cannot be run in payroll until it is set. Save anyway?')) return;
+
+        const payload = {
+            nameEnglish: nameEng,
+            nameArabic: (document.getElementById('empNameArabic').value || '').trim(),
+            civilId: (document.getElementById('empCivilId').value || '').trim(),
+            basic: basic,
+            status: document.getElementById('empStatus') ? document.getElementById('empStatus').value : 'Active'
+        };
+        if (eid) payload.employeeId = eid;
+
+        try {
+            const res = await fetch(this.EXEC_URL + '?method=saveEmployee', {
+                method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload)
+            });
+            const d = await res.json();
+            if (!d.success) throw new Error(d.error || 'Save failed');
+            if (d.edited) alert(d.message);
+            else alert('Employee added.\n\nID: ' + d.employeeId + '\nPIN: ' + d.pin + '\n\n(Note the PIN \u2014 it is auto-generated.)');
+            $('#employeeModal').modal('hide');
+            this.resetEmployeeForm();
+            await this.loadAllData();
+        } catch (err) { alert('Save failed: ' + err.message); }
     },
 
     // ============================================================
