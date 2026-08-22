@@ -108,6 +108,20 @@
           '<div id="docsStatus"></div>' +
           '<div class="text-muted small">One combined PDF: an A5 summary page plus one A5 payslip per employee on the tab. Saved to Drive.</div>' +
         '</div>' +
+        // ---- Bank transfer ----
+        '<div class="table-container mb-4">' +
+          '<h5 class="mb-3"><i class="bi bi-bank"></i> Bank Transfer (Warba)</h5>' +
+          '<div class="row g-2 align-items-end mb-2">' +
+            '<div class="col-md-6"><label class="form-label small mb-1">Period tab to transfer from</label>' +
+              '<input type="text" id="bankTab" class="form-control form-control-sm" placeholder="e.g. Payroll 01Aug-21Aug"></div>' +
+            '<div class="col-auto">' +
+              '<button id="bankBtn" class="btn btn-primary btn-sm" onclick="app.populateBankTransfer()">' +
+                '<i class="bi bi-bank"></i> Populate Bank Sheet</button></div>' +
+          '</div>' +
+          '<div id="bankStatus"></div>' +
+          '<div class="text-muted small">Writes each employee\'s Total Payable into the <b>Bank Transfer Details</b> tab, matched by Civil ID. ' +
+            'Flags anyone paid but missing a bank row or IBAN. Then copy that tab into the bank sheet.</div>' +
+        '</div>' +
         // ---- Amend attendance ----
         '<div class="table-container">' +
           '<h5 class="mb-3"><i class="bi bi-pencil-square"></i> Amend Attendance (Admin)</h5>' +
@@ -146,6 +160,22 @@
 
   (function attach() {
     if (typeof app === 'undefined') return setTimeout(attach, 50);
+
+    // ---- Populate bank transfer sheet ----
+    app.populateBankTransfer = async function () {
+      const tab = document.getElementById('bankTab').value.trim() || lastTab;
+      const status = document.getElementById('bankStatus');
+      const btn = document.getElementById('bankBtn');
+      if (!tab) { status.innerHTML = '<div class="alert alert-warning mb-0">Enter the payroll period tab first.</div>'; return; }
+      const orig = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Populating…';
+      try {
+        const data = await callApi('method=populateBankTransfer&tab=' + encodeURIComponent(tab));
+        const cls = data.reconciled ? 'alert-success' : 'alert-warning';
+        status.innerHTML = '<div class="alert ' + cls + ' mb-0"><i class="bi bi-' + (data.reconciled ? 'check-circle' : 'exclamation-triangle') + '"></i> ' + data.message + '</div>';
+      } catch (err) {
+        status.innerHTML = '<div class="alert alert-danger mb-0"><i class="bi bi-x-circle"></i> ' + err.message + '</div>';
+      } finally { btn.disabled = false; btn.innerHTML = orig; }
+    };
 
     // ---- Cancel / Amend the most recent run ----
     app.cancelPayroll = async function () {
