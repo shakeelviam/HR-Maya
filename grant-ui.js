@@ -27,7 +27,7 @@
     if (navList && !document.querySelector('[data-page="grantleave"]')) {
       const li = document.createElement('li');
       li.className = 'nav-item';
-      li.innerHTML = '<a class="nav-link" data-page="grantleave"><i class="bi bi-calendar-plus"></i> Leave Management</a>';
+      li.innerHTML = '<a class="nav-link" data-page="grantleave"><i class="bi bi-calendar-plus"></i> Grant Leave</a>';
       const bal = document.querySelector('[data-page="leavebal"]');
       if (bal && bal.closest('li')) bal.closest('li').insertAdjacentElement('afterend', li);
       else navList.appendChild(li);
@@ -38,7 +38,7 @@
         document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
         const pg = document.getElementById('page-grantleave');
         if (pg) pg.classList.add('active');
-        document.getElementById('pageTitle').innerText = 'Leave Management';
+        document.getElementById('pageTitle').innerText = 'Grant Leave';
         if (app.loadGrantPage) app.loadGrantPage();
       });
     }
