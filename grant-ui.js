@@ -54,6 +54,7 @@
             '<h5><i class="bi bi-calendar-plus"></i> Grant Leave</h5>' +
             '<div class="d-flex gap-2">' +
               '<input type="text" id="grantSearch" class="form-control form-control-sm" style="width:200px" placeholder="Search name / ID">' +
+              '<button class="btn btn-warning btn-sm" onclick="app.applyStatusNow()" title="Flip anyone currently on leave to On Leave, and list those to reactivate"><i class="bi bi-lightning-charge"></i> Apply Status Changes Now</button>' +
               '<button class="btn btn-outline-secondary btn-sm" onclick="app.loadGrantPage()"><i class="bi bi-arrow-repeat"></i> Refresh</button>' +
             '</div>' +
           '</div>' +
@@ -151,6 +152,21 @@
         status.innerHTML = '<div class="alert alert-success mb-0 py-1"><i class="bi bi-check-circle"></i> ' + d.message + '</div>';
         setTimeout(() => { const m = bootstrap.Modal.getInstance(document.getElementById('grantModal')); if (m) m.hide(); app.loadGrantPage(); }, 1400);
       } catch (err) { status.innerHTML = '<div class="alert alert-danger mb-0 py-1">' + err.message + '</div>'; }
+    };
+
+    app.applyStatusNow = async function () {
+      const wrap = document.getElementById('reactivateWrap');
+      if (!confirm('Apply leave status changes now?\n\nThis sets anyone whose approved leave covers today to On Leave (excluded from payroll), and lists anyone whose leave has ended for reactivation. It does not reactivate automatically.')) return;
+      wrap.innerHTML = '<div class="alert alert-info mb-2"><span class="spinner-border spinner-border-sm"></span> Applying…</div>';
+      try {
+        const d = await callApi('method=applyLeaveStatusChanges');
+        let html = '<div class="alert alert-success mb-2"><i class="bi bi-check-circle"></i> ' + d.message + '</div>';
+        if (d.flippedToLeave && d.flippedToLeave.length) {
+          html += '<div class="small mb-2"><b>Now On Leave:</b> ' + d.flippedToLeave.map(f => f.name + ' (' + f.id + ', until ' + f.until + ')').join(', ') + '</div>';
+        }
+        wrap.innerHTML = html;
+        app.loadGrantPage();
+      } catch (err) { wrap.innerHTML = '<div class="alert alert-danger mb-2">' + err.message + '</div>'; }
     };
 
     app.loadReactivateReminders = async function () {
