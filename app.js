@@ -254,6 +254,7 @@ const app = {
             document.getElementById('empNameEnglish').value = g('Name (English)');
             document.getElementById('empNameArabic').value = g('Name (Arabic)');
             document.getElementById('empCivilId').value = g('Civil ID');
+            var ibanEl = document.getElementById('empIban'); if (ibanEl) ibanEl.value = g('IBAN');
             document.getElementById('empSalary').value = g('Basic Salary');
             const st = document.getElementById('empStatus'); if (st) st.value = g('Status') || 'Active';
             this.editingEmployeeId = employeeId;
@@ -274,6 +275,7 @@ const app = {
             nameEnglish: nameEng,
             nameArabic: (document.getElementById('empNameArabic').value || '').trim(),
             civilId: (document.getElementById('empCivilId').value || '').trim(),
+            iban: (document.getElementById('empIban') ? document.getElementById('empIban').value : '').trim(),
             basic: basic,
             status: document.getElementById('empStatus') ? document.getElementById('empStatus').value : 'Active'
         };
