@@ -166,59 +166,161 @@ const app = {
     // ✅ REQUESTED CHANGES: VIEW PROFILE (ALL DETAILS)
     // ============================================================
 
-    viewProfile(employeeId) {
-        if (!employeeId) return;
-        const emp = this.employeesData.find(e => e['Employee ID'] === employeeId);
-        if (emp) {
-            document.querySelectorAll('#sidebar .nav-link').forEach(l => l.classList.remove('active'));
-            document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
-            document.getElementById('page-profile').classList.add('active');
-            document.getElementById('pageTitle').innerText = 'Employee Profile';
+    // ============================================================
+    // DEDICATED EMPLOYEE PAGE (replaces the modal for view/edit)
+    // ============================================================
+    currentEmp: null,
+    currentEmpGrants: [],
 
-            const profileHTML = `
-                <div class="profile-header">
-                    <div class="row">
-                        <div class="col-md-3 text-center border-end">
-                            <div class="profile-avatar">${(emp['Name (English)'] || '?').charAt(0)}</div>
-                            <h5 class="mt-3">${emp['Name (English)'] || 'Unknown'}</h5>
-                            <p class="text-muted">${emp['Employee ID'] || '-'}</p>
-                            <span class="status-badge ${(emp.Status || 'active').toLowerCase()}">${emp.Status || 'Active'}</span>
-                            <p class="mt-2 text-muted small">Branch: ${emp.Branch || 'N/A'}</p>
-                        </div>
-                        <div class="col-md-9">
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <h6 class="text-primary"><i class="bi bi-person"></i> Personal Details</h6>
-                                    <div class="profile-info-item"><span class="profile-info-label">Name (Arabic)</span><span class="profile-info-value">${emp['Name (Arabic)'] || '-'}</span></div>
-                                    <div class="profile-info-item"><span class="profile-info-label">Civil ID</span><span class="profile-info-value">${emp['Civil ID'] || '-'}</span></div>
-                                    <div class="profile-info-item"><span class="profile-info-label">Designation</span><span class="profile-info-value">${emp.Designation || 'Staff'}</span></div>
-                                    <h6 class="text-primary mt-3"><i class="bi bi-currency-exchange"></i> Salary Details</h6>
-                                    <div class="profile-info-item"><span class="profile-info-label">Basic Salary</span><span class="profile-info-value">${emp['Basic Salary'] || 0}</span></div>
-                                    <div class="profile-info-item"><span class="profile-info-label">Food Allowance</span><span class="profile-info-value">${emp['Food Allowance'] || 0}</span></div>
-                                    <div class="profile-info-item"><span class="profile-info-label">Accommodation</span><span class="profile-info-value">${emp.Accommodation || 0}</span></div>
-                                    <div class="profile-info-item"><span class="profile-info-label">Conveyance</span><span class="profile-info-value">${emp.Conveyance || 0}</span></div>
-                                    <div class="profile-info-item"><span class="profile-info-label">Gross Salary</span><span class="profile-info-value fw-bold">${emp['Gross Salary'] || 0}</span></div>
-                                    <div class="profile-info-item"><span class="profile-info-label">Total Payable</span><span class="profile-info-value text-success fw-bold">${emp['Total Payable'] || 0}</span></div>
-                                </div>
-                                <div class="col-md-6">
-                                    <h6 class="text-success"><i class="bi bi-calendar-check"></i> Leave & Vacation</h6>
-                                    <div class="profile-info-item"><span class="profile-info-label">Vacation Taken</span><span class="profile-info-value text-danger">${emp['Vacation Taken'] || 0} days</span></div>
-                                    <div class="profile-info-item"><span class="profile-info-label">Remaining Vacation</span><span class="profile-info-value text-success fw-bold">${emp['Remaining Vacation'] || 0} days</span></div>
-                                    <div class="profile-info-item"><span class="profile-info-label">Sick Days Taken</span><span class="profile-info-value text-warning">${emp['Sick Days Taken'] || 0} days</span></div>
-                                    <h6 class="text-success mt-3"><i class="bi bi-chat-text"></i> Remarks & History</h6>
-                                    <div class="profile-info-item"><span class="profile-info-label">Vacation Remarks</span><span class="profile-info-value text-muted">${emp['Vacation Remarks'] || 'None'}</span></div>
-                                    <div class="profile-info-item"><span class="profile-info-label">Sick Remarks</span><span class="profile-info-value text-muted">${emp['Sick Remarks'] || 'None'}</span></div>
-                                    <div class="profile-info-item"><span class="profile-info-label">Price Per Day</span><span class="profile-info-value">${emp['Price Per Day'] || '0'}</span></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            document.getElementById('profileContent').innerHTML = profileHTML;
-        } else {
-            alert(`Employee with ID ${employeeId} not found.`);
-        }
+    viewProfile(employeeId) { this.openEmployeePage(employeeId, 'view'); },
+    editEmployee(employeeId) { this.openEmployeePage(employeeId, 'edit'); },
+
+    async openEmployeePage(employeeId, mode) {
+        if (!employeeId) return;
+        document.querySelectorAll('#sidebar .nav-link').forEach(l => l.classList.remove('active'));
+        document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+        document.getElementById('page-profile').classList.add('active');
+        document.getElementById('pageTitle').innerText = 'Employee';
+        document.getElementById('profileContent').innerHTML = '<div class="text-muted p-4">Loading ' + employeeId + '…</div>';
+        try {
+            const res = await fetch(this.EXEC_URL + '?method=getEmployeeById&employeeId=' + encodeURIComponent(employeeId) + '&_=' + Date.now(), { cache: 'no-store' });
+            const d = await res.json();
+            if (!d.success) throw new Error(d.error || 'Not found');
+            this.currentEmp = d.data || {};
+            this.currentEmpGrants = [];
+            try {
+                const gr = await fetch(this.EXEC_URL + '?method=getLeaveGrants&empId=' + encodeURIComponent(employeeId) + '&_=' + Date.now(), { cache: 'no-store' });
+                const gd = await gr.json(); if (gd.success) this.currentEmpGrants = gd.data || [];
+            } catch (e) { /* grants optional */ }
+            this.renderEmployeePage(mode || 'view');
+        } catch (err) { document.getElementById('profileContent').innerHTML = '<div class="alert alert-danger m-3">Could not load ' + employeeId + ': ' + err.message + '</div>'; }
+    },
+
+    renderEmployeePage(mode) {
+        const r = this.currentEmp || {};
+        const g = (k) => (r[k] != null && r[k] !== '' ? r[k] : '');
+        const editing = mode === 'edit';
+        const id = g('Employee ID');
+        const toInputDate = (s) => { s = String(s || '').trim(); const m = s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/); return m ? (m[3] + '-' + m[2].padStart(2,'0') + '-' + m[1].padStart(2,'0')) : ''; };
+
+        // field renderer: read-only span or input depending on mode
+        const F = (label, key, opts) => {
+            opts = opts || {};
+            const val = g(key);
+            let control;
+            if (editing && !opts.readonly) {
+                if (opts.type === 'date') control = '<input type="date" id="ep_' + opts.id + '" class="form-control form-control-sm" value="' + toInputDate(val) + '">';
+                else if (opts.type === 'select') control = '<select id="ep_' + opts.id + '" class="form-select form-select-sm">' + opts.options.map(o => '<option' + (String(val)===o ? ' selected' : '') + '>' + o + '</option>').join('') + '</select>';
+                else control = '<input type="' + (opts.type || 'text') + '" id="ep_' + opts.id + '" class="form-control form-control-sm" value="' + String(val).replace(/"/g,'&quot;') + '">';
+            } else {
+                control = '<span class="profile-info-value' + (opts.strong ? ' fw-bold' : '') + '">' + (val || '<span class="text-muted">—</span>') + '</span>';
+            }
+            return '<div class="profile-info-item"><span class="profile-info-label">' + label + '</span>' + control + '</div>';
+        };
+        const link = (label, key) => {
+            const v = g(key);
+            const ctrl = v ? '<a href="' + v + '" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right"></i> View</a>' : '<span class="text-muted">—</span>';
+            return '<div class="profile-info-item"><span class="profile-info-label">' + label + '</span><span class="profile-info-value">' + ctrl + '</span></div>';
+        };
+
+        const statusVal = g('Status') || 'Active';
+        const grantsHtml = (this.currentEmpGrants && this.currentEmpGrants.length)
+            ? '<table class="table table-sm table-striped mb-0"><thead><tr><th>Type</th><th>Start</th><th>End</th><th class="text-end">Days</th><th>Status</th></tr></thead><tbody>' +
+              this.currentEmpGrants.map(x => '<tr><td>' + x.type + '</td><td>' + x.start + '</td><td>' + x.end + '</td><td class="text-end">' + x.days + '</td><td>' + x.status + '</td></tr>').join('') + '</tbody></table>'
+            : '<div class="text-muted small">No leave grants recorded.</div>';
+
+        const buttons = editing
+            ? '<button class="btn btn-success btn-sm" onclick="app.saveEmployeePage()"><i class="bi bi-check2"></i> Save</button> ' +
+              '<button class="btn btn-outline-secondary btn-sm" onclick="app.renderEmployeePage(\'view\')">Cancel</button>'
+            : '<button class="btn btn-primary btn-sm" onclick="app.renderEmployeePage(\'edit\')"><i class="bi bi-pencil"></i> Edit</button> ' +
+              '<button class="btn btn-outline-secondary btn-sm" onclick="app.backToEmployees()"><i class="bi bi-arrow-left"></i> Back to list</button>';
+
+        const html =
+            '<div class="profile-header">' +
+              '<div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">' +
+                '<div><h4 class="mb-0">' + (g('Name (English)') || 'Unknown') + '</h4>' +
+                  '<div class="text-muted">' + id + (g('PIN') ? ' · PIN ' + g('PIN') : '') + ' · <span class="status-badge ' + statusVal.toLowerCase().replace(/ /g,'') + '">' + statusVal + '</span></div></div>' +
+                '<div>' + buttons + '</div>' +
+              '</div>' +
+              '<div id="epStatus"></div>' +
+              '<div class="row g-4">' +
+                '<div class="col-lg-6">' +
+                  '<h6 class="text-primary"><i class="bi bi-person"></i> Personal</h6>' +
+                  F('Name (English)','Name (English)',{id:'nameEnglish'}) +
+                  F('Name (Arabic)','Name (Arabic)',{id:'nameArabic'}) +
+                  F('Civil ID','Civil ID',{id:'civilId'}) +
+                  F('Branch','Branch',{id:'branch'}) +
+                  F('Status','Status',{id:'status',type:'select',options:['Active','On Leave','Inactive']}) +
+                  '<h6 class="text-primary mt-3"><i class="bi bi-telephone"></i> Contact</h6>' +
+                  F('Email','Email',{id:'email',type:'email'}) +
+                  F('Mobile','Mobile',{id:'mobile'}) +
+                  F('WhatsApp','WhatsApp',{id:'whatsapp'}) +
+                  '<h6 class="text-primary mt-3"><i class="bi bi-bank"></i> Bank</h6>' +
+                  F('IBAN','IBAN',{id:'iban'}) +
+                '</div>' +
+                '<div class="col-lg-6">' +
+                  '<h6 class="text-primary"><i class="bi bi-file-earmark-text"></i> Documents</h6>' +
+                  F('Passport No','Passport No',{id:'passportNo'}) +
+                  F('CID Expiry','CID Expiry',{id:'cidExpiry',type:'date'}) +
+                  F('Passport Issue','Passport Issue',{id:'passportIssue',type:'date'}) +
+                  F('Passport Expiry','Passport Expiry',{id:'passportExpiry',type:'date'}) +
+                  F('Health Issue','Health Issue',{id:'healthIssue',type:'date'}) +
+                  F('Health Expiry','Health Expiry',{id:'healthExpiry',type:'date'}) +
+                  F('Date of Join','Date of Join',{id:'dateOfJoin',type:'date'}) +
+                  link('Civil ID Copy','Civil ID Copy') +
+                  link('Civil ID Back','Civil ID Back Copy') +
+                  link('Passport Page','Passport Entry Page') +
+                '</div>' +
+              '</div>' +
+              '<div class="row g-4 mt-1">' +
+                '<div class="col-lg-6">' +
+                  '<h6 class="text-success"><i class="bi bi-currency-exchange"></i> Salary</h6>' +
+                  F('Basic Salary','Basic Salary',{id:'basic',type:'number'}) +
+                  F('Gross Salary','Gross Salary',{readonly:true,strong:true}) +
+                  F('Total Payable','Total Payable',{readonly:true,strong:true}) +
+                  F('Price Per Hour','Price Per Hour',{readonly:true}) +
+                  F('Price Per Day','Price Per Day',{readonly:true}) +
+                '</div>' +
+                '<div class="col-lg-6">' +
+                  '<h6 class="text-success"><i class="bi bi-calendar-check"></i> Leave</h6>' +
+                  F('Remaining Vacation','Remaining Vacation',{readonly:true,strong:true}) +
+                  F('Vacation Taken','Vacation Taken',{readonly:true}) +
+                  F('Sick Days Taken','Sick Days Taken',{readonly:true}) +
+                  '<div class="mt-2">' + grantsHtml + '</div>' +
+                '</div>' +
+              '</div>' +
+            '</div>';
+        document.getElementById('profileContent').innerHTML = html;
+    },
+
+    backToEmployees() {
+        document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+        const emp = document.querySelector('[data-page="employees"]');
+        if (emp) emp.click();
+        else { document.getElementById('page-employees').classList.add('active'); this.loadAllData(); }
+    },
+
+    async saveEmployeePage() {
+        const r = this.currentEmp || {};
+        const eid = r['Employee ID'];
+        const v = (id) => { const el = document.getElementById('ep_' + id); return el ? String(el.value || '').trim() : undefined; };
+        const toDd = (s) => { s = String(s || '').trim(); const m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/); return m ? (m[3].padStart(2,'0') + '-' + m[2].padStart(2,'0') + '-' + m[1]) : s; };
+        const status = document.getElementById('epStatus');
+        const payload = { employeeId: eid };
+        const put = (k, val) => { if (val !== undefined) payload[k] = val; };
+        put('nameEnglish', v('nameEnglish')); put('nameArabic', v('nameArabic')); put('civilId', v('civilId'));
+        put('branch', v('branch')); put('status', v('status')); put('iban', v('iban'));
+        put('email', v('email')); put('mobile', v('mobile')); put('whatsapp', v('whatsapp'));
+        put('passportNo', v('passportNo')); put('basic', v('basic'));
+        ['cidExpiry','passportIssue','passportExpiry','healthIssue','healthExpiry','dateOfJoin'].forEach(k => { const val = v(k); if (val !== undefined) payload[k] = toDd(val); });
+        try {
+            const res = await fetch(this.EXEC_URL + '?method=saveEmployee', { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
+            const d = await res.json();
+            if (!d.success) throw new Error(d.error || 'Save failed');
+            status.innerHTML = '<div class="alert alert-success py-1"><i class="bi bi-check-circle"></i> ' + (d.message || 'Saved.') + '</div>';
+            await this.openEmployeePage(eid, 'view');
+            this.loadAllData();
+        } catch (err) { status.innerHTML = '<div class="alert alert-danger py-1">' + err.message + '</div>'; }
     },
 
     // ============================================================
@@ -242,7 +344,7 @@ const app = {
         $('#employeeModal').modal('show');
     },
 
-    async editEmployee(employeeId) {
+    async editEmployeeModal_unused(employeeId) {
         if (!employeeId) return;
         try {
             const res = await fetch(this.EXEC_URL + '?method=getEmployeeById&employeeId=' + encodeURIComponent(employeeId) + '&_=' + Date.now(), { cache: 'no-store' });
