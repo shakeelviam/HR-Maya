@@ -114,6 +114,8 @@
           '<div class="row g-2 align-items-end mb-2">' +
             '<div class="col-md-6"><label class="form-label small mb-1">Period tab to transfer from</label>' +
               '<input type="text" id="bankTab" class="form-control form-control-sm" placeholder="e.g. Payroll 01Aug-21Aug"></div>' +
+            '<div class="col-md-4"><label class="form-label small mb-1">Paid in cash — exclude IDs (optional)</label>' +
+              '<input type="text" id="bankExclude" class="form-control form-control-sm" placeholder="e.g. MT-00036"></div>' +
             '<div class="col-auto">' +
               '<button id="bankBtn" class="btn btn-primary btn-sm" onclick="app.populateBankTransfer()">' +
                 '<i class="bi bi-bank"></i> Populate Bank Sheet</button></div>' +
@@ -164,12 +166,15 @@
     // ---- Populate bank transfer sheet ----
     app.populateBankTransfer = async function () {
       const tab = document.getElementById('bankTab').value.trim() || lastTab;
+      const exclude = document.getElementById('bankExclude').value.trim();
       const status = document.getElementById('bankStatus');
       const btn = document.getElementById('bankBtn');
       if (!tab) { status.innerHTML = '<div class="alert alert-warning mb-0">Enter the payroll period tab first.</div>'; return; }
       const orig = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Populating…';
       try {
-        const data = await callApi('method=populateBankTransfer&tab=' + encodeURIComponent(tab));
+        let qs = 'method=populateBankTransfer&tab=' + encodeURIComponent(tab);
+        if (exclude) qs += '&excludeIds=' + encodeURIComponent(exclude);
+        const data = await callApi(qs);
         const cls = data.reconciled ? 'alert-success' : 'alert-warning';
         status.innerHTML = '<div class="alert ' + cls + ' mb-0"><i class="bi bi-' + (data.reconciled ? 'check-circle' : 'exclamation-triangle') + '"></i> ' + data.message + '</div>';
       } catch (err) {
