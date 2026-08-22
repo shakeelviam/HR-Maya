@@ -257,6 +257,19 @@ const app = {
             var ibanEl = document.getElementById('empIban'); if (ibanEl) ibanEl.value = g('IBAN');
             document.getElementById('empSalary').value = g('Basic Salary');
             const st = document.getElementById('empStatus'); if (st) st.value = g('Status') || 'Active';
+            // Document fields (from Staff Submission sync). Dates: dd-mm-yyyy -> yyyy-mm-dd for date inputs.
+            const setV = (id, v) => { const el = document.getElementById(id); if (el) el.value = (v == null ? '' : v); };
+            const toInputDate = (s) => { s = String(s || '').trim(); const m = s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/); return m ? (m[3] + '-' + m[2].padStart(2,'0') + '-' + m[1].padStart(2,'0')) : ''; };
+            setV('empEmail', g('Email'));
+            setV('empMobile', g('Mobile'));
+            setV('empWhatsapp', g('WhatsApp'));
+            setV('empPassport', g('Passport No'));
+            setV('empCidExpiry', toInputDate(g('CID Expiry')));
+            setV('empPassportIssued', toInputDate(g('Passport Issue')));
+            setV('empPassportExpiry', toInputDate(g('Passport Expiry')));
+            setV('empHealthIssued', toInputDate(g('Health Issue')));
+            setV('empHealthExpiry', toInputDate(g('Health Expiry')));
+            setV('empDateOfJoin', toInputDate(g('Date of Join')));
             this.editingEmployeeId = employeeId;
             const title = document.getElementById('employeeModalTitle');
             if (title) title.innerText = 'Edit Employee — ' + employeeId + (r['PIN'] ? '  (PIN ' + r['PIN'] + ')' : '');
@@ -271,13 +284,25 @@ const app = {
         if (!eid && !nameEng) { alert('Name (English) is required.'); return; }
         if (!eid && !basic && !confirm('No Basic Salary entered — this employee cannot be run in payroll until it is set. Save anyway?')) return;
 
+        const gv = (id) => { const el = document.getElementById(id); return el ? String(el.value || '').trim() : ''; };
+        const toDdMmYyyy = (s) => { s = String(s || '').trim(); const m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/); return m ? (m[3].padStart(2,'0') + '-' + m[2].padStart(2,'0') + '-' + m[1]) : s; };
         const payload = {
             nameEnglish: nameEng,
             nameArabic: (document.getElementById('empNameArabic').value || '').trim(),
             civilId: (document.getElementById('empCivilId').value || '').trim(),
             iban: (document.getElementById('empIban') ? document.getElementById('empIban').value : '').trim(),
             basic: basic,
-            status: document.getElementById('empStatus') ? document.getElementById('empStatus').value : 'Active'
+            status: document.getElementById('empStatus') ? document.getElementById('empStatus').value : 'Active',
+            email: gv('empEmail'),
+            mobile: gv('empMobile'),
+            whatsapp: gv('empWhatsapp'),
+            passportNo: gv('empPassport'),
+            cidExpiry: toDdMmYyyy(gv('empCidExpiry')),
+            passportIssue: toDdMmYyyy(gv('empPassportIssued')),
+            passportExpiry: toDdMmYyyy(gv('empPassportExpiry')),
+            healthIssue: toDdMmYyyy(gv('empHealthIssued')),
+            healthExpiry: toDdMmYyyy(gv('empHealthExpiry')),
+            dateOfJoin: toDdMmYyyy(gv('empDateOfJoin'))
         };
         if (eid) payload.employeeId = eid;
 
