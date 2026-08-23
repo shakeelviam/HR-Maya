@@ -70,103 +70,95 @@
   (function attach() {
     if (typeof app === 'undefined') return setTimeout(attach, 50);
 
+    app.GMATRIX = null;
+
     app.loadGrantPage = async function () {
       const wrap = document.getElementById('grantTableWrap');
       wrap.innerHTML = '<div class="text-muted small">Loading…</div>';
       try {
-        const t = await callApi('method=getLeaveTypes'); GTYPES = t.data || [];
-      } catch (e) { GTYPES = []; }
-      try {
-        const d = await callApi('method=getRemainingVacationTally');
-        TALLY = d.data || [];
+        const d = await callApi('method=getGrantMatrix');
+        app.GMATRIX = d;
         app.renderGrantTable('');
       } catch (err) { wrap.innerHTML = '<div class="alert alert-danger mb-0">' + err.message + '</div>'; }
       app.loadReactivateReminders();
     };
 
+    app.balFor = function (empId, type) {
+      const b = app.GMATRIX && app.GMATRIX.balances[empId];
+      if (!b) return null;
+      const v = b[String(type).toLowerCase()];
+      return (v === undefined) ? null : v;
+    };
+
     app.renderGrantTable = function (q) {
       const wrap = document.getElementById('grantTableWrap');
-      let rows = TALLY;
-      if (q) rows = rows.filter(r => (r.name || '').toLowerCase().includes(q) || (r.empId || '').toLowerCase().includes(q));
-      if (!rows.length) { wrap.innerHTML = '<div class="text-muted small">No employees.</div>'; return; }
-      const body = rows.map(r => {
-        const rem = r.balanceRemaining != null ? r.balanceRemaining : r.hrRemaining;
-        const warn = r.mismatch ? ' <span class="badge bg-warning text-dark" title="HR Maya ' + r.hrRemaining + ' vs Balances ' + r.balanceRemaining + '">⚠ check</span>' : '';
+      const M = app.GMATRIX;
+      if (!M) { wrap.innerHTML = '<div class="text-muted small">No data.</div>'; return; }
+      let emps = M.employees;
+      if (q) emps = emps.filter(r => (r.name || '').toLowerCase().includes(q) || (r.id || '').toLowerCase().includes(q));
+      if (!emps.length) { wrap.innerHTML = '<div class="text-muted small">No employees.</div>'; return; }
+      const typeOpts = M.types.map(t => '<option>' + t.type + '</option>').join('');
+      const today = new Date().toISOString().split('T')[0];
+
+      const body = emps.map(r => {
         const badge = String(r.status).toLowerCase() === 'on leave' ? '<span class="badge bg-info text-dark">On Leave</span>'
                     : String(r.status).toLowerCase() === 'inactive' ? '<span class="badge bg-secondary">Inactive</span>'
                     : '<span class="badge bg-success">Active</span>';
-        return '<tr><td>' + r.empId + '</td><td>' + r.name + '</td><td>' + badge + '</td>' +
-          '<td class="text-end fw-bold">' + rem + warn + '</td>' +
-          '<td class="text-end"><button class="btn btn-primary btn-sm" onclick="app.openGrant(\'' + r.empId + '\',\'' + String(r.name).replace(/'/g, "\\'") + '\',' + rem + ')"><i class="bi bi-calendar-plus"></i> Grant</button></td></tr>';
+        const firstType = M.types.length ? M.types[0].type : 'Annual';
+        const bal = app.balFor(r.id, firstType);
+        const balHtml = bal === null ? '<span class="text-warning">not allocated</span>' : '<b>' + bal + '</b>';
+        return '<tr data-emp="' + r.id + '">' +
+          '<td>' + r.id + '</td><td>' + r.name + '</td><td>' + badge + '</td>' +
+          '<td><select class="form-select form-select-sm gv-type" style="min-width:130px" onchange="app.onTypeChange(\'' + r.id + '\')">' + typeOpts + '</select></td>' +
+          '<td class="text-end gv-bal" style="min-width:90px">' + balHtml + '</td>' +
+          '<td><input type="date" class="form-control form-control-sm gv-start" value="' + today + '" style="min-width:140px"></td>' +
+          '<td><input type="date" class="form-control form-control-sm gv-end" value="' + today + '" style="min-width:140px"></td>' +
+          '<td class="text-end gv-days">1</td>' +
+          '<td class="text-end"><button class="btn btn-primary btn-sm" onclick="app.grantRow(\'' + r.id + '\')"><i class="bi bi-check2"></i> Grant</button></td>' +
+          '</tr>';
       }).join('');
       wrap.innerHTML = '<table class="table table-sm table-striped align-middle"><thead><tr>' +
-        '<th>ID</th><th>Name</th><th>Status</th><th class="text-end">Remaining Vacation</th><th></th></tr></thead><tbody>' + body + '</tbody></table>';
+        '<th>ID</th><th>Name</th><th>Status</th><th>Leave Type</th><th class="text-end">Balance</th><th>Start</th><th>End</th><th class="text-end">Days</th><th></th>' +
+        '</tr></thead><tbody>' + body + '</tbody></table>';
+
+      // wire per-row day calc
+      wrap.querySelectorAll('tr[data-emp]').forEach(tr => {
+        const s = tr.querySelector('.gv-start'), e = tr.querySelector('.gv-end'), dd = tr.querySelector('.gv-days');
+        const calc = () => { const a = s.value, b = e.value; if (a && b) { const n = Math.round((new Date(b) - new Date(a)) / 86400000) + 1; dd.innerText = n > 0 ? n : '—'; } };
+        s.addEventListener('change', calc); e.addEventListener('change', calc);
+      });
     };
 
-    app.openGrant = function (empId, name, remaining) {
-      const typeOpts = (GTYPES.length ? GTYPES.map(t => t.type) : ['Annual', 'Sick', 'Emergency', 'Unpaid']).map(t => '<option>' + t + '</option>').join('');
-      const html =
-        '<div class="modal fade" id="grantModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">' +
-          '<div class="modal-header"><h5 class="modal-title">Grant Leave — ' + name + ' (' + empId + ')</h5>' +
-            '<button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>' +
-          '<div class="modal-body">' +
-            '<div class="text-muted small mb-2">Remaining vacation: <b>' + remaining + '</b> days</div>' +
-            '<div class="row g-2">' +
-              '<div class="col-6"><label class="form-label small mb-1">Type</label><select id="grType" class="form-select form-select-sm">' + typeOpts + '</select></div>' +
-              '<div class="col-6"><label class="form-label small mb-1">Days (auto)</label><input id="grDays" class="form-control form-control-sm" readonly></div>' +
-              '<div class="col-6"><label class="form-label small mb-1">Start date</label><input type="date" id="grStart" class="form-control form-control-sm" value="' + todayIso() + '"></div>' +
-              '<div class="col-6"><label class="form-label small mb-1">End date</label><input type="date" id="grEnd" class="form-control form-control-sm" value="' + todayIso() + '"></div>' +
-            '</div>' +
-            '<div id="grStatus" class="mt-2"></div>' +
-            '<div class="text-muted small mt-2">On the <b>start date</b>, vacation/unpaid leave flips the employee to <b>On Leave</b> (excluded from payroll). Sick/Emergency stay Active.</div>' +
-          '</div>' +
-          '<div class="modal-footer">' +
-            '<button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>' +
-            '<button type="button" class="btn btn-primary btn-sm" onclick="app.submitGrant(\'' + empId + '\')"><i class="bi bi-check2"></i> Grant Leave</button>' +
-          '</div>' +
-        '</div></div></div>';
-      const old = document.getElementById('grantModal'); if (old) old.remove();
-      document.body.insertAdjacentHTML('beforeend', html);
-      const calcDays = () => {
-        const s = document.getElementById('grStart').value, e = document.getElementById('grEnd').value;
-        if (s && e) { const d = Math.round((new Date(e) - new Date(s)) / 86400000) + 1; document.getElementById('grDays').value = d > 0 ? d : ''; }
-      };
-      document.getElementById('grStart').addEventListener('change', calcDays);
-      document.getElementById('grEnd').addEventListener('change', calcDays);
-      calcDays();
-      new bootstrap.Modal(document.getElementById('grantModal')).show();
+    app.onTypeChange = function (empId) {
+      const tr = document.querySelector('tr[data-emp="' + empId + '"]');
+      if (!tr) return;
+      const type = tr.querySelector('.gv-type').value;
+      const bal = app.balFor(empId, type);
+      tr.querySelector('.gv-bal').innerHTML = bal === null ? '<span class="text-warning">not allocated</span>' : '<b>' + bal + '</b>';
     };
 
-    app.submitGrant = async function (empId) {
-      const status = document.getElementById('grStatus');
-      const type = document.getElementById('grType').value;
-      const start = document.getElementById('grStart').value;
-      const end = document.getElementById('grEnd').value;
-      if (!start || !end) { status.innerHTML = '<div class="alert alert-warning mb-0 py-1">Start and end dates required.</div>'; return; }
-      if (new Date(end) < new Date(start)) { status.innerHTML = '<div class="alert alert-warning mb-0 py-1">End is before start.</div>'; return; }
+    app.grantRow = async function (empId) {
+      const tr = document.querySelector('tr[data-emp="' + empId + '"]');
+      if (!tr) return;
+      const type = tr.querySelector('.gv-type').value;
+      const start = tr.querySelector('.gv-start').value;
+      const end = tr.querySelector('.gv-end').value;
+      const btn = tr.querySelector('button');
+      if (!start || !end) { alert('Start and end dates required.'); return; }
+      if (new Date(end) < new Date(start)) { alert('End is before start.'); return; }
+      const bal = app.balFor(empId, type);
+      if (bal === null) { if (!confirm(type + ' is not allocated to this employee. Allocate it first (Leave Allocation), or continue anyway?')) return; }
+      const orig = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
       try {
+        const toDd = (iso) => { const [y,m,d] = iso.split('-'); return d + '-' + m + '-' + y; };
         const qs = 'method=grantLeave&empId=' + encodeURIComponent(empId) + '&type=' + encodeURIComponent(type) +
-          '&start=' + encodeURIComponent(toDdMmYyyy(start)) + '&end=' + encodeURIComponent(toDdMmYyyy(end)) +
+          '&start=' + encodeURIComponent(toDd(start)) + '&end=' + encodeURIComponent(toDd(end)) +
           '&by=' + encodeURIComponent(adminEmail());
         const d = await callApi(qs);
-        status.innerHTML = '<div class="alert alert-success mb-0 py-1"><i class="bi bi-check-circle"></i> ' + d.message + '</div>';
-        setTimeout(() => { const m = bootstrap.Modal.getInstance(document.getElementById('grantModal')); if (m) m.hide(); app.loadGrantPage(); }, 1400);
-      } catch (err) { status.innerHTML = '<div class="alert alert-danger mb-0 py-1">' + err.message + '</div>'; }
-    };
-
-    app.applyStatusNow = async function () {
-      const wrap = document.getElementById('reactivateWrap');
-      if (!confirm('Apply leave status changes now?\n\nThis sets anyone whose approved leave covers today to On Leave (excluded from payroll), and lists anyone whose leave has ended for reactivation. It does not reactivate automatically.')) return;
-      wrap.innerHTML = '<div class="alert alert-info mb-2"><span class="spinner-border spinner-border-sm"></span> Applying…</div>';
-      try {
-        const d = await callApi('method=applyLeaveStatusChanges');
-        let html = '<div class="alert alert-success mb-2"><i class="bi bi-check-circle"></i> ' + d.message + '</div>';
-        if (d.flippedToLeave && d.flippedToLeave.length) {
-          html += '<div class="small mb-2"><b>Now On Leave:</b> ' + d.flippedToLeave.map(f => f.name + ' (' + f.id + ', until ' + f.until + ')').join(', ') + '</div>';
-        }
-        wrap.innerHTML = html;
-        app.loadGrantPage();
-      } catch (err) { wrap.innerHTML = '<div class="alert alert-danger mb-2">' + err.message + '</div>'; }
+        btn.innerHTML = '<i class="bi bi-check-circle"></i> Done';
+        btn.className = 'btn btn-success btn-sm';
+        setTimeout(() => app.loadGrantPage(), 1200);
+      } catch (err) { alert(err.message); btn.disabled = false; btn.innerHTML = orig; }
     };
 
     app.loadReactivateReminders = async function () {
