@@ -14,14 +14,12 @@
 // uses successfully: a simple GET to /exec. Apps Script serves simple
 // GET requests with permissive CORS, so this works from GitHub Pages
 // with no backend change and no redeployment.
-
 function gsRequest(method, params = {}) {
     // Force the deployed /exec endpoint. /exec works for anonymous
     // kiosk users; /dev never will. This coercion means the kiosk keeps
     // working even if config.js is ever toggled back to /dev by mistake.
     const url = CONFIG.API_URL.replace('/dev', '/exec');
     const query = new URLSearchParams({ method, ...params }).toString();
-
     return fetch(`${url}?${query}`)
         .then(res => res.json())
         .catch(err => ({
@@ -29,20 +27,20 @@ function gsRequest(method, params = {}) {
             error: (err && err.message) ? err.message : 'Connection error'
         }));
 }
-
 // --- Kiosk API calls -----------------------------------------
 // These return the backend's raw JSON object directly (it already
 // contains .success, .name, .id, .currentStatus, .stage, .error, etc.),
 // which is exactly what kiosk.js expects. No wrapping.
-
 function loginStaffKiosk(empId, pin) {
     return gsRequest('loginStaffKiosk', { empId: empId, pin: pin });
 }
-
-function markKioskAttendance(empId, pin, stage) {
-    return gsRequest('markKioskAttendance', { empId: empId, pin: pin, stage: stage });
+function markKioskAttendance(empId, pin, stage, lat, lng) {
+    return gsRequest('markKioskAttendance', {
+        empId: empId, pin: pin, stage: stage,
+        lat: (lat == null ? '' : lat),
+        lng: (lng == null ? '' : lng)
+    });
 }
-
 function getDailyKioskStatus(empId) {
     return gsRequest('getDailyKioskStatus', { empId: empId });
 }
