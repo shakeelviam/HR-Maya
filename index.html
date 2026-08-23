@@ -98,7 +98,6 @@
                 <li class="nav-item"><a class="nav-link active" data-page="dashboard"><i class="bi bi-grid-1x2-fill"></i> Dashboard</a></li>
                 <li class="nav-item"><a class="nav-link" data-page="employees"><i class="bi bi-people-fill"></i> Employees</a></li>
                 <li class="nav-item"><a class="nav-link" data-page="attendance"><i class="bi bi-calendar-check-fill"></i> Attendance</a></li>
-                <li class="nav-item"><a class="nav-link" data-page="leave"><i class="bi bi-clock-fill"></i> Leave Management</a></li>
                 <li class="nav-item"><a class="nav-link" data-page="reviews"><i class="bi bi-star-fill"></i> Performance Reviews</a></li>
             </ul>
         </nav>
@@ -166,20 +165,6 @@
                         <button class="btn btn-primary" onclick="app.showAttendanceModal()"><i class="bi bi-plus-circle"></i> Mark Attendance</button>
                     </div>
                     <div class="mt-3 text-muted small">Use the "Mark Attendance" button above to log employee stages (Check In, Break Out, etc.).</div>
-                </div>
-            </div>
-
-            <!-- LEAVE -->
-            <div class="page-section" id="page-leave">
-                <div class="table-container">
-                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-                        <h5><i class="bi bi-clock"></i> Leave Requests</h5>
-                        <button class="btn btn-primary btn-sm" onclick="app.showLeaveRequestModal()"><i class="bi bi-plus-circle"></i> New Request</button>
-                    </div>
-                    <table id="leaveTable" class="table table-striped">
-                        <thead><tr><th>Request ID</th><th>Employee ID</th><th>Employee Name</th><th>Start Date</th><th>End Date</th><th>Type</th><th>Status</th><th>Actions</th></tr></thead>
-                        <tbody id="leaveTableBody"></tbody>
-                    </table>
                 </div>
             </div>
 
