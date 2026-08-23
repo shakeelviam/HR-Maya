@@ -60,10 +60,16 @@ async function kioskAction(stage) {
     allBtns.forEach(b => b.disabled = true);
 
     try {
-        const result = await markKioskAttendance(currentEmpId, currentEmpPin, stage);
+        // Capture location (best-effort). Backend flags "NO LOCATION" if unavailable/denied.
+        const pos = await getKioskLocation();
+        const result = await markKioskAttendance(currentEmpId, currentEmpPin, stage, pos.lat, pos.lng);
 
         if (result.success) {
-            alert(result.message);
+            let msg = result.message;
+            if (result.geoFlag && result.geoFlag !== 'OK') {
+                msg += '\n\n⚠ Location: ' + result.geoFlag + (result.distance != null ? ' (' + result.distance + 'm from branch)' : '');
+            }
+            alert(msg);
             updateButtons(result.stage);
         } else {
             alert(result.error || 'Action failed.');
@@ -124,3 +130,19 @@ document.getElementById('kioskPin').addEventListener('keypress', function (e) {
         kioskLogin();
     }
 });
+
+// Best-effort geolocation for kiosk punches. Resolves {lat,lng} or {lat:null,lng:null}.
+function getKioskLocation() {
+    return new Promise((resolve) => {
+        if (!('geolocation' in navigator)) { resolve({ lat: null, lng: null }); return; }
+        let done = false;
+        const finish = (v) => { if (!done) { done = true; resolve(v); } };
+        navigator.geolocation.getCurrentPosition(
+            (p) => finish({ lat: p.coords.latitude, lng: p.coords.longitude }),
+            () => finish({ lat: null, lng: null }),
+            { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+        );
+        // Hard fallback so a hung GPS never blocks the punch.
+        setTimeout(() => finish({ lat: null, lng: null }), 9000);
+    });
+}
