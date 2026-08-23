@@ -250,6 +250,7 @@ const app = {
                   F('Name (Arabic)','Name (Arabic)',{id:'nameArabic'}) +
                   F('Civil ID','Civil ID',{id:'civilId'}) +
                   F('Branch','Branch',{id:'branch'}) +
+                  F('Shift','Shift',{id:'shift'}) +
                   F('Status','Status',{id:'status',type:'select',options:['Active','On Leave','Inactive']}) +
                   '<h6 class="text-primary mt-3"><i class="bi bi-telephone"></i> Contact</h6>' +
                   F('Email','Email',{id:'email',type:'email'}) +
@@ -310,6 +311,7 @@ const app = {
         const put = (k, val) => { if (val !== undefined) payload[k] = val; };
         put('nameEnglish', v('nameEnglish')); put('nameArabic', v('nameArabic')); put('civilId', v('civilId'));
         put('branch', v('branch')); put('status', v('status')); put('iban', v('iban'));
+        put('shift', v('shift'));
         put('email', v('email')); put('mobile', v('mobile')); put('whatsapp', v('whatsapp'));
         put('passportNo', v('passportNo')); put('basic', v('basic'));
         ['cidExpiry','passportIssue','passportExpiry','healthIssue','healthExpiry','dateOfJoin'].forEach(k => { const val = v(k); if (val !== undefined) payload[k] = toDd(val); });
