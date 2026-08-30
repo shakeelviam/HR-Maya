@@ -78,8 +78,13 @@ const app = {
     // ---- EMPLOYEE LIST FILTERS — ERPNext-style filter builder (list-filter.js) ----
     setupEmployeeFilters() {
         try {
-            if (window.ListFilter && this.employeesTable) {
-                ListFilter.attach('employeesTable', { exclude: ['Actions'] });
+            if (window.ListFilter && this.employeesTable && this.employeesData && this.employeesData.length) {
+                ListFilter.attachData('employeesTable', {
+                    records: this.employeesData,
+                    rowKey: 'Employee ID',
+                    keyColIdx: 0,
+                    exclude: ['Actions']
+                });
             }
         } catch (e) { console.warn('Filter setup skipped:', e); }
     },
