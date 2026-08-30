@@ -82,6 +82,17 @@ window.ListFilter = (function () {
     $.fn.dataTable.ext.search.push(function (settings, rowData) {
       const reg = registry[settings.nTable.id];
       if (!reg || !reg.conditions.length) return true;
+      if (reg.dataMode) {
+        const key = String(rowData[reg.keyColIdx] || '').replace(/<[^>]*>/g, '').trim();
+        const rec = reg.recByKey[key];
+        if (!rec) return true;
+        for (const cond of reg.conditions) {
+          if (!cond.field) continue;
+          const cv = String(rec[cond.field] == null ? '' : rec[cond.field]).trim();
+          if (!matchCond(reg.fieldTypes[cond.field] || 'text', cv, cond.op, cond.val)) return false;
+        }
+        return true;
+      }
       for (const cond of reg.conditions) {
         if (cond.col == null) continue;
         const cv = cellText(rowData, cond.col);
@@ -109,8 +120,16 @@ window.ListFilter = (function () {
       container.insertBefore(bar, anchor);
     }
     const rowsHtml = reg.conditions.map((c, i) => {
-      const type = c.col != null ? (reg.colTypes[c.col] || 'text') : 'text';
-      const fieldOpts = reg.headers.map((h, idx) => '<option value="' + idx + '"' + (String(c.col) === String(idx) ? ' selected' : '') + '>' + h + '</option>').join('');
+      let type, fieldOpts, curKey;
+      if (reg.dataMode) {
+        curKey = c.field || '';
+        type = c.field ? (reg.fieldTypes[c.field] || 'text') : 'text';
+        fieldOpts = reg.fields.map(f => '<option value="' + f + '"' + (c.field === f ? ' selected' : '') + '>' + f + '</option>').join('');
+      } else {
+        curKey = c.col;
+        type = c.col != null ? (reg.colTypes[c.col] || 'text') : 'text';
+        fieldOpts = reg.headers.map((h, idx) => (reg._excludedIdx && reg._excludedIdx.indexOf(idx) !== -1) ? '' : '<option value="' + idx + '"' + (String(c.col) === String(idx) ? ' selected' : '') + '>' + h + '</option>').join('');
+      }
       const valDisabled = (c.op === 'is set' || c.op === 'is not set') ? ' disabled' : '';
       return '<div class="row g-1 align-items-center mb-1" data-i="' + i + '">' +
         '<div class="col-auto small text-muted" style="width:38px">' + (i === 0 ? 'Where' : 'and') + '</div>' +
@@ -135,6 +154,41 @@ window.ListFilter = (function () {
   function draw(tableId) { const t = $('#' + tableId).DataTable(); t.draw(); }
 
   return {
+    // Data-backed attach: filter on ALL record fields (not just visible columns).
+    attachData: function (tableId, opts) {
+      opts = opts || {};
+      ensureHook();
+      const records = opts.records || [];
+      const keyField = opts.rowKey || 'Employee ID';
+      const keyColIdx = opts.keyColIdx == null ? 0 : opts.keyColIdx;
+      let fields = opts.fields;
+      if (!fields) {
+        const seen = {};
+        records.forEach(r => Object.keys(r).forEach(k => { seen[k] = true; }));
+        fields = Object.keys(seen);
+      }
+      const drop = (opts.exclude || []).map(s => s.toLowerCase());
+      fields = fields.filter(f => drop.indexOf(String(f).toLowerCase()) === -1);
+      const fieldTypes = {};
+      fields.forEach(f => {
+        let nums = 0, dates = 0, nonEmpty = 0;
+        for (let i = 0; i < records.length && i < 60; i++) {
+          const v = records[i][f]; const t = String(v == null ? '' : v).trim();
+          if (!t) continue; nonEmpty++;
+          if (looksDate(t)) dates++;
+          else if (parseNum(t) !== null && /\d/.test(t) && !/[a-zA-Z]{2,}/.test(t)) nums++;
+        }
+        fieldTypes[f] = nonEmpty === 0 ? 'text' : (dates / nonEmpty > 0.6 ? 'date' : (nums / nonEmpty > 0.6 ? 'number' : 'text'));
+      });
+      const recByKey = {};
+      records.forEach(r => { recByKey[String(r[keyField] || '').trim()] = r; });
+      registry[tableId] = {
+        conditions: [], dataMode: true, fields: fields, fieldTypes: fieldTypes,
+        recByKey: recByKey, keyColIdx: keyColIdx, keyField: keyField, headers: fields, colTypes: {}
+      };
+      renderBar(tableId);
+    },
+
     attach: function (tableId, opts) {
       opts = opts || {};
       ensureHook();
@@ -152,13 +206,14 @@ window.ListFilter = (function () {
       registry[tableId]._excludedIdx = filterableHeaders.map((h, i) => h === null ? i : -1).filter(i => i >= 0);
       renderBar(tableId);
     },
-    addCond: function (tableId) { const r = registry[tableId]; r.conditions.push({ col: null, op: 'like', val: '' }); renderBar(tableId); },
+    addCond: function (tableId) { const r = registry[tableId]; r.conditions.push(r.dataMode ? { field: '', op: 'like', val: '' } : { col: null, op: 'like', val: '' }); renderBar(tableId); },
     removeCond: function (tableId, i) { const r = registry[tableId]; r.conditions.splice(i, 1); renderBar(tableId); draw(tableId); },
     clearAll: function (tableId) { registry[tableId].conditions = []; renderBar(tableId); draw(tableId); },
     onField: function (tableId, i, val) {
       const r = registry[tableId]; const c = r.conditions[i];
-      c.col = val === '' ? null : parseInt(val, 10);
-      const type = c.col != null ? (r.colTypes[c.col] || 'text') : 'text';
+      let type;
+      if (r.dataMode) { c.field = val || ''; type = c.field ? (r.fieldTypes[c.field] || 'text') : 'text'; }
+      else { c.col = val === '' ? null : parseInt(val, 10); type = c.col != null ? (r.colTypes[c.col] || 'text') : 'text'; }
       const ops = (OPERATORS[type] || OPERATORS.text);
       if (!ops.some(o => o[0] === c.op)) c.op = ops[0][0];
       renderBar(tableId); draw(tableId);
