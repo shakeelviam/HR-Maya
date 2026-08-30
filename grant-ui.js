@@ -106,7 +106,7 @@
                     : '<span class="badge bg-success">Active</span>';
         const firstType = M.types.length ? M.types[0].type : 'Annual';
         const bal = app.balFor(r.id, firstType);
-        const balHtml = bal === null ? '<span class="text-warning">not allocated</span>' : '<b>' + bal + '</b>';
+        const balHtml = bal === null ? '<span class="text-warning">not allocated</span>' : (bal < 0 ? '<b class="text-danger">' + bal + '</b>' : '<b>' + bal + '</b>');
         return '<tr data-emp="' + r.id + '">' +
           '<td>' + r.id + '</td><td>' + r.name + '</td><td>' + badge + '</td>' +
           '<td><select class="form-select form-select-sm gv-type" style="min-width:130px" onchange="app.onTypeChange(\'' + r.id + '\')">' + typeOpts + '</select></td>' +
@@ -134,7 +134,7 @@
       if (!tr) return;
       const type = tr.querySelector('.gv-type').value;
       const bal = app.balFor(empId, type);
-      tr.querySelector('.gv-bal').innerHTML = bal === null ? '<span class="text-warning">not allocated</span>' : '<b>' + bal + '</b>';
+      tr.querySelector('.gv-bal').innerHTML = bal === null ? '<span class="text-warning">not allocated</span>' : (bal < 0 ? '<b class="text-danger">' + bal + '</b>' : '<b>' + bal + '</b>');
     };
 
     app.grantRow = async function (empId) {
