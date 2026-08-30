@@ -97,6 +97,7 @@
           '<td>' + r.empId + '</td><td>' + r.name + '</td><td>' + r.date + '</td><td>' + (r.shift || '<span class="text-danger">—</span>') + '</td>' +
           '<td>' + (r.checkIn || '—') + '</td><td>' + (r.checkOut || '—') + '</td>' +
           '<td class="text-end">' + (r.presence == null ? '—' : r.presence) + '</td>' +
+          '<td>' + (r.dayType === 'Half' ? '<span class="badge bg-warning text-dark">Half</span>' : (r.dayType === 'Full' ? '<span class="badge bg-success">Full</span>' : '—')) + '</td>' +
           '<td class="text-end">' + r.breakMin + (r.breakOver ? ' <span class="text-danger">(+' + r.breakOver + ')</span>' : '') + '</td>' +
           '<td><input type="number" step="0.01" class="form-control form-control-sm or-ot text-end" value="' + (r.ot || 0) + '" style="width:80px"></td>' +
           '<td>' + flagCell + '</td>' +
@@ -104,7 +105,7 @@
           '</tr>';
       }).join('');
       wrap.innerHTML = '<table class="table table-sm table-striped align-middle" style="min-width:1000px"><thead><tr>' +
-        '<th>ID</th><th>Name</th><th>Date</th><th>Shift</th><th>In</th><th>Out</th><th class="text-end">Presence</th><th class="text-end">Break(m)</th><th class="text-end">OT (hrs)</th><th>Flags</th><th>Post?</th>' +
+        '<th>ID</th><th>Name</th><th>Date</th><th>Shift</th><th>In</th><th>Out</th><th class="text-end">Presence</th><th>Day</th><th class="text-end">Break(m)</th><th class="text-end">OT (hrs)</th><th>Flags</th><th>Post?</th>' +
         '</tr></thead><tbody>' + body + '</tbody></table>';
       app.renderOtPostBar();
     };
