@@ -53,8 +53,8 @@
           '<h6 class="mb-3"><i class="bi bi-diagram-3"></i> Assign Shift to Staff</h6>' +
           '<div class="row g-2 align-items-end">' +
             '<div class="col-md-3"><label class="form-label small mb-1">Shift</label><select id="asShift" class="form-select form-select-sm"></select></div>' +
-            '<div class="col-md-3"><label class="form-label small mb-1">Apply to</label><select id="asScope" class="form-select form-select-sm" onchange="app.shiftScopeChange()"><option value="all">All employees</option><option value="branch">A branch</option><option value="ids">Specific IDs</option></select></div>' +
-            '<div class="col-md-4" id="asExtraWrap" style="display:none"><label class="form-label small mb-1" id="asExtraLabel"></label><input id="asExtra" class="form-control form-control-sm"></div>' +
+            '<div class="col-md-3"><label class="form-label small mb-1">Apply to</label><select id="asScope" class="form-select form-select-sm" onchange="app.shiftScopeChange()"><option value="all">All employees</option><option value="branch">A location</option><option value="ids">Specific IDs</option></select></div>' +
+            '<div class="col-md-4" id="asExtraWrap" style="display:none"><label class="form-label small mb-1" id="asExtraLabel"></label><select id="asExtraLoc" class="form-select form-select-sm" style="display:none"></select><input id="asExtra" class="form-control form-control-sm"></div>' +
             '<div class="col-md-2"><button class="btn btn-primary btn-sm w-100" onclick="app.doAssignShift()"><i class="bi bi-check2"></i> Assign</button></div>' +
           '</div>' +
           '<div id="asStatus" class="mt-2"></div>' +
@@ -143,15 +143,21 @@
     app.shiftScopeChange = function () {
       const scope = document.getElementById('asScope').value;
       const wrap = document.getElementById('asExtraWrap'), label = document.getElementById('asExtraLabel');
-      if (scope === 'branch') { wrap.style.display = ''; label.innerText = 'Branch name (exactly as in HR Maya)'; }
-      else if (scope === 'ids') { wrap.style.display = ''; label.innerText = 'Employee IDs (comma-separated)'; }
-      else wrap.style.display = 'none';
+      const locSel = document.getElementById('asExtraLoc'), txt = document.getElementById('asExtra');
+      if (scope === 'branch') {
+        wrap.style.display = ''; label.innerText = 'Location';
+        locSel.style.display = ''; txt.style.display = 'none';
+        callApi('method=getLocations').then(d => { locSel.innerHTML = (d.data || []).filter(l => l.active).map(l => '<option>' + l.name + '</option>').join(''); }).catch(() => {});
+      } else if (scope === 'ids') {
+        wrap.style.display = ''; label.innerText = 'Employee IDs (comma-separated)';
+        locSel.style.display = 'none'; txt.style.display = '';
+      } else { wrap.style.display = 'none'; }
     };
 
     app.doAssignShift = async function () {
       const status = document.getElementById('asStatus');
       const payload = { shift: document.getElementById('asShift').value, scope: document.getElementById('asScope').value };
-      if (payload.scope === 'branch') payload.branch = document.getElementById('asExtra').value.trim();
+      if (payload.scope === 'branch') payload.branch = document.getElementById('asExtraLoc').value.trim();
       if (payload.scope === 'ids') payload.ids = document.getElementById('asExtra').value.trim();
       if (!payload.shift) { status.innerHTML = '<div class="alert alert-warning mb-0">Pick a shift.</div>'; return; }
       status.innerHTML = '<div class="text-muted small">Assigning…</div>';
