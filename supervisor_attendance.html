@@ -26,8 +26,8 @@
   <div class="card shadow-sm">
     <div class="card-body">
       <div class="mb-3">
-        <label class="form-label small mb-1">Supervisor name</label>
-        <input id="supName" class="form-control" placeholder="Your name">
+        <label class="form-label small mb-1">Supervisor</label>
+        <select id="supPick" class="form-select" onchange="onSupPick()"><option value="">— select your name —</option></select>
       </div>
       <div class="mb-3">
         <label class="form-label small mb-1">Location</label>
@@ -64,7 +64,7 @@
 <script>
 // ⚙️ Set this to your Apps Script /exec URL.
 const EXEC_URL = 'https://script.google.com/macros/s/AKfycbyG5XLC79FnyLtSGGWunhJwU83SV0b0kz3y1FKdal-JBcTUM-X0ax134konYyTaKxYiiQ/exec';
-let EMPLOYEES = [], chosenStatus = '';
+let EMPLOYEES = [], chosenStatus = '', SUP_MAP = {}, EMP_ALL = [];
 
 function toDd(iso){ if(!iso) return ''; const [y,m,d]=iso.split('-'); return d+'-'+m+'-'+y; }
 
@@ -73,11 +73,38 @@ async function load(){
     const res = await fetch(EXEC_URL + '?method=getManualAttnEmployees&_=' + Date.now(), { cache:'no-store' });
     const d = await res.json();
     if(!d.success) throw new Error(d.error||'load failed');
-    EMPLOYEES = d.employees||[];
+    EMPLOYEES = d.employees||[]; EMP_ALL = EMPLOYEES.slice();
     document.getElementById('loc').innerHTML = (d.locations||[]).map(l=>'<option>'+l+'</option>').join('');
     document.getElementById('shift').innerHTML = '<option value="">— select —</option>' + (d.shifts||[]).map(s=>'<option>'+s+'</option>').join('');
     renderEmps(EMPLOYEES);
-  }catch(err){ document.getElementById('msg').innerHTML = '<span class="text-danger">Could not load employees: '+err.message+'</span>'; }
+    // Supervisors + their locations
+    const sr = await fetch(EXEC_URL + '?method=getLocationSupervisors&_=' + Date.now(), { cache:'no-store' });
+    const sd = await sr.json();
+    if(sd.success){
+      const supOpts = [];
+      (sd.data||[]).forEach(loc=>{
+        (loc.supervisors||[]).forEach(s=>{
+          SUP_MAP[s.id] = { name:s.name, location:loc.location };
+          supOpts.push('<option value="'+s.id+'">'+s.name+' — '+loc.location+'</option>');
+        });
+      });
+      document.getElementById('supPick').innerHTML = '<option value="">— select your name —</option>' + supOpts.join('');
+    }
+  }catch(err){ document.getElementById('msg').innerHTML = '<span class="text-danger">Could not load: '+err.message+'</span>'; }
+}
+async function onSupPick(){
+  const id = document.getElementById('supPick').value;
+  const info = SUP_MAP[id];
+  if(!info){ EMPLOYEES = EMP_ALL.slice(); renderEmps(EMPLOYEES); return; }
+  // Lock location to the supervisor's location and filter employees to it.
+  const locSel = document.getElementById('loc');
+  for(const o of locSel.options){ if(o.value===info.location){ locSel.value=info.location; break; } }
+  try{
+    const r = await fetch(EXEC_URL + '?method=getEmployeesByLocation&location='+encodeURIComponent(info.location)+'&_='+Date.now(), { cache:'no-store' });
+    const d = await r.json();
+    EMPLOYEES = (d.success && d.employees && d.employees.length) ? d.employees : EMP_ALL.slice();
+    renderEmps(EMPLOYEES);
+  }catch(e){ EMPLOYEES = EMP_ALL.slice(); renderEmps(EMPLOYEES); }
 }
 function renderEmps(list){
   document.getElementById('emp').innerHTML = list.map(e=>'<option value="'+e.id+'">'+e.name+' ('+e.id+')</option>').join('');
@@ -97,8 +124,9 @@ async function submitAttn(){
   const location = document.getElementById('loc').value;
   const shift = document.getElementById('shift').value;
   const date = document.getElementById('date').value;
-  const by = document.getElementById('supName').value.trim();
-  if(!by){ msg.innerHTML='<span class="text-danger">Enter your name.</span>'; return; }
+  const supId = document.getElementById('supPick').value;
+  const by = supId && SUP_MAP[supId] ? (SUP_MAP[supId].name + ' (' + supId + ')') : '';
+  if(!by){ msg.innerHTML='<span class="text-danger">Select your name (supervisor).</span>'; return; }
   if(!empId){ msg.innerHTML='<span class="text-danger">Pick an employee.</span>'; return; }
   if(!chosenStatus){ msg.innerHTML='<span class="text-danger">Pick a status.</span>'; return; }
   const btn = document.getElementById('submitBtn'); btn.disabled=true; btn.innerHTML='Saving…';
