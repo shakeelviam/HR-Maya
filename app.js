@@ -75,65 +75,13 @@ const app = {
         try { this.setupEmployeeFilters(); } catch (e) { console.warn('Employee filter setup skipped:', e); }
     },
 
-    // ---- EMPLOYEE LIST FILTERS (Status + Branch), on top of the built-in search ----
+    // ---- EMPLOYEE LIST FILTERS — ERPNext-style filter builder (list-filter.js) ----
     setupEmployeeFilters() {
-        const self = this;
-        // Register the custom row filter once (persists across table rebuilds).
-        if (!this._empFilterPushed && $.fn.dataTable) {
-            $.fn.dataTable.ext.search.push(function (settings, rowData) {
-                if (settings.nTable.id !== 'employeesTable') return true;
-                const empId = String(rowData[0] || '').trim();
-                const emp = self.employeesData.find(e => String(e['Employee ID'] || '').trim() === empId);
-                if (!emp) return true;
-                if (self.filters.status && String(emp.Status || 'Active') !== self.filters.status) return false;
-                if (self.filters.branch && String(emp.Branch || '') !== self.filters.branch) return false;
-                return true;
-            });
-            this._empFilterPushed = true;
-        }
-        // Inject the filter bar once, above the table's DataTables wrapper.
-        const container = document.querySelector('#page-employees .table-container');
-        if (container && !document.getElementById('empFilterBar')) {
-            const bar = document.createElement('div');
-            bar.id = 'empFilterBar';
-            bar.className = 'row g-2 align-items-end mb-3';
-            bar.innerHTML =
-                '<div class="col-auto"><label class="form-label small mb-1">Status</label>' +
-                    '<select id="empFilterStatus" class="form-select form-select-sm" onchange="app.applyEmployeeFilter()">' +
-                        '<option value="">All</option><option>Active</option><option>Inactive</option><option>On Leave</option></select></div>' +
-                '<div class="col-auto"><label class="form-label small mb-1">Branch</label>' +
-                    '<select id="empFilterBranch" class="form-select form-select-sm" onchange="app.applyEmployeeFilter()">' +
-                        '<option value="">All</option></select></div>' +
-                '<div class="col-auto"><button class="btn btn-outline-secondary btn-sm" onclick="app.clearEmployeeFilter()"><i class="bi bi-x-circle"></i> Clear</button></div>';
-            // Anchor to the DataTables wrapper if present, else the table, else the container top.
-            const table = document.getElementById('employeesTable');
-            const wrapper = document.getElementById('employeesTable_wrapper');
-            const anchor = (wrapper && wrapper.parentNode === container) ? wrapper
-                         : (table && table.parentNode === container) ? table : null;
-            if (anchor) container.insertBefore(bar, anchor);
-            else container.insertBefore(bar, container.firstChild);
-        }
-        // (Re)populate Branch options from current data, preserving selection.
-        const bsel = document.getElementById('empFilterBranch');
-        if (bsel) {
-            const cur = bsel.value;
-            const branches = Array.from(new Set(this.employeesData.map(e => String(e.Branch || '').trim()).filter(Boolean))).sort();
-            bsel.innerHTML = '<option value="">All</option>' + branches.map(b => '<option>' + b + '</option>').join('');
-            bsel.value = cur;
-        }
-    },
-
-    applyEmployeeFilter() {
-        this.filters.status = (document.getElementById('empFilterStatus') || {}).value || '';
-        this.filters.branch = (document.getElementById('empFilterBranch') || {}).value || '';
-        if (this.employeesTable) this.employeesTable.draw();
-    },
-
-    clearEmployeeFilter() {
-        this.filters = { status: '', branch: '' };
-        const s = document.getElementById('empFilterStatus'); if (s) s.value = '';
-        const b = document.getElementById('empFilterBranch'); if (b) b.value = '';
-        if (this.employeesTable) this.employeesTable.draw();
+        try {
+            if (window.ListFilter && this.employeesTable) {
+                ListFilter.attach('employeesTable', { exclude: ['Actions'] });
+            }
+        } catch (e) { console.warn('Filter setup skipped:', e); }
     },
 
     updateDashboardStats() {
