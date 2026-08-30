@@ -68,7 +68,8 @@
           '<td class="text-end">' + (l.longitude !== '' ? l.longitude : '') + '</td>' +
           '<td class="text-end">' + (l.radius !== '' ? l.radius : '') + '</td>' +
           '<td>' + (l.active ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-secondary">No</span>') + '</td>' +
-          '<td class="text-end"><button class="btn btn-outline-primary btn-sm me-1" onclick="app.editSupervisors(\'' + l.name.replace(/'/g,"\\'") + '\')" title="Supervisors"><i class="bi bi-person-badge"></i></button>' +
+          '<td class="text-end"><button class="btn btn-outline-info btn-sm me-1" onclick="app.editLocationShifts(\'' + l.name.replace(/'/g,"\\'") + '\')" title="Shifts at this location"><i class="bi bi-clock"></i></button>' +
+            '<button class="btn btn-outline-primary btn-sm me-1" onclick="app.editSupervisors(\'' + l.name.replace(/'/g,"\\'") + '\')" title="Supervisors"><i class="bi bi-person-badge"></i></button>' +
             '<button class="btn btn-outline-secondary btn-sm me-1" onclick="app.openLocation(\'' + l.name.replace(/'/g,"\\'") + '\')"><i class="bi bi-pencil"></i></button>' +
             '<button class="btn btn-outline-danger btn-sm" onclick="app.retireLocation(\'' + l.name.replace(/'/g,"\\'") + '\')"><i class="bi bi-archive"></i></button></td></tr>').join('');
         wrap.innerHTML = '<table class="table table-sm table-striped align-middle"><thead><tr>' +
@@ -121,6 +122,39 @@
         const d = await callPost('saveLocation', payload);
         status.innerHTML = '<div class="alert alert-success mb-0 py-1">' + d.message + '</div>';
         setTimeout(() => { const m = bootstrap.Modal.getInstance(document.getElementById('locModal')); if (m) m.hide(); app.loadLocations(); }, 1000);
+      } catch (err) { status.innerHTML = '<div class="alert alert-danger mb-0 py-1">' + err.message + '</div>'; }
+    };
+
+    app.editLocationShifts = async function (location) {
+      let allShifts = [], current = [];
+      try { const sr = await callApi('method=getShifts'); allShifts = (sr.data || []).filter(s => s.active).map(s => s.name); } catch (e) {}
+      try { const lr = await callApi('method=getLocations'); const row = (lr.data || []).find(x => x.name === location); current = row && row.shifts ? row.shifts : []; } catch (e) {}
+      const opts = allShifts.map(s => '<option value="' + s + '"' + (current.indexOf(s) !== -1 ? ' selected' : '') + '>' + s + '</option>').join('');
+      const html =
+        '<div class="modal fade" id="locShModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">' +
+          '<div class="modal-header"><h5 class="modal-title">Shifts at ' + location + '</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>' +
+          '<div class="modal-body">' +
+            '<label class="form-label small mb-1">Select shift(s) for this location (Ctrl/Cmd-click for multiple)</label>' +
+            '<select id="locShSelect" class="form-select" multiple size="8">' + opts + '</select>' +
+            '<div class="text-muted small mt-2">Staff checking in here get the location shift whose start time is closest to their check-in.</div>' +
+            '<div id="locShStatus" class="mt-2"></div>' +
+          '</div>' +
+          '<div class="modal-footer"><button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>' +
+            '<button class="btn btn-primary btn-sm" onclick="app.saveLocationShifts(\'' + location.replace(/'/g,"\\'") + '\')"><i class="bi bi-check2"></i> Save</button></div>' +
+        '</div></div></div>';
+      const old = document.getElementById('locShModal'); if (old) old.remove();
+      document.body.insertAdjacentHTML('beforeend', html);
+      new bootstrap.Modal(document.getElementById('locShModal')).show();
+    };
+
+    app.saveLocationShifts = async function (location) {
+      const sel = document.getElementById('locShSelect');
+      const names = Array.from(sel.selectedOptions).map(o => o.value);
+      const status = document.getElementById('locShStatus');
+      try {
+        const d = await callPost('saveLocationShifts', { location: location, shifts: names.join(',') });
+        status.innerHTML = '<div class="alert alert-success mb-0 py-1">' + d.message + '</div>';
+        setTimeout(() => { const m = bootstrap.Modal.getInstance(document.getElementById('locShModal')); if (m) m.hide(); }, 1000);
       } catch (err) { status.innerHTML = '<div class="alert alert-danger mb-0 py-1">' + err.message + '</div>'; }
     };
 
