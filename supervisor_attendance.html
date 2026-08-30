@@ -34,6 +34,10 @@
         <select id="loc" class="form-select"></select>
       </div>
       <div class="mb-3">
+        <label class="form-label small mb-1">Shift</label>
+        <select id="shift" class="form-select"></select>
+      </div>
+      <div class="mb-3">
         <label class="form-label small mb-1">Employee</label>
         <input id="empSearch" class="form-control mb-1" placeholder="Type to filter…" oninput="filterEmps()">
         <select id="emp" class="form-select" size="5"></select>
@@ -71,6 +75,7 @@ async function load(){
     if(!d.success) throw new Error(d.error||'load failed');
     EMPLOYEES = d.employees||[];
     document.getElementById('loc').innerHTML = (d.locations||[]).map(l=>'<option>'+l+'</option>').join('');
+    document.getElementById('shift').innerHTML = '<option value="">— select —</option>' + (d.shifts||[]).map(s=>'<option>'+s+'</option>').join('');
     renderEmps(EMPLOYEES);
   }catch(err){ document.getElementById('msg').innerHTML = '<span class="text-danger">Could not load employees: '+err.message+'</span>'; }
 }
@@ -90,6 +95,7 @@ async function submitAttn(){
   const msg = document.getElementById('msg');
   const empId = document.getElementById('emp').value;
   const location = document.getElementById('loc').value;
+  const shift = document.getElementById('shift').value;
   const date = document.getElementById('date').value;
   const by = document.getElementById('supName').value.trim();
   if(!by){ msg.innerHTML='<span class="text-danger">Enter your name.</span>'; return; }
@@ -99,7 +105,7 @@ async function submitAttn(){
   try{
     const res = await fetch(EXEC_URL + '?method=saveManualAttendance', {
       method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({ empId:empId, location:location, date:toDd(date), status:chosenStatus, by:by })
+      body: JSON.stringify({ empId:empId, location:location, shift:shift, date:toDd(date), status:chosenStatus, by:by })
     });
     const d = await res.json();
     if(!d.success) throw new Error(d.error||'save failed');
