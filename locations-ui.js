@@ -68,7 +68,8 @@
           '<td class="text-end">' + (l.longitude !== '' ? l.longitude : '') + '</td>' +
           '<td class="text-end">' + (l.radius !== '' ? l.radius : '') + '</td>' +
           '<td>' + (l.active ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-secondary">No</span>') + '</td>' +
-          '<td class="text-end"><button class="btn btn-outline-secondary btn-sm me-1" onclick="app.openLocation(\'' + l.name.replace(/'/g,"\\'") + '\')"><i class="bi bi-pencil"></i></button>' +
+          '<td class="text-end"><button class="btn btn-outline-primary btn-sm me-1" onclick="app.editSupervisors(\'' + l.name.replace(/'/g,"\\'") + '\')" title="Supervisors"><i class="bi bi-person-badge"></i></button>' +
+            '<button class="btn btn-outline-secondary btn-sm me-1" onclick="app.openLocation(\'' + l.name.replace(/'/g,"\\'") + '\')"><i class="bi bi-pencil"></i></button>' +
             '<button class="btn btn-outline-danger btn-sm" onclick="app.retireLocation(\'' + l.name.replace(/'/g,"\\'") + '\')"><i class="bi bi-archive"></i></button></td></tr>').join('');
         wrap.innerHTML = '<table class="table table-sm table-striped align-middle"><thead><tr>' +
           '<th>Location</th><th>Geofence</th><th class="text-end">Latitude</th><th class="text-end">Longitude</th><th class="text-end">Radius</th><th>Active</th><th></th>' +
@@ -120,6 +121,45 @@
         const d = await callPost('saveLocation', payload);
         status.innerHTML = '<div class="alert alert-success mb-0 py-1">' + d.message + '</div>';
         setTimeout(() => { const m = bootstrap.Modal.getInstance(document.getElementById('locModal')); if (m) m.hide(); app.loadLocations(); }, 1000);
+      } catch (err) { status.innerHTML = '<div class="alert alert-danger mb-0 py-1">' + err.message + '</div>'; }
+    };
+
+    app.editSupervisors = async function (location) {
+      // Load employees + current supervisors.
+      let emps = [], current = [];
+      try {
+        const er = await callApi('method=getManualAttnEmployees'); emps = er.employees || [];
+      } catch (e) {}
+      try {
+        const sr = await callApi('method=getLocationSupervisors');
+        const row = (sr.data || []).find(x => x.location === location);
+        current = row ? row.supervisors.map(s => s.id) : [];
+      } catch (e) {}
+      const opts = emps.map(e => '<option value="' + e.id + '"' + (current.indexOf(e.id) !== -1 ? ' selected' : '') + '>' + e.name + ' (' + e.id + ')</option>').join('');
+      const html =
+        '<div class="modal fade" id="supModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">' +
+          '<div class="modal-header"><h5 class="modal-title">Supervisors — ' + location + '</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>' +
+          '<div class="modal-body">' +
+            '<label class="form-label small mb-1">Select supervisors (Ctrl/Cmd-click for multiple)</label>' +
+            '<select id="supSelect" class="form-select" multiple size="10">' + opts + '</select>' +
+            '<div id="supStatus" class="mt-2"></div>' +
+          '</div>' +
+          '<div class="modal-footer"><button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>' +
+            '<button class="btn btn-primary btn-sm" onclick="app.saveSupervisors(\'' + location.replace(/'/g,"\\'") + '\')"><i class="bi bi-check2"></i> Save</button></div>' +
+        '</div></div></div>';
+      const old = document.getElementById('supModal'); if (old) old.remove();
+      document.body.insertAdjacentHTML('beforeend', html);
+      new bootstrap.Modal(document.getElementById('supModal')).show();
+    };
+
+    app.saveSupervisors = async function (location) {
+      const sel = document.getElementById('supSelect');
+      const ids = Array.from(sel.selectedOptions).map(o => o.value);
+      const status = document.getElementById('supStatus');
+      try {
+        const d = await callPost('saveLocationSupervisors', { location: location, supervisorIds: ids.join(',') });
+        status.innerHTML = '<div class="alert alert-success mb-0 py-1">' + d.message + '</div>';
+        setTimeout(() => { const m = bootstrap.Modal.getInstance(document.getElementById('supModal')); if (m) m.hide(); }, 1000);
       } catch (err) { status.innerHTML = '<div class="alert alert-danger mb-0 py-1">' + err.message + '</div>'; }
     };
 
