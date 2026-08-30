@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maya HR — Attendance (22–31 Aug)</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+<style>
+  body { background:#f2f4f7; font-family:'Segoe UI',Tahoma,sans-serif; }
+  .card-wrap { max-width:560px; margin:24px auto; }
+  .brand { text-align:center; margin-bottom:16px; }
+  .brand i { font-size:2.2rem; color:#0d6efd; }
+  .status-btn { flex:1; }
+  .status-btn.active-present { background:#198754; color:#fff; }
+  .status-btn.active-absent { background:#dc3545; color:#fff; }
+  .status-btn.active-dayoff { background:#0dcaf0; color:#000; }
+  #msg { min-height:24px; }
+</style>
+</head>
+<body>
+<div class="card-wrap">
+  <div class="brand"><i class="bi bi-building"></i><h4 class="mb-0">Maya HR Attendance</h4>
+    <div class="text-muted small">Backfill 22–31 August 2026 only</div></div>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <div class="mb-3">
+        <label class="form-label small mb-1">Supervisor name</label>
+        <input id="supName" class="form-control" placeholder="Your name">
+      </div>
+      <div class="mb-3">
+        <label class="form-label small mb-1">Location</label>
+        <select id="loc" class="form-select"></select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label small mb-1">Employee</label>
+        <input id="empSearch" class="form-control mb-1" placeholder="Type to filter…" oninput="filterEmps()">
+        <select id="emp" class="form-select" size="5"></select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label small mb-1">Date</label>
+        <input id="date" type="date" class="form-control" min="2026-08-22" max="2026-08-31" value="2026-08-22">
+      </div>
+      <div class="mb-3">
+        <label class="form-label small mb-1">Status</label>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-outline-success status-btn" data-s="Present" onclick="pick(this)">Present</button>
+          <button type="button" class="btn btn-outline-danger status-btn" data-s="Absent" onclick="pick(this)">Absent</button>
+          <button type="button" class="btn btn-outline-info status-btn" data-s="Day Off" onclick="pick(this)">Day Off</button>
+        </div>
+      </div>
+      <button id="submitBtn" class="btn btn-primary w-100" onclick="submitAttn()"><i class="bi bi-check2"></i> Submit</button>
+      <div id="msg" class="mt-2 small"></div>
+    </div>
+  </div>
+  <div class="text-center text-muted small mt-2">One entry per employee per day. Re-submitting updates the previous mark.</div>
+</div>
+
+<script>
+// ⚙️ Set this to your Apps Script /exec URL.
+const EXEC_URL = 'https://script.google.com/macros/s/AKfycbyG5XLC79FnyLtSGGWunhJwU83SV0b0kz3y1FKdal-JBcTUM-X0ax134konYyTaKxYiiQ/exec';
+let EMPLOYEES = [], chosenStatus = '';
+
+function toDd(iso){ if(!iso) return ''; const [y,m,d]=iso.split('-'); return d+'-'+m+'-'+y; }
+
+async function load(){
+  try{
+    const res = await fetch(EXEC_URL + '?method=getManualAttnEmployees&_=' + Date.now(), { cache:'no-store' });
+    const d = await res.json();
+    if(!d.success) throw new Error(d.error||'load failed');
+    EMPLOYEES = d.employees||[];
+    document.getElementById('loc').innerHTML = (d.locations||[]).map(l=>'<option>'+l+'</option>').join('');
+    renderEmps(EMPLOYEES);
+  }catch(err){ document.getElementById('msg').innerHTML = '<span class="text-danger">Could not load employees: '+err.message+'</span>'; }
+}
+function renderEmps(list){
+  document.getElementById('emp').innerHTML = list.map(e=>'<option value="'+e.id+'">'+e.name+' ('+e.id+')</option>').join('');
+}
+function filterEmps(){
+  const q = document.getElementById('empSearch').value.toLowerCase();
+  renderEmps(EMPLOYEES.filter(e => (e.name+' '+e.id).toLowerCase().includes(q)));
+}
+function pick(btn){
+  chosenStatus = btn.getAttribute('data-s');
+  document.querySelectorAll('.status-btn').forEach(b=>b.className='btn btn-outline-'+(b.getAttribute('data-s')==='Present'?'success':b.getAttribute('data-s')==='Absent'?'danger':'info')+' status-btn');
+  btn.classList.add(chosenStatus==='Present'?'active-present':chosenStatus==='Absent'?'active-absent':'active-dayoff');
+}
+async function submitAttn(){
+  const msg = document.getElementById('msg');
+  const empId = document.getElementById('emp').value;
+  const location = document.getElementById('loc').value;
+  const date = document.getElementById('date').value;
+  const by = document.getElementById('supName').value.trim();
+  if(!by){ msg.innerHTML='<span class="text-danger">Enter your name.</span>'; return; }
+  if(!empId){ msg.innerHTML='<span class="text-danger">Pick an employee.</span>'; return; }
+  if(!chosenStatus){ msg.innerHTML='<span class="text-danger">Pick a status.</span>'; return; }
+  const btn = document.getElementById('submitBtn'); btn.disabled=true; btn.innerHTML='Saving…';
+  try{
+    const res = await fetch(EXEC_URL + '?method=saveManualAttendance', {
+      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ empId:empId, location:location, date:toDd(date), status:chosenStatus, by:by })
+    });
+    const d = await res.json();
+    if(!d.success) throw new Error(d.error||'save failed');
+    msg.innerHTML = '<span class="text-success"><i class="bi bi-check-circle"></i> '+d.message+'</span>';
+    chosenStatus=''; document.querySelectorAll('.status-btn').forEach(b=>b.className='btn btn-outline-'+(b.getAttribute('data-s')==='Present'?'success':b.getAttribute('data-s')==='Absent'?'danger':'info')+' status-btn');
+  }catch(err){ msg.innerHTML='<span class="text-danger">'+err.message+'</span>'; }
+  finally{ btn.disabled=false; btn.innerHTML='<i class="bi bi-check2"></i> Submit'; }
+}
+load();
+</script>
+</body>
+</html>
