@@ -75,11 +75,12 @@
           '<tr' + (s.active ? '' : ' class="table-secondary"') + '><td><b>' + s.name + '</b></td>' +
           '<td>' + s.start + '</td><td>' + s.end + '</td><td class="text-end">' + s.normalHours + '</td>' +
           '<td class="text-end">' + s.breakMinutes + '</td><td class="text-end">' + s.graceMinutes + '</td>' +
+          '<td>' + (s.autoPresent ? '<span class="badge bg-info text-dark">Auto ' + (s.weeklyOff ? '(off ' + s.weeklyOff + ')' : '') + '</span>' : '') + '</td>' +
           '<td>' + (s.active ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-secondary">No</span>') + '</td>' +
           '<td class="text-end"><button class="btn btn-outline-secondary btn-sm me-1" onclick="app.openShift(\'' + s.name.replace(/'/g,"\\'") + '\')"><i class="bi bi-pencil"></i></button>' +
             '<button class="btn btn-outline-danger btn-sm" onclick="app.retireShift(\'' + s.name.replace(/'/g,"\\'") + '\')"><i class="bi bi-archive"></i></button></td></tr>').join('');
         wrap.innerHTML = '<table class="table table-sm table-striped align-middle"><thead><tr>' +
-          '<th>Shift</th><th>Start</th><th>End</th><th class="text-end">Normal Hrs</th><th class="text-end">Break min</th><th class="text-end">Grace min</th><th>Active</th><th></th>' +
+          '<th>Shift</th><th>Start</th><th>End</th><th class="text-end">Normal Hrs</th><th class="text-end">Break min</th><th class="text-end">Grace min</th><th>Attendance</th><th>Active</th><th></th>' +
           '</tr></thead><tbody>' + body + '</tbody></table>';
         const sel = document.getElementById('asShift');
         if (sel) sel.innerHTML = SHIFTS.filter(s => s.active).map(s => '<option>' + s.name + '</option>').join('');
@@ -99,6 +100,8 @@
             '<div class="col-4"><label class="form-label small mb-1">Normal Hours</label><input id="shNH" type="number" step="0.25" class="form-control form-control-sm" value="' + val('normalHours',9) + '"></div>' +
             '<div class="col-4"><label class="form-label small mb-1">Break (min)</label><input id="shBreak" type="number" class="form-control form-control-sm" value="' + val('breakMinutes',60) + '"></div>' +
             '<div class="col-4"><label class="form-label small mb-1">Grace (min)</label><input id="shGrace" type="number" class="form-control form-control-sm" value="' + val('graceMinutes',10) + '"></div>' +
+            '<div class="col-12"><div class="form-check"><input type="checkbox" class="form-check-input" id="shAutoPresent"' + (val('autoPresent',false) ? ' checked' : '') + '><label class="form-check-label" for="shAutoPresent"><b>Auto Present</b> — staff on this shift are counted present without punching (e.g. Head Office). No OT.</label></div></div>' +
+            '<div class="col-12"><label class="form-label small mb-1">Weekly Off (comma-separated day names)</label><input id="shWeeklyOff" class="form-control form-control-sm" placeholder="Fri, Sat" value="' + val('weeklyOff','') + '"></div>' +
             '<div class="col-12"><div class="form-check"><input type="checkbox" class="form-check-input" id="shActive"' + (val('active',true) ? ' checked' : '') + '><label class="form-check-label" for="shActive">Active</label></div></div>' +
           '</div><div id="shStatus" class="mt-2"></div>' +
           '<div class="text-muted small mt-1">Normal Hours = full shift length incl. break (e.g. 9). End is informational — OT is presence-based.</div></div>' +
@@ -119,6 +122,8 @@
         normalHours: document.getElementById('shNH').value,
         breakMinutes: document.getElementById('shBreak').value,
         graceMinutes: document.getElementById('shGrace').value,
+        autoPresent: document.getElementById('shAutoPresent').checked ? 'Yes' : 'No',
+        weeklyOff: document.getElementById('shWeeklyOff').value.trim(),
         active: document.getElementById('shActive').checked ? 'Yes' : 'No'
       };
       if (!payload.name) { status.innerHTML = '<div class="alert alert-warning mb-0 py-1">Name required.</div>'; return; }
