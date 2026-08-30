@@ -187,7 +187,12 @@
       if (payload.scope === 'ids') payload.ids = document.getElementById('alScopeExtra').value.trim();
       if (!payload.type || payload.days === '') { status.innerHTML = '<div class="alert alert-warning mb-0">Type and days required.</div>'; return; }
       status.innerHTML = '<div class="text-muted small">Allocating…</div>';
-      try { const d = await callPost('allocateLeave', payload); status.innerHTML = '<div class="alert alert-success mb-0">' + d.message + '</div>'; }
+      try { const d = await callPost('allocateLeave', payload); status.innerHTML = '<div class="alert alert-success mb-0">' + d.message + '</div>';
+        if (d.negatives && d.negatives.length) {
+          alert('Heads up — these employees were negative in ' + payload.type + ' before this allocation. Allocate more if needed:\n\n' +
+            d.negatives.map(x => '• ' + x.name + ' (' + x.id + '): ' + x.remaining).join('\n'));
+        }
+      }
       catch (err) { status.innerHTML = '<div class="alert alert-danger mb-0">' + err.message + '</div>'; }
     };
 
