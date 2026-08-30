@@ -177,6 +177,14 @@ const app = {
 
     async openEmployeePage(employeeId, mode) {
         if (!employeeId) return;
+        // Ensure location list for the Location dropdown.
+        if (!this.LOCATION_NAMES) {
+            try {
+                const lr = await fetch(this.EXEC_URL + '?method=getLocations&_=' + Date.now(), { cache: 'no-store' });
+                const ld = await lr.json();
+                this.LOCATION_NAMES = (ld.success && ld.data) ? ld.data.filter(l => l.active).map(l => l.name) : [];
+            } catch (e) { this.LOCATION_NAMES = []; }
+        }
         document.querySelectorAll('#sidebar .nav-link').forEach(l => l.classList.remove('active'));
         document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
         document.getElementById('page-profile').classList.add('active');
@@ -249,7 +257,7 @@ const app = {
                   F('Name (English)','Name (English)',{id:'nameEnglish'}) +
                   F('Name (Arabic)','Name (Arabic)',{id:'nameArabic'}) +
                   F('Civil ID','Civil ID',{id:'civilId'}) +
-                  F('Branch','Branch',{id:'branch'}) +
+                  F('Location','Location',{id:'branch',type:'select',options:(app.LOCATION_NAMES||[])}) +
                   F('Shift','Shift',{id:'shift'}) +
                   F('Status','Status',{id:'status',type:'select',options:['Active','On Leave','Inactive']}) +
                   '<h6 class="text-primary mt-3"><i class="bi bi-telephone"></i> Contact</h6>' +
