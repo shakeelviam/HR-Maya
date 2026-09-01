@@ -17,6 +17,16 @@
   function adminEmail() { const el = document.getElementById('userEmail'); return el && el.innerText && el.innerText !== 'Loading...' ? el.innerText.trim() : 'Dashboard'; }
 
   async function callApi(qs) {
+    // One auto-retry for Apps Script cold-start (transient 404/network).
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const res = await fetch(EXEC_URL + '?' + qs + '&_=' + Date.now(), { cache: 'no-store' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const d = await res.json(); if (!d.success) throw new Error(d.error || 'Unknown error'); return d;
+      } catch (e) { if (attempt === 1) throw e; await new Promise(r => setTimeout(r, 800)); }
+    }
+  }
+  async function callApi_orig(qs) {
     const res = await fetch(EXEC_URL + '?' + qs + '&_=' + Date.now(), { cache: 'no-store' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const d = await res.json(); if (!d.success) throw new Error(d.error || 'Unknown error'); return d;
