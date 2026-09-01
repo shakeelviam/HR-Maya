@@ -48,7 +48,7 @@ const app = {
         const tbody = document.getElementById('employeesTableBody');
         tbody.innerHTML = '';
         if (!this.employeesData || this.employeesData.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" class="text-center">No employees found.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center">No employees found.</td></tr>';
             return;
         }
 
@@ -59,6 +59,7 @@ const app = {
                     <td>${emp['Name (English)'] || 'Unknown'}</td>
                     <td>${emp['Name (Arabic)'] || '-'}</td>
                     <td>${emp['Civil ID'] || '-'}</td>
+                    <td>${emp['Designation'] || '-'}</td>
                     <td>${emp['Gross Salary'] || 0}</td>
                     <td>${emp['Remaining Vacation'] || 0}</td>
                     <td><span class="status-badge ${(emp.Status || 'active').toLowerCase()}">${emp.Status || 'Active'}</span></td>
@@ -138,6 +139,13 @@ const app = {
                 this.LOCATION_NAMES = (ld.success && ld.data) ? ld.data.filter(l => l.active).map(l => l.name) : [];
             } catch (e) { this.LOCATION_NAMES = []; }
         }
+        if (!this.DESIGNATION_NAMES) {
+            try {
+                const dr = await fetch(this.EXEC_URL + '?method=getDesignations&_=' + Date.now(), { cache: 'no-store' });
+                const dd = await dr.json();
+                this.DESIGNATION_NAMES = (dd.success && dd.data) ? dd.data : [];
+            } catch (e) { this.DESIGNATION_NAMES = []; }
+        }
         document.querySelectorAll('#sidebar .nav-link').forEach(l => l.classList.remove('active'));
         document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
         document.getElementById('page-profile').classList.add('active');
@@ -211,6 +219,7 @@ const app = {
                   F('Name (Arabic)','Name (Arabic)',{id:'nameArabic'}) +
                   F('Civil ID','Civil ID',{id:'civilId'}) +
                   F('Location','Location',{id:'branch',type:'select',options:(app.LOCATION_NAMES||[])}) +
+                  F('Designation','Designation',{id:'designation',type:'select',options:(app.DESIGNATION_NAMES||[])}) +
                   F('Shift','Shift',{id:'shift'}) +
                   F('Status','Status',{id:'status',type:'select',options:['Active','On Leave','Inactive']}) +
                   '<h6 class="text-primary mt-3"><i class="bi bi-telephone"></i> Contact</h6>' +
@@ -273,6 +282,7 @@ const app = {
         put('nameEnglish', v('nameEnglish')); put('nameArabic', v('nameArabic')); put('civilId', v('civilId'));
         put('branch', v('branch')); put('status', v('status')); put('iban', v('iban'));
         put('shift', v('shift'));
+        put('designation', v('designation'));
         put('email', v('email')); put('mobile', v('mobile')); put('whatsapp', v('whatsapp'));
         put('passportNo', v('passportNo')); put('basic', v('basic'));
         ['cidExpiry','passportIssue','passportExpiry','healthIssue','healthExpiry','dateOfJoin'].forEach(k => { const val = v(k); if (val !== undefined) payload[k] = toDd(val); });
