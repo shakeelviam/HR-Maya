@@ -146,3 +146,49 @@ function getKioskLocation() {
         setTimeout(() => finish({ lat: null, lng: null }), 9000);
     });
 }
+
+// ============================================================
+// SUBMIT OVERTIME (kiosk add-on) — self-submit, goes to HR pending review
+// ============================================================
+function openOtSubmit() {
+    if (!currentEmpId) return;
+    const m = document.getElementById('otModal');
+    document.getElementById('otDate').value = new Date().toISOString().split('T')[0];
+    document.getElementById('otHours').value = '';
+    document.getElementById('otMsg').innerText = '';
+    m.style.display = 'flex';
+}
+function closeOtSubmit() {
+    document.getElementById('otModal').style.display = 'none';
+}
+async function submitOt() {
+    const msg = document.getElementById('otMsg');
+    const btn = document.getElementById('otSubmitBtn');
+    const iso = document.getElementById('otDate').value;
+    const hours = document.getElementById('otHours').value;
+    if (!iso) { msg.style.color = '#c00'; msg.innerText = 'Pick a date.'; return; }
+    if (!hours || Number(hours) <= 0) { msg.style.color = '#c00'; msg.innerText = 'Enter OT hours.'; return; }
+    // dd-mm-yyyy for the backend
+    const [y, mo, d] = iso.split('-');
+    const dd = d + '-' + mo + '-' + y;
+
+    btn.disabled = true; btn.innerText = 'Submitting…';
+    msg.style.color = '#555'; msg.innerText = 'Getting location…';
+    try {
+        const pos = await getKioskLocation();
+        msg.innerText = 'Please wait…';
+        const result = await submitOtRequest(currentEmpId, currentEmpPin, dd, hours, pos.lat, pos.lng);
+        if (result && result.success) {
+            msg.style.color = '#198754';
+            msg.innerText = result.message || 'Submitted — pending HR review.';
+            setTimeout(closeOtSubmit, 1800);
+        } else {
+            msg.style.color = '#c00';
+            msg.innerText = (result && result.error) ? result.error : 'Could not submit.';
+        }
+    } catch (e) {
+        msg.style.color = '#c00'; msg.innerText = 'Network error. Try again.';
+    } finally {
+        btn.disabled = false; btn.innerText = 'Submit';
+    }
+}
