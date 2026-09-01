@@ -159,23 +159,24 @@
     };
 
     app.editSupervisors = async function (location) {
-      // Load employees + current supervisors.
       let emps = [], current = [];
-      try {
-        const er = await callApi('method=getManualAttnEmployees'); emps = er.employees || [];
-      } catch (e) {}
+      try { const er = await callApi('method=getManualAttnEmployees'); emps = er.employees || []; } catch (e) {}
       try {
         const sr = await callApi('method=getLocationSupervisors');
-        const row = (sr.data || []).find(x => x.location === location);
-        current = row ? row.supervisors.map(s => s.id) : [];
+        const row = (sr.data || []).find(x => String(x.location).trim().toLowerCase() === String(location).trim().toLowerCase());
+        current = row ? row.supervisors.map(s => String(s.id).trim()) : [];
       } catch (e) {}
-      const opts = emps.map(e => '<option value="' + e.id + '"' + (current.indexOf(e.id) !== -1 ? ' selected' : '') + '>' + e.name + ' (' + e.id + ')</option>').join('');
+      const curSet = {}; current.forEach(id => curSet[id] = true);
+      const checks = emps.map(e =>
+        '<div class="form-check"><input class="form-check-input sup-chk" type="checkbox" value="' + e.id + '" id="sup_' + e.id + '"' + (curSet[e.id] ? ' checked' : '') + '>' +
+        '<label class="form-check-label" for="sup_' + e.id + '">' + e.name + ' (' + e.id + ')</label></div>').join('');
       const html =
         '<div class="modal fade" id="supModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">' +
           '<div class="modal-header"><h5 class="modal-title">Supervisors — ' + location + '</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>' +
           '<div class="modal-body">' +
-            '<label class="form-label small mb-1">Select supervisors (Ctrl/Cmd-click for multiple)</label>' +
-            '<select id="supSelect" class="form-select" multiple size="10">' + opts + '</select>' +
+            '<div class="d-flex justify-content-between align-items-center mb-2"><span class="small text-muted">Tick everyone who supervises this location. You can select multiple.</span>' +
+              '<input type="text" id="supFilter" class="form-control form-control-sm" style="width:150px" placeholder="filter…" oninput="app.filterSupChecks()"></div>' +
+            '<div id="supList" style="max-height:320px;overflow:auto;border:1px solid #eee;border-radius:6px;padding:8px">' + checks + '</div>' +
             '<div id="supStatus" class="mt-2"></div>' +
           '</div>' +
           '<div class="modal-footer"><button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>' +
@@ -186,13 +187,20 @@
       new bootstrap.Modal(document.getElementById('supModal')).show();
     };
 
+    app.filterSupChecks = function () {
+      const q = (document.getElementById('supFilter').value || '').toLowerCase();
+      document.querySelectorAll('#supList .form-check').forEach(fc => {
+        const t = fc.innerText.toLowerCase();
+        fc.style.display = t.indexOf(q) !== -1 ? '' : 'none';
+      });
+    };
+
     app.saveSupervisors = async function (location) {
-      const sel = document.getElementById('supSelect');
-      const ids = Array.from(sel.selectedOptions).map(o => o.value);
+      const ids = Array.from(document.querySelectorAll('#supList .sup-chk:checked')).map(c => c.value);
       const status = document.getElementById('supStatus');
       try {
         const d = await callPost('saveLocationSupervisors', { location: location, supervisorIds: ids.join(',') });
-        status.innerHTML = '<div class="alert alert-success mb-0 py-1">' + d.message + '</div>';
+        status.innerHTML = '<div class="alert alert-success mb-0 py-1">' + d.message + ' (' + ids.length + ' supervisor' + (ids.length === 1 ? '' : 's') + ')</div>';
         setTimeout(() => { const m = bootstrap.Modal.getInstance(document.getElementById('supModal')); if (m) m.hide(); }, 1000);
       } catch (err) { status.innerHTML = '<div class="alert alert-danger mb-0 py-1">' + err.message + '</div>'; }
     };
