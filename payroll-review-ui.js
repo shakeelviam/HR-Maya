@@ -102,6 +102,7 @@
           '<td class="text-end">' + fmt(e.encAmt) + '</td>' +
           '<td><input type="number" step="0.001" class="form-control form-control-sm pr-bonus text-end" value="0" style="width:90px"></td>' +
           '<td class="text-end pr-unpaid" data-v="' + KD(e.unpaidAmt) + '">' + unp + '</td>' +
+          '<td class="text-end pr-sched" data-v="' + KD(e.scheduled || 0) + '">' + (e.scheduled ? '<span title="' + (e.scheduledItems||[]).map(it=>it.type+' '+fmt(it.amount)).join(', ') + '">' + fmt(e.scheduled) + '</span>' : '0.000') + '</td>' +
           '<td><input type="number" step="0.001" class="form-control form-control-sm pr-loan text-end" value="0" style="width:90px"></td>' +
           '<td><input type="number" step="0.001" class="form-control form-control-sm pr-adv text-end" value="0" style="width:90px"></td>' +
           '<td><input type="number" step="0.001" class="form-control form-control-sm pr-disc text-end" value="0" style="width:90px"></td>' +
@@ -110,7 +111,7 @@
       }).join('');
       wrap.innerHTML = '<table class="table table-sm table-striped align-middle" style="min-width:1050px"><thead><tr>' +
         '<th>ID</th><th>Name</th><th class="text-end">Gross</th><th class="text-end">OT (hrs/KD)</th><th class="text-end">Encash</th>' +
-        '<th class="text-end">Bonus/Add</th><th class="text-end">Unpaid</th><th class="text-end">Loan</th><th class="text-end">Advance</th><th class="text-end">Discipline</th>' +
+        '<th class="text-end">Bonus/Add</th><th class="text-end">Unpaid</th><th class="text-end">Scheduled</th><th class="text-end">Loan</th><th class="text-end">Advance</th><th class="text-end">Discipline</th>' +
         '<th class="text-end">Net</th></tr></thead><tbody>' + body + '</tbody></table>';
 
       wrap.querySelectorAll('tr[data-i]').forEach(tr => {
@@ -125,7 +126,8 @@
       const num = (sel) => { const el = tr.querySelector(sel); return Number(el.value) || 0; };
       const bonus = num('.pr-bonus'), loan = num('.pr-loan'), adv = num('.pr-adv'), disc = num('.pr-disc');
       const unpaid = Number(tr.querySelector('.pr-unpaid').getAttribute('data-v')) || 0;
-      const net = KD(e.gross + e.otAmount + e.encAmt + bonus - (unpaid + loan + adv + disc));
+      const sched = Number((tr.querySelector('.pr-sched') || {}).getAttribute ? tr.querySelector('.pr-sched').getAttribute('data-v') : 0) || 0;
+      const net = KD(e.gross + e.otAmount + e.encAmt + bonus - (unpaid + sched + loan + adv + disc));
       tr.querySelector('.pr-net').innerText = fmt(net);
       app.renderRunBar();
     };
