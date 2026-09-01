@@ -46,6 +46,7 @@
     if (anchor && anchor.parentElement && !document.getElementById('page-otreview')) {
       const s = document.createElement('div'); s.className = 'page-section'; s.id = 'page-otreview';
       s.innerHTML =
+        '<div id="orPendingWrap" class="table-container mb-3"></div>' +
         '<div class="table-container mb-3">' +
           '<h5 class="mb-3"><i class="bi bi-clipboard-check"></i> OT Review &amp; Post</h5>' +
           '<div class="row g-2 align-items-end">' +
@@ -69,6 +70,7 @@
     if (typeof app === 'undefined') return setTimeout(attach, 50);
 
     app.loadOtDraft = async function () {
+      app.loadPendingOt();
       const wrap = document.getElementById('orTableWrap');
       const from = document.getElementById('orFrom').value, to = document.getElementById('orTo').value;
       wrap.innerHTML = '<div class="text-muted small">Computing…</div>';
@@ -80,6 +82,40 @@
         DRAFT = await callApi(qs);
         app.renderOtDraft();
       } catch (err) { wrap.innerHTML = '<div class="alert alert-danger mb-0">' + err.message + '</div>'; }
+    };
+
+    app.loadPendingOt = async function () {
+      const wrap = document.getElementById('orPendingWrap');
+      if (!wrap) return;
+      try {
+        const d = await callApi('method=getPendingOt');
+        if (!d.rows || !d.rows.length) { wrap.innerHTML = ''; return; }
+        const body = d.rows.map(r => {
+          const geo = /OK/.test(r.geoFlag) ? '<span class="text-success small">' + r.geoFlag + '</span>' : '<span class="text-danger small">' + (r.geoFlag || '—') + '</span>';
+          return '<tr data-row="' + r.row + '"><td>' + r.empId + '</td><td>' + r.name + '</td><td>' + r.date + '</td>' +
+          '<td><input type="number" step="0.25" class="form-control form-control-sm po-hrs" value="' + r.hours + '" style="width:90px"></td>' +
+          '<td class="small"><b>' + (r.computedOt || '—') + '</b></td>' +
+          '<td>' + geo + '</td>' +
+          '<td class="small text-muted">' + (r.submitted || '') + '</td>' +
+          '<td class="text-end"><button class="btn btn-success btn-sm me-1" onclick="app.approvePending(' + r.row + ')"><i class="bi bi-check"></i></button>' +
+            '<button class="btn btn-outline-danger btn-sm" onclick="app.rejectPending(' + r.row + ')"><i class="bi bi-x"></i></button></td></tr>';
+        }).join('');
+        wrap.innerHTML = '<h6 class="mb-2"><i class="bi bi-hourglass-split"></i> Self-submitted OT — pending approval (' + d.rows.length + ')</h6>' +
+          '<div class="table-responsive"><table class="table table-sm table-striped align-middle"><thead><tr><th>ID</th><th>Name</th><th>Date</th><th>Claimed</th><th>Computed (presence−shift)</th><th>Geo</th><th>Submitted</th><th></th></tr></thead><tbody>' + body + '</tbody></table></div>' +
+          '<div class="text-muted small">Compare <b>Claimed</b> against <b>Computed</b> (from punches). Edit the hours before approving if they differ. Approving posts into OT_Entries (paid).</div>';
+      } catch (e) { wrap.innerHTML = ''; }
+    };
+
+    app.approvePending = async function (row) {
+      const tr = document.querySelector('#orPendingWrap tr[data-row="' + row + '"]');
+      const hrs = tr ? tr.querySelector('.po-hrs').value : '';
+      try { const d = await callApi('method=approvePendingOt&row=' + row + '&hours=' + encodeURIComponent(hrs) + '&by=' + encodeURIComponent(adminEmail())); alert(d.message); app.loadPendingOt(); }
+      catch (err) { alert(err.message); }
+    };
+    app.rejectPending = async function (row) {
+      if (!confirm('Reject this OT submission?')) return;
+      try { await callApi('method=rejectPendingOt&row=' + row); app.loadPendingOt(); }
+      catch (err) { alert(err.message); }
     };
 
     app.renderOtDraft = function () {
