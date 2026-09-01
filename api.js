@@ -31,6 +31,9 @@ function gsRequest(method, params = {}) {
 // These return the backend's raw JSON object directly (it already
 // contains .success, .name, .id, .currentStatus, .stage, .error, etc.),
 // which is exactly what kiosk.js expects. No wrapping.
+function submitOtRequest(empId, pin, date, hours, lat, lng) {
+    return gsRequest('submitOtRequest', { empId: empId, pin: pin, date: date, hours: hours, lat: (lat == null ? '' : lat), lng: (lng == null ? '' : lng) });
+}
 function loginStaffKiosk(empId, pin) {
     return gsRequest('loginStaffKiosk', { empId: empId, pin: pin });
 }
