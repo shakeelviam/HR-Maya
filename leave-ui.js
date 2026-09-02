@@ -118,6 +118,12 @@
             '</div>' +
             '<div id="migStatus" class="mt-2"></div>' +
           '</div></div>' +
+        '</div>' +
+        // Encashment history + reprint voucher
+        '<div class="table-container mt-4">' +
+          '<div class="d-flex justify-content-between align-items-center mb-2"><h6 class="mb-0"><i class="bi bi-receipt"></i> Encashment History</h6>' +
+            '<button class="btn btn-outline-secondary btn-sm" onclick="app.loadEncashHistory()"><i class="bi bi-arrow-repeat"></i> Load</button></div>' +
+          '<div id="encHistWrap" class="table-responsive"><div class="text-muted small">Click Load to view past encashments and reprint vouchers.</div></div>' +
         '</div>';
       anchor.parentElement.appendChild(s);
     }
@@ -125,6 +131,32 @@
 
   (function attach() {
     if (typeof app === 'undefined') return setTimeout(attach, 50);
+
+    app.loadEncashHistory = async function () {
+      const wrap = document.getElementById('encHistWrap');
+      wrap.innerHTML = '<div class="text-muted small">Loading…</div>';
+      try {
+        const d = await callApi('method=getEncashmentHistory');
+        if (!d.rows || !d.rows.length) { wrap.innerHTML = '<div class="text-muted small">No encashments recorded.</div>'; return; }
+        const money = (n) => (Math.round((Number(n)||0)*1000)/1000).toFixed(3);
+        const body = d.rows.map(r =>
+          '<tr><td>' + r.empId + '</td><td>' + r.name + '</td><td>' + r.type + '</td>' +
+          '<td class="text-end">' + r.days + '</td><td class="text-end">' + money(r.amount) + '</td>' +
+          '<td>' + (r.encashDate || '') + '</td><td class="small text-muted">' + (r.voucherNo || '—') + '</td>' +
+          '<td class="text-end"><button class="btn btn-outline-primary btn-sm" onclick="app.reprintVoucher(' + r.row + ', this)"><i class="bi bi-printer"></i> Print</button></td></tr>').join('');
+        wrap.innerHTML = '<table class="table table-sm table-striped align-middle"><thead><tr>' +
+          '<th>ID</th><th>Name</th><th>Type</th><th class="text-end">Days</th><th class="text-end">Amount</th><th>Date</th><th>Voucher No</th><th></th>' +
+          '</tr></thead><tbody>' + body + '</tbody></table>';
+      } catch (err) { wrap.innerHTML = '<div class="alert alert-danger mb-0">' + err.message + '</div>'; }
+    };
+
+    app.reprintVoucher = async function (row, btn) {
+      if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>'; }
+      try {
+        const d = await callApi('method=reprintEncashmentVoucher&row=' + row);
+        if (btn) { btn.outerHTML = '<a class="btn btn-primary btn-sm" href="' + d.url + '" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right"></i> Open</a>'; }
+      } catch (err) { if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-printer"></i> Print'; } alert(err.message); }
+    };
 
     app.loadLeaveTypes = async function () {
       try {
