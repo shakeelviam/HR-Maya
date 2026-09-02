@@ -187,9 +187,21 @@
           '&days=' + encodeURIComponent(days) + '&encashDate=' + encodeURIComponent(toDdMmYyyy(dateIso)) +
           '&by=' + encodeURIComponent(adminEmail());
         const data = await callApi(qs);
-        status.innerHTML = '<div class="alert alert-success mb-0"><i class="bi bi-check-circle"></i> ' + data.message + '</div>';
+        let okHtml = '<div class="alert alert-success mb-0"><i class="bi bi-check-circle"></i> ' + data.message + '</div>';
+        if (data.voucherNo) {
+          okHtml += '<button class="btn btn-outline-primary btn-sm mt-2" onclick="app.printVoucher(\'' + data.voucherNo + '\', this)"><i class="bi bi-printer"></i> Print Encashment Voucher</button>';
+        }
+        status.innerHTML = okHtml;
         app.loadLeaveBalances();
       } catch (err) { status.innerHTML = '<div class="alert alert-danger mb-0">' + err.message + '</div>'; }
+    };
+
+    app.printVoucher = async function (voucherNo, btn) {
+      if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Generating…'; }
+      try {
+        const d = await callApi('method=generateEncashmentVoucher&voucherNo=' + encodeURIComponent(voucherNo));
+        if (btn) { btn.outerHTML = '<a class="btn btn-primary btn-sm mt-2" href="' + d.url + '" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right"></i> Open Voucher PDF</a>'; }
+      } catch (err) { if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-printer"></i> Print Encashment Voucher'; } alert(err.message); }
     };
 
     app.bulkUploadLeave = async function () {
