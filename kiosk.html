@@ -20,15 +20,16 @@
         .kiosk-header { background: white; border-radius: 15px; padding: 20px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
         .kiosk-header h4 { margin: 0; font-weight: 600; }
         .kiosk-header small { color: #6c757d; }
-        .stage-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .stage-btn { height: 130px; border: none; border-radius: 15px; font-size: 1.4rem; font-weight: 600; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .stage-btn i { font-size: 2.5rem; margin-bottom: 10px; }
-        .stage-btn:active:not(:disabled) { transform: scale(0.95); }
-        .stage-btn:disabled { opacity: 0.4; filter: grayscale(100%); pointer-events: none; }
+        .stage-btn-single { width: 100%; min-height: 200px; border: none; border-radius: 20px; font-size: 2rem; font-weight: 700; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; box-shadow: 0 6px 16px rgba(0,0,0,0.15); transition: transform 0.15s; }
+        .stage-btn-single i { font-size: 4rem; }
+        .stage-btn-single:active { transform: scale(0.97); }
         .btn-check-in { background: #198754; }
         .btn-break-out { background: #ffc107; color: #333; }
         .btn-break-in { background: #0dcaf0; color: #333; }
         .btn-check-out { background: #dc3545; }
+        .stage-done { text-align:center; padding:40px 20px; background:#fff; border-radius:20px; box-shadow:0 6px 16px rgba(0,0,0,0.08); color:#198754; }
+        .stage-done i { font-size:4rem; } .stage-done div { font-size:1.4rem; font-weight:700; margin-top:8px; }
+        .stage-done-sub { font-size:0.95rem !important; font-weight:400 !important; color:#6c757d; margin-top:4px; }
         .btn-ot { width: 100%; margin-top: 15px; height: 60px; border: none; border-radius: 15px; background: #fd7e14; color: white; font-size: 1.15rem; font-weight: 600; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .btn-ot:active { transform: scale(0.97); }
         .logout-container { text-align: right; margin-top: 15px; }
@@ -64,20 +65,7 @@
             <small id="kioskEmpIdDisplay">ID: ---</small>
         </div>
 
-        <div class="stage-grid">
-            <button class="stage-btn btn-check-in" id="btnCheckIn" onclick="kioskAction('Check In')">
-                <i class="bi bi-play-circle"></i> Check In
-            </button>
-            <button class="stage-btn btn-break-out" id="btnBreakOut" onclick="kioskAction('Break Out')">
-                <i class="bi bi-pause-circle"></i> Break Out
-            </button>
-            <button class="stage-btn btn-break-in" id="btnBreakIn" onclick="kioskAction('Break In')">
-                <i class="bi bi-play-circle"></i> Break In
-            </button>
-            <button class="stage-btn btn-check-out" id="btnCheckOut" onclick="kioskAction('Check Out')">
-                <i class="bi bi-stop-circle"></i> Check Out
-            </button>
-        </div>
+        <div id="stageHost"></div>
 
         <button class="btn-ot" onclick="openOtSubmit()">
             <i class="bi bi-clock-history"></i> Submit Overtime
