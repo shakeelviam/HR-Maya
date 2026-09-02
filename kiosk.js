@@ -55,9 +55,9 @@ async function kioskLogin() {
 async function kioskAction(stage) {
     if (!currentEmpId) return;
 
-    // Simple client-side locking to prevent double clicking
-    const allBtns = document.querySelectorAll('.stage-btn');
-    allBtns.forEach(b => b.disabled = true);
+    // Lock the single stage button + OT button during the request.
+    const btn = document.getElementById('stageBtn');
+    if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
 
     try {
         // Capture location (best-effort). Backend flags "NO LOCATION" if unavailable/denied.
@@ -70,36 +70,50 @@ async function kioskAction(stage) {
                 msg += '\n\n⚠ Location: ' + result.geoFlag + (result.distance != null ? ' (' + result.distance + 'm from branch)' : '');
             }
             alert(msg);
-            updateButtons(result.stage);
+            // Advance to the next step based on the stage just recorded.
+            const nextByStage = {
+                'Check In': 'checked_in',
+                'Break Out': 'on_break',
+                'Break In': 'break_done',
+                'Check Out': 'done'
+            };
+            updateButtons(nextByStage[stage] || 'done');
         } else {
             alert(result.error || 'Action failed.');
             refreshDashboardState();
+            if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
         }
     } catch (error) {
         alert('Network error. Please try again.');
         console.error(error);
-    } finally {
-        allBtns.forEach(b => b.disabled = false);
+        if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
     }
 }
 
 // 3. Button State Manager
+// Single big button showing only the next valid action.
+// Sequence: (none/checked_out) Check In -> (checked_in) Break Out ->
+//           (on_break) Break In -> (break_done) Check Out -> (done) completed.
 function updateButtons(currentStage) {
-    const btnCI = document.getElementById('btnCheckIn');
-    const btnBO = document.getElementById('btnBreakOut');
-    const btnBI = document.getElementById('btnBreakIn');
-    const btnCO = document.getElementById('btnCheckOut');
-
-    // Reset all to disabled
-    [btnCI, btnBO, btnBI, btnCO].forEach(b => b.disabled = true);
-
-    if (currentStage === 'none' || currentStage === 'checked_out') {
-        btnCI.disabled = false;
-    } else if (currentStage === 'checked_in') {
-        btnBO.disabled = false;
-    } else if (currentStage === 'on_break') {
-        btnBI.disabled = false;
+    const host = document.getElementById('stageHost');
+    if (!host) return;
+    const map = {
+        'none':        { stage: 'Check In',  cls: 'btn-check-in',  icon: 'bi-play-circle',  label: 'Check In' },
+        'checked_out': { stage: 'Check In',  cls: 'btn-check-in',  icon: 'bi-play-circle',  label: 'Check In' },
+        'checked_in':  { stage: 'Break Out', cls: 'btn-break-out', icon: 'bi-pause-circle', label: 'Break Out' },
+        'on_break':    { stage: 'Break In',  cls: 'btn-break-in',  icon: 'bi-play-circle',  label: 'Break In' },
+        'break_done':  { stage: 'Check Out', cls: 'btn-check-out', icon: 'bi-stop-circle',  label: 'Check Out' },
+        'checked_in_after_break': { stage: 'Check Out', cls: 'btn-check-out', icon: 'bi-stop-circle', label: 'Check Out' }
+    };
+    const step = map[currentStage];
+    if (!step) {
+        // Fully done for the day.
+        host.innerHTML = '<div class="stage-done"><i class="bi bi-check-circle"></i><div>All done for today</div>' +
+            '<div class="stage-done-sub">You have completed your attendance.</div></div>';
+        return;
     }
+    host.innerHTML = '<button class="stage-btn-single ' + step.cls + '" id="stageBtn" onclick="kioskAction(\'' + step.stage + '\')">' +
+        '<i class="bi ' + step.icon + '"></i><span>' + step.label + '</span></button>';
 }
 
 // 4. Logout Function
