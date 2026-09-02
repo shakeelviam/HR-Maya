@@ -97,7 +97,7 @@
             '</div>' +
             '<button class="btn btn-success btn-sm mt-3" onclick="app.encashLeave()"><i class="bi bi-cash-coin"></i> Encash</button>' +
             '<div id="enStatus" class="mt-2"></div>' +
-            '<div class="text-muted small mt-1">Amount = Basic ÷ 26 × days. Excludes OT. Reduces Remaining and is paid in the run ending on/after the encash date.</div>' +
+            '<div class="text-muted small mt-1">Amount = Basic ÷ 30 × days (a month = 30 days; 60 days = 2 basic salaries). Excludes OT. Reduces Remaining and is paid in the run ending on/after the encash date.</div>' +
           '</div></div>' +
         '</div>' +
         // Bulk upload + migration
