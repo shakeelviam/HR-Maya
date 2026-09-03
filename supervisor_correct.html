@@ -84,14 +84,36 @@ async function loadSessions(){
 function renderSessions(){
   const wrap=document.getElementById('sessWrap');
   if(!DATA.sessions.length){ wrap.innerHTML='<div class="text-muted small">No sessions for this location in 01–03 Sep.</div>'; return; }
-  const body=DATA.sessions.map((s,i)=>
-    '<tr class="'+(s.broken?'needs':'')+'" data-i="'+i+'"><td>'+s.name+'</td><td>'+s.date+'</td>'+
-    '<td><input type="time" class="form-control form-control-sm tm sc-in" value="'+s.checkIn+'"></td>'+
-    '<td><input type="time" class="form-control form-control-sm tm sc-out" value="'+s.checkOut+'"></td>'+
-    '<td><input type="checkbox" class="form-check-input sc-next"></td>'+
-    '<td>'+(s.presence==null?'—':s.presence+'h')+(s.broken?' <span class="badge bg-warning text-dark">'+s.reason+'</span>':'')+'</td>'+
-    '<td class="text-end"><button class="btn btn-primary btn-sm" onclick="saveCorrect('+i+',this)">Save</button></td></tr>').join('');
+  const body=DATA.sessions.map((s,i)=>{
+    const rowCls = s.duplicate ? 'table-danger' : (s.broken ? 'needs' : '');
+    const dupBadge = s.duplicate ? ' <span class="badge bg-danger">Duplicate</span>' : '';
+    const brokenBadge = s.broken ? ' <span class="badge bg-warning text-dark">'+s.reason+'</span>' : '';
+    // auto-tick +1d if the out time is earlier than the in time (crossed midnight)
+    const autoNext = (s.checkIn && s.checkOut && s.checkOut < s.checkIn);
+    return '<tr class="'+rowCls+'" data-i="'+i+'"><td>'+s.name+dupBadge+'</td><td>'+s.date+'</td>'+
+    '<td><input type="time" class="form-control form-control-sm tm sc-in" value="'+s.checkIn+'" onchange="app_autoNext('+i+')"></td>'+
+    '<td><input type="time" class="form-control form-control-sm tm sc-out" value="'+s.checkOut+'" onchange="app_autoNext('+i+')"></td>'+
+    '<td><input type="checkbox" class="form-check-input sc-next"'+(autoNext?' checked':'')+'></td>'+
+    '<td>'+(s.presence==null?'—':s.presence+'h')+brokenBadge+'</td>'+
+    '<td class="text-end"><button class="btn btn-primary btn-sm me-1" onclick="saveCorrect('+i+',this)">Save</button>'+
+      '<button class="btn btn-outline-danger btn-sm" onclick="deleteSess('+i+',this)" title="Delete this session"><i class="bi bi-trash"></i></button></td></tr>';
+  }).join('');
   wrap.innerHTML='<table class="table table-sm align-middle"><thead><tr><th>Name</th><th>Date</th><th>In</th><th>Out</th><th>+1d</th><th>Presence</th><th></th></tr></thead><tbody>'+body+'</tbody></table>';
+}
+
+// Auto-tick +1d when the out time is earlier than the in time (overnight).
+function app_autoNext(i){
+  const tr=document.querySelector('tr[data-i="'+i+'"]');
+  const inV=tr.querySelector('.sc-in').value, outV=tr.querySelector('.sc-out').value;
+  if(inV && outV && outV < inV) tr.querySelector('.sc-next').checked = true;
+}
+
+async function deleteSess(i,btn){
+  const s=DATA.sessions[i];
+  if(!confirm('Delete '+s.name+' session on '+s.date+'? (removes the punches)')) return;
+  btn.disabled=true; btn.innerText='…';
+  try{ await post('deleteSession',{ ciRow:s.ciRow, coRow:s.coRow, empId:s.empId, date:s.date, by:supName() }); loadSessions(); }
+  catch(e){ alert(e.message); btn.disabled=false; btn.innerHTML='<i class="bi bi-trash"></i>'; }
 }
 async function saveCorrect(i,btn){
   const s=DATA.sessions[i]; const tr=document.querySelector('tr[data-i="'+i+'"]');
