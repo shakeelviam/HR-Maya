@@ -4,136 +4,744 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Maya HR Management System</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap 5 + Icons (structural / modals / forms) -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- DataTables -->
     <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+
     <style>
-        :root { --primary-color: #0d6efd; --sidebar-width: 250px; }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f9fa; height: 100vh; }
-        
-        #loginScreen { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%); padding: 20px; }
-        .login-card { background: white; border-radius: 20px; padding: 50px 40px; max-width: 420px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.3); text-align: center; }
-        .login-card .logo-icon { font-size: 4rem; color: #0d6efd; }
-        .login-card h2 { font-weight: 600; margin-top: 10px; color: #1a1a2e; }
-        .login-card p.subtitle { color: #6c757d; margin-bottom: 30px; }
-        .login-card hr { margin: 25px 0; }
-        .login-card .google-btn-wrapper { display: flex; justify-content: center; }
-        .login-card .footer-text { font-size: 0.8rem; color: #6c757d; margin-top: 15px; }
-        
-        #mainApp { display: none; width: 100%; }
-        .wrapper { display: flex; width: 100%; align-items: stretch; }
-        #sidebar { min-width: var(--sidebar-width); max-width: var(--sidebar-width); background: linear-gradient(180deg, #0d6efd 0%, #0a58ca 100%); color: #fff; transition: all 0.3s; min-height: 100vh; padding-top: 20px; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
-        #sidebar .brand { padding: 20px 30px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; }
-        #sidebar .brand h3 { font-weight: 300; letter-spacing: 1px; }
-        #sidebar .brand i { font-size: 2rem; }
-        #sidebar .nav-link { color: rgba(255,255,255,0.8); padding: 12px 30px; transition: all 0.3s; border-left: 3px solid transparent; cursor: pointer; }
-        #sidebar .nav-link:hover { color: #fff; background: rgba(255,255,255,0.1); border-left-color: #fff; }
-        #sidebar .nav-link.active { color: #fff; background: rgba(255,255,255,0.15); border-left-color: #fff; }
-        #sidebar .nav-link i { margin-right: 10px; width: 20px; text-align: center; }
-        #content { width: 100%; padding: 20px; min-height: 100vh; transition: all 0.3s; }
-        .top-bar { background: white; padding: 12px 25px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 25px; }
-        .top-bar .user-info { display: flex; align-items: center; gap: 12px; }
-        .top-bar .user-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid #e9ecef; }
-        .top-bar .user-avatar-placeholder { width: 36px; height: 36px; border-radius: 50%; background: #0d6efd; color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 0.9rem; }
-        .top-bar .user-email { font-size: 0.9rem; color: #6c757d; }
-        .stat-card { background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); transition: transform 0.3s; }
-        .stat-card:hover { transform: translateY(-5px); }
-        .stat-card .stat-icon { font-size: 2.5rem; opacity: 0.7; }
-        .stat-card .stat-number { font-size: 2rem; font-weight: 600; }
-        .table-container { background: white; border-radius: 10px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .page-section { display: none; }
-        .page-section.active { display: block; }
-        
-        .profile-header { background: white; border-radius: 10px; padding: 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 25px; }
-        .profile-avatar { width: 100px; height: 100px; border-radius: 50%; background: #0d6efd; color: white; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: 600; margin: 0 auto; }
-        .profile-info-item { padding: 8px 0; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; }
-        .profile-info-item:last-child { border-bottom: none; }
-        .profile-info-label { color: #6c757d; font-weight: 500; }
-        .profile-info-value { font-weight: 500; }
-        .profile-stat { text-align: center; padding: 15px; background: #f8f9fa; border-radius: 8px; }
-        .profile-stat-number { font-size: 1.8rem; font-weight: 600; color: #0d6efd; }
-        .profile-stat-label { color: #6c757d; font-size: 0.9rem; }
-        .status-badge { padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 500; }
-        .status-badge.active { background: #d4edda; color: #155724; }
-        .status-badge.inactive { background: #f8d7da; color: #721c24; }
-        .status-badge.on-leave { background: #fff3cd; color: #856404; }
-        
-        @media (max-width: 768px) {
-            #sidebar { margin-left: -250px; position: fixed; z-index: 1000; height: 100vh; }
-            #sidebar.active { margin-left: 0; }
-            #content { width: 100%; padding: 15px; }
-            .login-card { padding: 30px 20px; }
-            .profile-avatar { width: 70px; height: 70px; font-size: 1.8rem; }
-        }
+    /* ============================================================
+       DESIGN TOKENS
+       ============================================================ */
+    :root {
+        --hr-sidebar-bg  : oklch(0.16 0.02 200);
+        --hr-accent      : oklch(0.65 0.13 190);
+        --hr-accent-dark : oklch(0.56 0.13 190);
+        --hr-content-bg  : oklch(0.985 0.002 200);
+        --hr-card-bg     : #fff;
+        --hr-card-border : oklch(0.9 0.005 200);
+        --hr-text        : oklch(0.2 0.01 200);
+        --hr-muted       : oklch(0.52 0.01 200);
+        --hr-divider     : oklch(0.28 0.02 200);
+        --hr-row-sep     : oklch(0.94 0.003 200);
+        --sidebar-width  : 68px;
+    }
+
+    /* ============================================================
+       GLOBAL BASE
+       ============================================================ */
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+        font-family: system-ui, -apple-system, sans-serif;
+        background: var(--hr-content-bg);
+        color: var(--hr-text);
+        min-height: 100vh;
+        margin: 0;
+    }
+    a { color: var(--hr-accent); text-decoration: none; }
+    a:hover { color: var(--hr-accent-dark); }
+
+    /* ============================================================
+       LOGIN SCREEN
+       ============================================================ */
+    #loginScreen {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        background: var(--hr-sidebar-bg);
+        padding: 20px;
+    }
+    .login-card {
+        background: var(--hr-card-bg);
+        border-radius: 16px;
+        padding: 48px 40px;
+        max-width: 400px;
+        width: 100%;
+        text-align: center;
+        box-shadow: 0 24px 80px oklch(0.05 0.02 200 / .4);
+    }
+    .login-card .logo-icon {
+        width: 56px; height: 56px;
+        border-radius: 12px;
+        background: var(--hr-accent);
+        display: flex; align-items: center; justify-content: center;
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 700; font-size: 24px;
+        color: var(--hr-sidebar-bg);
+        margin: 0 auto 16px;
+    }
+    /* hide the original Bootstrap icon inside the login-card logo slot */
+    .login-card .logo-icon i { display: none; }
+    .login-card h2 {
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 600; font-size: 22px;
+        color: var(--hr-text); margin-bottom: 6px;
+    }
+    .login-card .subtitle { color: var(--hr-muted); font-size: 14px; margin-bottom: 0; }
+    .login-card hr { border-color: var(--hr-card-border); margin: 24px 0; }
+    .login-card .google-btn-wrapper { display: flex; justify-content: center; }
+    .login-card .footer-text { font-size: 12px; color: var(--hr-muted); margin-top: 16px; }
+
+    /* ============================================================
+       APP SHELL
+       ============================================================ */
+    #mainApp { display: none; width: 100%; }
+    .wrapper { display: flex; width: 100%; min-height: 100vh; }
+
+    /* ============================================================
+       SIDEBAR  — 68px icon strip
+       ============================================================ */
+    #sidebar {
+        width: var(--sidebar-width);
+        min-width: var(--sidebar-width);
+        background: var(--hr-sidebar-bg);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 16px 0;
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        overflow-y: auto;
+        overflow-x: hidden;
+        scrollbar-width: none;
+        z-index: 100;
+    }
+    #sidebar::-webkit-scrollbar { display: none; }
+
+    .sidebar-logo {
+        width: 30px; height: 30px;
+        border-radius: 8px;
+        background: var(--hr-accent);
+        display: flex; align-items: center; justify-content: center;
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 700; font-size: 14px;
+        color: var(--hr-sidebar-bg);
+        margin-bottom: 14px;
+        flex-shrink: 0;
+    }
+
+    /* ul.nav must stay for UI-file compatibility (they query #sidebar ul.nav) */
+    #sidebar ul.nav {
+        flex-direction: column !important;
+        align-items: center;
+        gap: 6px;
+        list-style: none;
+        padding: 0; margin: 0;
+        width: 100%;
+    }
+    #sidebar .nav-item {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+    }
+    /* Dividers between groups */
+    #sidebar .nav-divider {
+        height: 1px;
+        width: 36px;
+        background: var(--hr-divider);
+        margin: 2px auto;
+        list-style: none;
+        display: block;
+        pointer-events: none;
+    }
+    /* Icon nav links */
+    #sidebar .nav-link {
+        width: 40px; height: 40px;
+        border-radius: 9px;
+        display: flex; align-items: center; justify-content: center;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 11px; font-weight: 700;
+        letter-spacing: .02em;
+        color: oklch(0.65 0.01 200);
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 0;
+        text-decoration: none !important;
+        transition: background .12s, color .12s;
+        /* hide injected Bootstrap icons (UI files inject <i> tags) */
+    }
+    #sidebar .nav-link i { display: none; }
+    #sidebar .nav-link:hover {
+        background: oklch(0.24 0.02 200);
+        color: oklch(0.78 0.01 200);
+    }
+    #sidebar .nav-link.active {
+        background: var(--hr-accent);
+        color: var(--hr-sidebar-bg);
+    }
+
+    /* ============================================================
+       CONTENT AREA
+       ============================================================ */
+    #content {
+        flex: 1;
+        min-width: 0;
+        padding: 36px 44px;
+        background: var(--hr-content-bg);
+    }
+
+    /* Page header */
+    #pageHeader {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 20px;
+        border-bottom: 1px solid var(--hr-card-border);
+        margin-bottom: 28px;
+    }
+    #pageGroup {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 11px;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+        color: var(--hr-muted);
+        margin-bottom: 4px;
+    }
+    #pageTitle {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 26px; font-weight: 600;
+        color: oklch(0.18 0.01 200);
+        margin: 0; padding: 0;
+    }
+    /* user chip */
+    .user-chip {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        flex-shrink: 0;
+    }
+    #userAvatarPlaceholder {
+        width: 34px; height: 34px;
+        border-radius: 8px;
+        background: var(--hr-accent);
+        color: var(--hr-sidebar-bg);
+        display: flex; align-items: center; justify-content: center;
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 700; font-size: 13px;
+    }
+    #userAvatar {
+        width: 34px; height: 34px;
+        border-radius: 8px;
+        object-fit: cover;
+    }
+    #userEmail { font-size: 14px; color: var(--hr-muted); }
+    .user-chip .btn-outline-danger {
+        border: 1px solid oklch(0.88 0.01 25) !important;
+        background: transparent !important;
+        color: oklch(0.55 0.16 25) !important;
+        padding: 8px 16px !important;
+        border-radius: 8px !important;
+        font-size: 14px !important; font-weight: 500 !important;
+    }
+    .user-chip .btn-outline-danger:hover {
+        background: oklch(0.97 0.01 25) !important;
+    }
+
+    /* ============================================================
+       PAGE SECTIONS
+       ============================================================ */
+    .page-section { display: none; }
+    .page-section.active { display: block; }
+
+    /* ============================================================
+       STAT CARDS (Dashboard)
+       ============================================================ */
+    .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
+    }
+    .hr-stat-card {
+        background: var(--hr-card-bg);
+        border: 1px solid var(--hr-card-border);
+        border-radius: 14px;
+        padding: 24px;
+    }
+    .hr-stat-label {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 12px;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+        color: var(--hr-muted);
+        font-weight: 600;
+    }
+    .hr-stat-value {
+        font-family: 'JetBrains Mono', monospace;
+        font-weight: 700; font-size: 32px;
+        margin-top: 10px;
+        color: var(--hr-accent);
+    }
+
+    /* ============================================================
+       CARDS / TABLE CONTAINERS
+       ============================================================ */
+    .table-container {
+        background: var(--hr-card-bg);
+        border: 1px solid var(--hr-card-border);
+        border-radius: 14px;
+        padding: 24px;
+    }
+    /* toolbar row inside a card */
+    .page-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .page-toolbar h5 {
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 600; font-size: 16px;
+        margin: 0;
+    }
+
+    /* ============================================================
+       TABLES
+       ============================================================ */
+    .table {
+        color: var(--hr-text);
+        border-color: var(--hr-row-sep);
+        font-size: 14px;
+        margin-bottom: 0;
+    }
+    .table thead tr { background: var(--hr-content-bg); }
+    .table thead th {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 11px; font-weight: 600;
+        text-transform: uppercase;
+        color: var(--hr-muted);
+        letter-spacing: .03em;
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--hr-card-border) !important;
+        white-space: nowrap;
+    }
+    .table tbody td {
+        padding: 13px 16px;
+        border-top: 1px solid var(--hr-row-sep) !important;
+        vertical-align: middle;
+    }
+    .table-striped > tbody > tr:nth-of-type(odd) > * { --bs-table-accent-bg: transparent; background: transparent; }
+    .table-striped > tbody > tr:nth-of-type(even) > * { --bs-table-accent-bg: transparent; background: transparent; }
+    .table tbody tr:hover td { background: oklch(0.975 0.002 200) !important; }
+    /* Monospace for numbers/IDs in tables (applied via class by UI files) */
+    td.num, .font-mono { font-family: 'JetBrains Mono', monospace; }
+    /* Employee ID sub-label */
+    td .emp-id, td .text-muted.small { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--hr-muted); }
+
+    /* DataTables overrides */
+    .dataTables_wrapper .dataTables_filter input,
+    .dataTables_wrapper .dataTables_length select {
+        border: 1px solid oklch(0.85 0.005 200);
+        border-radius: 7px;
+        padding: 6px 10px;
+        font-size: 13px;
+        background: #fff;
+        color: var(--hr-text);
+    }
+    .dataTables_wrapper .dataTables_filter input:focus,
+    .dataTables_wrapper .dataTables_length select:focus {
+        border-color: var(--hr-accent);
+        box-shadow: 0 0 0 3px oklch(0.65 0.13 190 / .12);
+        outline: none;
+    }
+    .dataTables_wrapper .dataTables_info { font-size: 13px; color: var(--hr-muted); }
+    .dataTables_wrapper .page-item.active .page-link {
+        background: var(--hr-accent);
+        border-color: var(--hr-accent);
+        color: var(--hr-sidebar-bg);
+    }
+    .dataTables_wrapper .page-link {
+        color: var(--hr-accent);
+        border-color: var(--hr-card-border);
+        border-radius: 6px !important;
+    }
+
+    /* ============================================================
+       STATUS BADGES
+       ============================================================ */
+    /* Bootstrap badge override + custom pills */
+    .status-badge,
+    span[style*="background:oklch(0.94"],
+    span[style*="background: oklch(0.94"] {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+    }
+    .status-badge.active { background: oklch(0.94 0.05 165); color: oklch(0.4 0.1 165); }
+    .status-badge.on-leave { background: oklch(0.94 0.05 85); color: oklch(0.45 0.12 85); }
+    .status-badge.inactive { background: oklch(0.94 0.03 25); color: oklch(0.5 0.14 25); }
+    .badge.bg-success, .badge.bg-primary { background: oklch(0.94 0.05 165) !important; color: oklch(0.4 0.1 165) !important; }
+    .badge.bg-warning { background: oklch(0.94 0.05 85) !important; color: oklch(0.45 0.12 85) !important; }
+    .badge.bg-danger { background: oklch(0.94 0.03 25) !important; color: oklch(0.5 0.14 25) !important; }
+    .badge.bg-secondary { background: oklch(0.94 0.003 200) !important; color: oklch(0.4 0.01 200) !important; }
+
+    /* ============================================================
+       BUTTONS
+       ============================================================ */
+    .btn { font-family: 'Space Grotesk', sans-serif; font-weight: 500; }
+    .btn-primary {
+        background: var(--hr-accent) !important;
+        border-color: var(--hr-accent) !important;
+        color: var(--hr-sidebar-bg) !important;
+        border-radius: 8px;
+    }
+    .btn-primary:hover, .btn-primary:focus {
+        background: var(--hr-accent-dark) !important;
+        border-color: var(--hr-accent-dark) !important;
+        color: var(--hr-sidebar-bg) !important;
+    }
+    .btn-primary:disabled { opacity: .6; }
+    .btn-secondary {
+        background: oklch(0.94 0.003 200) !important;
+        border-color: oklch(0.86 0.005 200) !important;
+        color: var(--hr-text) !important;
+        border-radius: 8px;
+    }
+    .btn-outline-secondary {
+        border: 1px solid oklch(0.85 0.005 200) !important;
+        color: var(--hr-muted) !important;
+        background: transparent !important;
+        border-radius: 8px;
+    }
+    .btn-outline-secondary:hover {
+        background: oklch(0.96 0.003 200) !important;
+        color: var(--hr-text) !important;
+        border-color: oklch(0.78 0.005 200) !important;
+    }
+    .btn-outline-primary {
+        border: 1px solid var(--hr-accent) !important;
+        color: var(--hr-accent) !important;
+        background: transparent !important;
+        border-radius: 8px;
+    }
+    .btn-outline-primary:hover {
+        background: var(--hr-accent) !important;
+        color: var(--hr-sidebar-bg) !important;
+    }
+    .btn-warning {
+        background: oklch(0.82 0.14 85) !important;
+        border-color: oklch(0.82 0.14 85) !important;
+        color: oklch(0.2 0.06 85) !important;
+        border-radius: 8px;
+    }
+    .btn-success {
+        background: oklch(0.55 0.14 165) !important;
+        border-color: oklch(0.55 0.14 165) !important;
+        color: #fff !important;
+        border-radius: 8px;
+    }
+    .btn-outline-danger {
+        border: 1px solid oklch(0.88 0.01 25) !important;
+        background: transparent !important;
+        color: oklch(0.55 0.16 25) !important;
+        border-radius: 8px;
+    }
+    .btn-outline-danger:hover {
+        background: oklch(0.97 0.01 25) !important;
+    }
+    .btn-danger {
+        background: oklch(0.55 0.18 25) !important;
+        border-color: oklch(0.55 0.18 25) !important;
+        color: #fff !important;
+        border-radius: 8px;
+    }
+
+    /* ============================================================
+       FORM CONTROLS
+       ============================================================ */
+    .form-control, .form-select, .form-control-sm, .form-select-sm {
+        border: 1px solid oklch(0.85 0.005 200);
+        border-radius: 7px;
+        color: var(--hr-text);
+        background: #fff;
+    }
+    .form-control:focus, .form-select:focus,
+    .form-control-sm:focus, .form-select-sm:focus {
+        border-color: var(--hr-accent);
+        box-shadow: 0 0 0 3px oklch(0.65 0.13 190 / .12);
+        outline: none;
+    }
+    .form-label { font-size: 13px; color: var(--hr-text); font-weight: 500; }
+    .form-label.small, .form-label small { font-size: 12px; }
+
+    /* ============================================================
+       MODALS
+       ============================================================ */
+    .modal-content {
+        border-radius: 14px;
+        border: 1px solid var(--hr-card-border);
+    }
+    .modal-header {
+        border-bottom: 1px solid var(--hr-card-border);
+        padding: 20px 24px 16px;
+    }
+    .modal-title {
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 600; font-size: 18px;
+    }
+    .modal-body { padding: 24px; }
+    .modal-footer { border-top: 1px solid var(--hr-card-border); padding: 16px 24px; }
+
+    /* ============================================================
+       PROFILE PAGE
+       ============================================================ */
+    .profile-header {
+        background: var(--hr-card-bg);
+        border: 1px solid var(--hr-card-border);
+        border-radius: 14px;
+        padding: 24px;
+        margin-bottom: 20px;
+    }
+    .profile-avatar {
+        width: 80px; height: 80px;
+        border-radius: 12px;
+        background: var(--hr-accent);
+        color: var(--hr-sidebar-bg);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 2rem; font-weight: 700;
+        font-family: 'Space Grotesk', sans-serif;
+        margin: 0 auto;
+    }
+    .profile-info-item {
+        padding: 8px 0;
+        border-bottom: 1px solid var(--hr-card-border);
+        display: flex; justify-content: space-between;
+    }
+    .profile-info-item:last-child { border-bottom: none; }
+    .profile-info-label { color: var(--hr-muted); font-size: 13px; }
+    .profile-info-value { font-weight: 500; }
+    .profile-stat {
+        text-align: center; padding: 16px;
+        background: var(--hr-content-bg);
+        border-radius: 10px;
+    }
+    .profile-stat-number {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 1.6rem; font-weight: 700;
+        color: var(--hr-accent);
+    }
+    .profile-stat-label { color: var(--hr-muted); font-size: 12px; }
+
+    /* ============================================================
+       MISC / ALERTS
+       ============================================================ */
+    .alert { border-radius: 10px; }
+    .alert-success { background: oklch(0.94 0.05 165); border-color: oklch(0.84 0.08 165); color: oklch(0.35 0.1 165); }
+    .alert-warning { background: oklch(0.94 0.05 85); border-color: oklch(0.84 0.1 85); color: oklch(0.38 0.12 85); }
+    .alert-danger  { background: oklch(0.94 0.03 25); border-color: oklch(0.84 0.06 25); color: oklch(0.42 0.14 25); }
+    .text-primary, .text-info { color: var(--hr-accent) !important; }
+    .text-success { color: oklch(0.45 0.12 165) !important; }
+    .text-warning { color: oklch(0.5 0.14 85) !important; }
+    .text-danger  { color: oklch(0.5 0.16 25) !important; }
+    .text-muted   { color: var(--hr-muted) !important; }
+    .bg-light, .bg-secondary { background: var(--hr-content-bg) !important; }
+
+    /* ============================================================
+       RESPONSIVE
+       ============================================================ */
+    @media (max-width: 900px) {
+        #content { padding: 20px 20px; }
+        .stat-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 600px) {
+        #sidebar { width: 52px; min-width: 52px; }
+        --sidebar-width: 52px;
+        #content { padding: 16px 14px; }
+        #userEmail { display: none; }
+        #pageTitle { font-size: 20px; }
+        .stat-grid { grid-template-columns: 1fr 1fr; }
+    }
     </style>
 </head>
 <body>
 
-<!-- LOGIN SCREEN -->
+<!-- ============================================================
+     LOGIN SCREEN
+     ============================================================ -->
 <div id="loginScreen">
     <div class="login-card">
-        <i class="bi bi-building logo-icon"></i>
+        <div class="logo-icon">
+            <i class="bi bi-building"></i><!-- icon hidden via CSS; "M" shown below -->
+            M
+        </div>
         <h2>Maya HR</h2>
         <p class="subtitle">Human Resources Management System</p>
         <hr>
-        <div id="googleLoginButton"></div>
+        <div id="googleLoginButton" class="google-btn-wrapper"></div>
         <p class="footer-text">
-            <i class="bi bi-shield-lock"></i> 
             Only authorized company email addresses can access this system.
         </p>
     </div>
 </div>
 
-<!-- MAIN APP -->
+
+<!-- ============================================================
+     MAIN APP
+     ============================================================ -->
 <div id="mainApp">
     <div class="wrapper">
+
+        <!-- =====================================================
+             SIDEBAR — 68px icon strip
+             All nav items pre-baked so *-ui.js files skip injection
+             ===================================================== -->
         <nav id="sidebar">
-            <div class="brand text-center">
-                <i class="bi bi-building"></i>
-                <h3>Maya HR</h3>
-                <p class="small opacity-75">Human Resources</p>
-            </div>
+            <div class="sidebar-logo">M</div>
             <ul class="nav flex-column">
-                <li class="nav-item"><a class="nav-link active" data-page="dashboard"><i class="bi bi-grid-1x2-fill"></i> Dashboard</a></li>
-                <li class="nav-item"><a class="nav-link" data-page="employees"><i class="bi bi-people-fill"></i> Employees</a></li>
-                <li class="nav-item"><a class="nav-link" data-page="attendance"><i class="bi bi-calendar-check-fill"></i> Attendance</a></li>
-                <li class="nav-item"><a class="nav-link" data-page="reviews"><i class="bi bi-star-fill"></i> Performance Reviews</a></li>
+
+                <!-- Dashboard -->
+                <li class="nav-item">
+                    <a class="nav-link active" data-page="dashboard" title="Dashboard">DB</a>
+                </li>
+
+                <!-- People group divider -->
+                <li class="nav-divider" aria-hidden="true"></li>
+
+                <!-- Employees -->
+                <li class="nav-item">
+                    <a class="nav-link" data-page="employees" title="Employees">EM</a>
+                </li>
+                <!-- Performance Reviews -->
+                <li class="nav-item">
+                    <a class="nav-link" data-page="reviews" title="Performance Reviews">RV</a>
+                </li>
+
+                <!-- Time group divider -->
+                <li class="nav-divider" aria-hidden="true"></li>
+
+                <!-- Attendance -->
+                <li class="nav-item">
+                    <a class="nav-link" data-page="attendance" title="Attendance">AT</a>
+                </li>
+                <!-- Shifts -->
+                <li class="nav-item">
+                    <a class="nav-link" data-page="shifts" title="Shifts">SH</a>
+                </li>
+                <!-- Locations -->
+                <li class="nav-item">
+                    <a class="nav-link" data-page="locations" title="Locations">LC</a>
+                </li>
+                <!-- Overtime -->
+                <li class="nav-item">
+                    <a class="nav-link" data-page="ot" title="Overtime">OT</a>
+                </li>
+                <!-- OT Review -->
+                <li class="nav-item">
+                    <a class="nav-link" data-page="otreview" title="OT Review">OR</a>
+                </li>
+
+                <!-- Pay group divider -->
+                <li class="nav-divider" aria-hidden="true"></li>
+
+                <!-- Payroll -->
+                <li class="nav-item">
+                    <a class="nav-link" data-page="payroll" title="Payroll">PY</a>
+                </li>
+                <!-- Payroll Review -->
+                <li class="nav-item">
+                    <a class="nav-link" data-page="payrollreview" title="Payroll Review">PV</a>
+                </li>
+                <!-- Scheduled Deductions -->
+                <li class="nav-item">
+                    <a class="nav-link" data-page="scheddeduct" title="Scheduled Deductions">SD</a>
+                </li>
+
+                <!-- Admin group divider -->
+                <li class="nav-divider" aria-hidden="true"></li>
+
+                <!-- Leave Balances -->
+                <li class="nav-item">
+                    <a class="nav-link" data-page="leavebal" title="Leave Balances">LB</a>
+                </li>
+                <!-- Leave Types -->
+                <li class="nav-item">
+                    <a class="nav-link" data-page="leavetypes" title="Leave Types">LT</a>
+                </li>
+                <!-- Leave Allocation -->
+                <li class="nav-item">
+                    <a class="nav-link" data-page="leavealloc" title="Leave Allocation">LA</a>
+                </li>
+                <!-- Grant Leave -->
+                <li class="nav-item">
+                    <a class="nav-link" data-page="grantleave" title="Grant Leave">GL</a>
+                </li>
+
             </ul>
-        </nav>
+        </nav><!-- /#sidebar -->
 
+
+        <!-- =====================================================
+             CONTENT AREA
+             ===================================================== -->
         <div id="content">
-            <div class="top-bar d-flex justify-content-between align-items-center">
+
+            <!-- Page Header -->
+            <div id="pageHeader">
                 <div>
-                    <button class="btn btn-outline-secondary d-md-none" id="sidebarToggle"><i class="bi bi-list"></i></button>
-                    <h4 class="d-inline-block ms-2" id="pageTitle">Dashboard</h4>
+                    <div id="pageGroup">Overview</div>
+                    <h1 id="pageTitle">Dashboard</h1>
                 </div>
-                <div class="user-info">
-                    <img id="userAvatar" class="user-avatar" src="" alt="Avatar" style="display:none;">
-                    <div id="userAvatarPlaceholder" class="user-avatar-placeholder">?</div>
-                    <span id="userEmail" class="user-email">Loading...</span>
-                    <button class="btn btn-outline-danger btn-sm" onclick="handleSignOut()"><i class="bi bi-box-arrow-right"></i> Sign Out</button>
+                <div class="user-chip">
+                    <img id="userAvatar" style="display:none;" alt="">
+                    <div id="userAvatarPlaceholder">?</div>
+                    <span id="userEmail">Loading…</span>
+                    <button class="btn btn-outline-danger btn-sm" onclick="handleSignOut()">Sign Out</button>
                 </div>
             </div>
 
-            <!-- DASHBOARD -->
+
+            <!-- ================================================
+                 DASHBOARD
+                 ================================================ -->
             <div class="page-section active" id="page-dashboard">
-                <div class="row g-4 mb-4">
-                    <div class="col-md-3"><div class="stat-card"><div class="d-flex justify-content-between align-items-start"><div><p class="text-muted mb-1">Total Employees</p><p class="stat-number" id="totalEmployees">0</p></div><i class="bi bi-people stat-icon text-primary"></i></div></div></div>
-                    <div class="col-md-3"><div class="stat-card"><div class="d-flex justify-content-between align-items-start"><div><p class="text-muted mb-1">Active Employees</p><p class="stat-number" id="activeEmployees">0</p></div><i class="bi bi-person-check stat-icon text-success"></i></div></div></div>
-                    <div class="col-md-3"><div class="stat-card"><div class="d-flex justify-content-between align-items-start"><div><p class="text-muted mb-1">Pending Leaves</p><p class="stat-number" id="pendingLeaves">0</p></div><i class="bi bi-clock-history stat-icon text-warning"></i></div></div></div>
-                    <div class="col-md-3"><div class="stat-card"><div class="d-flex justify-content-between align-items-start"><div><p class="text-muted mb-1">Avg Rating</p><p class="stat-number" id="avgRating">0</p></div><i class="bi bi-star-fill stat-icon text-info"></i></div></div></div>
+                <div class="stat-grid">
+                    <div class="hr-stat-card">
+                        <div class="hr-stat-label">Total Employees</div>
+                        <div class="hr-stat-value" id="totalEmployees">0</div>
+                    </div>
+                    <div class="hr-stat-card">
+                        <div class="hr-stat-label">Active Employees</div>
+                        <div class="hr-stat-value" id="activeEmployees">0</div>
+                    </div>
+                    <div class="hr-stat-card">
+                        <div class="hr-stat-label">Pending Leaves</div>
+                        <div class="hr-stat-value" id="pendingLeaves">0</div>
+                    </div>
+                    <div class="hr-stat-card">
+                        <div class="hr-stat-label">Avg Rating</div>
+                        <div class="hr-stat-value" id="avgRating">0</div>
+                    </div>
                 </div>
             </div>
 
-            <!-- EMPLOYEES -->
+
+            <!-- ================================================
+                 EMPLOYEES
+                 ================================================ -->
             <div class="page-section" id="page-employees">
                 <div class="table-container">
-                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-                        <h5><i class="bi bi-people"></i> Employee Management</h5>
-                        <div>
-                            <button class="btn btn-primary btn-sm me-2" onclick="app.showAddEmployeeModal()"><i class="bi bi-plus-circle"></i> Add Employee</button>
-                            <button class="btn btn-outline-secondary btn-sm" onclick="app.loadAllData()"><i class="bi bi-arrow-repeat"></i> Refresh</button>
+                    <div class="page-toolbar">
+                        <h5>Employee Management</h5>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-primary btn-sm" onclick="app.showAddEmployeeModal()">
+                                + Add Employee
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="app.loadAllData()">
+                                ↺ Refresh
+                            </button>
                         </div>
                     </div>
                     <table id="employeesTable" class="table table-striped">
@@ -155,96 +763,795 @@
                 </div>
             </div>
 
-            <!-- PROFILE -->
-            <div class="page-section" id="page-profile"><div id="profileContent"></div></div>
 
-            <!-- ATTENDANCE -->
-            <div class="page-section" id="page-attendance">
-                <div class="table-container">
-                    <h5><i class="bi bi-calendar-check"></i> Attendance Log</h5>
-                    <div>
-                        <button class="btn btn-primary" onclick="app.showAttendanceModal()"><i class="bi bi-plus-circle"></i> Mark Attendance</button>
-                    </div>
-                    <div class="mt-3 text-muted small">Use the "Mark Attendance" button above to log employee stages (Check In, Break Out, etc.).</div>
-                </div>
+            <!-- ================================================
+                 PROFILE (employee-ui.js populates profileContent)
+                 ================================================ -->
+            <div class="page-section" id="page-profile">
+                <div id="profileContent"></div>
             </div>
 
-            <!-- REVIEWS -->
+
+            <!-- ================================================
+                 ATTENDANCE (attendance-ui.js rewrites via sec.innerHTML)
+                 ================================================ -->
+            <div class="page-section" id="page-attendance"></div>
+
+
+            <!-- ================================================
+                 PERFORMANCE REVIEWS
+                 ================================================ -->
             <div class="page-section" id="page-reviews">
                 <div class="table-container">
-                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-                        <h5><i class="bi bi-star"></i> Performance Reviews</h5>
-                        <button class="btn btn-primary btn-sm" onclick="app.showReviewModal()"><i class="bi bi-plus-circle"></i> Add Review</button>
+                    <div class="page-toolbar">
+                        <h5>Performance Reviews</h5>
+                        <button class="btn btn-primary btn-sm" onclick="app.showReviewModal()">+ Add Review</button>
                     </div>
                     <table id="reviewsTable" class="table table-striped">
-                        <thead><tr><th>Review ID</th><th>Employee ID</th><th>Employee Name</th><th>Date</th><th>Reviewer</th><th>Rating</th><th>Comments</th></tr></thead>
+                        <thead>
+                            <tr>
+                                <th>Review ID</th>
+                                <th>Employee ID</th>
+                                <th>Employee Name</th>
+                                <th>Date</th>
+                                <th>Reviewer</th>
+                                <th>Rating</th>
+                                <th>Comments</th>
+                            </tr>
+                        </thead>
                         <tbody id="reviewsTableBody"></tbody>
                     </table>
                 </div>
+            </div>
+
+
+            <!-- ================================================
+                 SHIFTS — pre-baked so shifts-ui.js skips creation.
+                 All IDs match exactly what shifts-ui.js expects.
+                 ================================================ -->
+            <div class="page-section" id="page-shifts">
+                <div class="table-container mb-4">
+                    <div class="page-toolbar">
+                        <h5>Shifts</h5>
+                        <button class="btn btn-primary btn-sm" onclick="app.openShift()">+ New Shift</button>
+                    </div>
+                    <div id="shTableWrap" class="table-responsive">
+                        <div class="text-muted small">Loading…</div>
+                    </div>
+                    <div class="text-muted small mt-2">
+                        Normal Hours is the <b>total</b> shift length incl. break.
+                        OT = presence − Normal Hours. Grace applies to check-in only.
+                    </div>
+                </div>
+                <div class="table-container">
+                    <h6 class="mb-3">Assign Shift to Staff</h6>
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label small mb-1">Shift</label>
+                            <select id="asShift" class="form-select form-select-sm"></select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small mb-1">Apply to</label>
+                            <select id="asScope" class="form-select form-select-sm" onchange="app.shiftScopeChange()">
+                                <option value="all">All employees</option>
+                                <option value="branch">A location</option>
+                                <option value="ids">Specific IDs</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4" id="asExtraWrap" style="display:none">
+                            <label class="form-label small mb-1" id="asExtraLabel"></label>
+                            <select id="asExtraLoc" class="form-select form-select-sm" style="display:none"></select>
+                            <input id="asExtra" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-primary btn-sm w-100" onclick="app.doAssignShift()">Assign</button>
+                        </div>
+                    </div>
+                    <div id="asStatus" class="mt-2"></div>
+                </div>
+            </div>
+
+
+            <!-- ================================================
+                 LOCATIONS — pre-baked; locTableWrap required.
+                 ================================================ -->
+            <div class="page-section" id="page-locations">
+                <div class="table-container">
+                    <div class="page-toolbar">
+                        <h5>Locations</h5>
+                        <button class="btn btn-primary btn-sm" onclick="app.openLocation()">+ New Location</button>
+                    </div>
+                    <div id="locTableWrap" class="table-responsive">
+                        <div class="text-muted small">Loading…</div>
+                    </div>
+                    <div class="text-muted small mt-2">
+                        Tick <b>Geofenced</b> for locations where the kiosk should check GPS (needs lat/long/radius).
+                        Leave it off for office locations like Head Office.
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- ================================================
+                 OVERTIME — pre-baked. All IDs match ot-ui.js.
+                 ================================================ -->
+            <div class="page-section" id="page-ot">
+                <div id="otGate"></div>
+                <div id="otBody">
+                    <!-- Add OT -->
+                    <div class="table-container mb-4">
+                        <h5 class="mb-3">Add Overtime</h5>
+                        <div class="row g-2 align-items-end">
+                            <div class="col-auto">
+                                <label class="form-label small mb-1">Date</label>
+                                <input type="date" id="otDate" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-auto position-relative">
+                                <label class="form-label small mb-1">Employee (name / ID / Civil ID)</label>
+                                <input type="text" id="otEmpSearch" class="form-control form-control-sm"
+                                    style="min-width:240px" placeholder="Type name, MT-ID or Civil ID" autocomplete="off">
+                                <input type="hidden" id="otEmp">
+                                <select id="otEmpResults" class="form-select form-select-sm mt-1"
+                                    size="5" style="display:none;position:absolute;z-index:30;min-width:240px"
+                                    onchange="app.otPickEmployee(this.value)"></select>
+                                <div id="otEmpPicked" class="small text-success mt-1"></div>
+                            </div>
+                            <div class="col-auto">
+                                <label class="form-label small mb-1">OT Hours</label>
+                                <input type="number" id="otHours" class="form-control form-control-sm"
+                                    step="0.25" min="0" style="width:110px">
+                            </div>
+                            <div class="col-auto">
+                                <label class="form-label small mb-1">Remark</label>
+                                <input type="text" id="otRemark" class="form-control form-control-sm"
+                                    placeholder="optional">
+                            </div>
+                            <div class="col-auto">
+                                <button id="otAddBtn" class="btn btn-primary btn-sm" onclick="app.addOt()">Add</button>
+                            </div>
+                        </div>
+                        <div id="otAddStatus" class="mt-2"></div>
+                        <div class="text-muted small mt-1">
+                            One OT figure per employee per day — re-adding the same date overwrites it.
+                        </div>
+                    </div>
+                    <!-- OT Summary -->
+                    <div class="table-container">
+                        <div class="page-toolbar mb-3">
+                            <h5>OT Summary</h5>
+                            <div class="d-flex gap-2 align-items-end">
+                                <div>
+                                    <label class="form-label small mb-1">From</label>
+                                    <input type="date" id="otFrom" class="form-control form-control-sm">
+                                </div>
+                                <div>
+                                    <label class="form-label small mb-1">To</label>
+                                    <input type="date" id="otTo" class="form-control form-control-sm">
+                                </div>
+                                <button class="btn btn-outline-secondary btn-sm" onclick="app.otSummary()">View</button>
+                                <button class="btn btn-primary btn-sm" onclick="app.otReport()">Save Report</button>
+                            </div>
+                        </div>
+                        <div id="otSummaryWrap">
+                            <div class="text-muted small">Pick a From–To range and click View. Leave blank for all-time.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- ================================================
+                 OT REVIEW — pre-baked. All IDs match ot-review-ui.js.
+                 ================================================ -->
+            <div class="page-section" id="page-otreview">
+                <div id="orPendingWrap" class="table-container mb-3"></div>
+                <div class="table-container mb-3">
+                    <h5 class="mb-3">OT Review &amp; Post</h5>
+                    <div class="row g-2 align-items-end">
+                        <div class="col-auto">
+                            <label class="form-label small mb-1">From</label>
+                            <input type="date" id="orFrom" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-auto">
+                            <label class="form-label small mb-1">To</label>
+                            <input type="date" id="orTo" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-auto">
+                            <button class="btn btn-primary btn-sm" onclick="app.loadOtDraft()">Compute</button>
+                        </div>
+                        <div class="col-auto">
+                            <input type="text" id="orSearch" class="form-control form-control-sm"
+                                placeholder="Filter name/ID" style="width:170px">
+                        </div>
+                        <div class="col-auto form-check ms-2">
+                            <input type="checkbox" class="form-check-input" id="orFlagsOnly">
+                            <label class="form-check-label small" for="orFlagsOnly">Flagged only</label>
+                        </div>
+                    </div>
+                    <div class="text-muted small mt-2">
+                        OT = presence − shift Normal Hours (computed per day from attendance).
+                        Edit any OT before posting. Posting writes to OT_Entries.
+                    </div>
+                </div>
+                <div id="orTableWrap" class="table-container table-responsive">
+                    <div class="text-muted small">Pick a range and click Compute.</div>
+                </div>
+                <div id="orPostBar"></div>
+            </div>
+
+
+            <!-- ================================================
+                 PAYROLL — pre-baked. All IDs match payroll-ui.js.
+                 ================================================ -->
+            <div class="page-section" id="page-payroll">
+                <!-- Run Payroll -->
+                <div class="table-container mb-4">
+                    <h5 class="mb-3">Run Payroll</h5>
+                    <div class="row g-2 align-items-end mb-2">
+                        <div class="col-auto">
+                            <label class="form-label small mb-1">Period End</label>
+                            <input type="date" id="payrollPeriodEnd" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-auto">
+                            <label class="form-label small mb-1">Mode</label>
+                            <select id="payrollMode" class="form-select form-select-sm">
+                                <option value="attendance">With attendance (OT from log)</option>
+                                <option value="manual">Without attendance (manual OT)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row g-2 align-items-end mb-2">
+                        <div class="col-md-8">
+                            <label class="form-label small mb-1">Exclude Employee IDs (optional, comma-separated)</label>
+                            <input type="text" id="payrollExclude" class="form-control form-control-sm"
+                                placeholder="e.g. MT-00023 — staff already paid via advance/vacation">
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <a href="#" id="payrollFirstRunToggle" class="small text-muted">
+                            First payroll run ever? Click to set a start date
+                        </a>
+                        <div id="payrollFirstRunRow" class="row g-2 align-items-end mt-1" style="display:none;">
+                            <div class="col-auto">
+                                <label class="form-label small mb-1">Period Start (first run only)</label>
+                                <input type="date" id="payrollPeriodStart" class="form-control form-control-sm">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 mb-2">
+                        <button id="payrollPrepBtn" class="btn btn-outline-secondary btn-sm" onclick="app.preparePayrollInputs()">
+                            Prepare Inputs
+                        </button>
+                        <button id="payrollRunBtn" class="btn btn-primary btn-sm" onclick="app.runPayroll()">
+                            Run Payroll
+                        </button>
+                        <button id="payrollCancelBtn" class="btn btn-outline-danger btn-sm" onclick="app.cancelPayroll()">
+                            Cancel Last Run
+                        </button>
+                    </div>
+                    <div id="payrollStatus" class="mb-2"></div>
+                    <div id="payrollFlags"></div>
+                    <div class="text-muted small">
+                        Manual mode uses <b>Manual OT Hours</b> from the Payroll_Inputs tab; both modes apply
+                        <b>Deductions</b> from that tab. "Prepare Inputs" seeds a row per employee for the chosen Period End.
+                        Runs auto-continue from the last period (Payroll_Control).
+                    </div>
+                </div>
+                <!-- Payslips & Report -->
+                <div class="table-container mb-4">
+                    <h5 class="mb-3">Payslips &amp; Report (A5 PDF)</h5>
+                    <div class="row g-2 align-items-end mb-2">
+                        <div class="col-md-6">
+                            <label class="form-label small mb-1">Period tab (blank = most recent run)</label>
+                            <input type="text" id="docsTab" class="form-control form-control-sm"
+                                placeholder="e.g. Payroll 21Jul-20Aug">
+                        </div>
+                        <div class="col-auto">
+                            <button id="docsBtn" class="btn btn-primary btn-sm" onclick="app.generatePayrollDocs()">
+                                Generate
+                            </button>
+                        </div>
+                    </div>
+                    <div id="docsStatus"></div>
+                    <div class="text-muted small">
+                        One combined PDF: an A5 summary page plus one A5 payslip per employee on the tab. Saved to Drive.
+                    </div>
+                </div>
+                <!-- Bank Transfer -->
+                <div class="table-container mb-4">
+                    <h5 class="mb-3">Bank Transfer (Warba)</h5>
+                    <div class="row g-2 align-items-end mb-2">
+                        <div class="col-md-5">
+                            <label class="form-label small mb-1">Period tab to transfer from</label>
+                            <input type="text" id="bankTab" class="form-control form-control-sm"
+                                placeholder="e.g. Payroll 01Aug-21Aug">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small mb-1">Paid in cash — exclude IDs (optional)</label>
+                            <input type="text" id="bankExclude" class="form-control form-control-sm"
+                                placeholder="e.g. MT-00036">
+                        </div>
+                        <div class="col-auto">
+                            <button id="bankBtn" class="btn btn-primary btn-sm" onclick="app.populateBankTransfer()">
+                                Populate Bank Sheet
+                            </button>
+                        </div>
+                    </div>
+                    <div id="bankStatus"></div>
+                    <div class="text-muted small">
+                        Writes each employee's Total Payable into the <b>Bank Transfer Details</b> tab, matched by Civil ID.
+                        Flags anyone paid but missing a bank row or IBAN.
+                    </div>
+                </div>
+                <!-- Amend Attendance -->
+                <div class="table-container">
+                    <h5 class="mb-3">Amend Attendance (Admin)</h5>
+                    <div class="row g-2 align-items-end mb-2">
+                        <div class="col-auto">
+                            <label class="form-label small mb-1">Employee ID</label>
+                            <input type="text" id="amendEmpId" class="form-control form-control-sm"
+                                placeholder="MT-00001">
+                        </div>
+                        <div class="col-auto">
+                            <label class="form-label small mb-1">Date</label>
+                            <input type="date" id="amendDate" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-auto">
+                            <label class="form-label small mb-1">Stage</label>
+                            <select id="amendStage" class="form-select form-select-sm">
+                                <option>Check In</option>
+                                <option>Break Out</option>
+                                <option>Break In</option>
+                                <option>Check Out</option>
+                            </select>
+                        </div>
+                        <div class="col-auto">
+                            <label class="form-label small mb-1">Time</label>
+                            <input type="time" id="amendTime" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-auto">
+                            <label class="form-label small mb-1">Action</label>
+                            <select id="amendAction" class="form-select form-select-sm">
+                                <option value="set">Set / Add</option>
+                                <option value="delete">Delete</option>
+                            </select>
+                        </div>
+                        <div class="col-auto">
+                            <button id="amendBtn" class="btn btn-primary btn-sm" onclick="app.amendAttendance()">Save</button>
+                        </div>
+                    </div>
+                    <div id="amendStatus"></div>
+                    <div class="text-muted small">
+                        Every change is logged to Attendance_Amendments. If the date falls in a period already run,
+                        that run is flagged NEEDS RE-RUN in Payroll_Control — re-run it to apply the correction.
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- ================================================
+                 PAYROLL REVIEW — pre-baked. All IDs match payroll-review-ui.js.
+                 ================================================ -->
+            <div class="page-section" id="page-payrollreview">
+                <div class="table-container mb-3">
+                    <h5 class="mb-3">Payroll Review &amp; Run</h5>
+                    <div class="row g-2 align-items-end">
+                        <div class="col-auto">
+                            <label class="form-label small mb-1">Period end (cutoff)</label>
+                            <input type="date" id="prEnd" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-auto">
+                            <label class="form-label small mb-1">Period start (optional)</label>
+                            <input type="date" id="prStart" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-auto">
+                            <label class="form-label small mb-1">Exclude IDs (cash/advance)</label>
+                            <input type="text" id="prExclude" class="form-control form-control-sm"
+                                placeholder="MT-00036">
+                        </div>
+                        <div class="col-auto">
+                            <button class="btn btn-primary btn-sm" onclick="app.loadPayrollReview()">Load</button>
+                        </div>
+                    </div>
+                    <div class="text-muted small mt-2">
+                        OT is taken from the <b>entire</b> OT_Entries tab. Unpaid-leave deductions auto-fill
+                        from granted Unpaid leave in the period. Running archives OT_Entries and starts fresh.
+                    </div>
+                </div>
+                <div id="prTableWrap" class="table-container table-responsive">
+                    <div class="text-muted small">Pick a period end and click Load.</div>
+                </div>
+                <div id="prRunBar"></div>
+            </div>
+
+
+            <!-- ================================================
+                 SCHEDULED DEDUCTIONS — pre-baked. All IDs match scheduled-deductions-ui.js.
+                 ================================================ -->
+            <div class="page-section" id="page-scheddeduct">
+                <div class="table-container mb-3">
+                    <h5 class="mb-3">Schedule a Deduction</h5>
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label small mb-1">Employee</label>
+                            <input id="sdEmpSearch" class="form-control form-control-sm mb-1"
+                                placeholder="filter…" oninput="app.sdFilterEmps()">
+                            <select id="sdEmp" class="form-select form-select-sm"></select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small mb-1">Type</label>
+                            <select id="sdType" class="form-select form-select-sm">
+                                <option>Loan</option>
+                                <option>Advance</option>
+                                <option>Disciplinary</option>
+                                <option>Fine</option>
+                                <option>Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small mb-1">Amount (KD)</label>
+                            <input id="sdAmount" type="number" step="0.001"
+                                class="form-control form-control-sm">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small mb-1">Month</label>
+                            <select id="sdMonth" class="form-select form-select-sm"></select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small mb-1">Remark</label>
+                            <input id="sdRemark" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-md-1">
+                            <button class="btn btn-primary btn-sm w-100" onclick="app.addSchedDeduct()">Add</button>
+                        </div>
+                    </div>
+                    <div id="sdStatus" class="mt-2"></div>
+                    <div class="text-muted small mt-1">
+                        Split a fine across months by adding one row per month. Payroll auto-applies the month's
+                        pending rows, then locks them.
+                    </div>
+                </div>
+                <div class="table-container">
+                    <div class="page-toolbar mb-2">
+                        <h6 class="mb-0">Scheduled</h6>
+                        <button class="btn btn-outline-secondary btn-sm" onclick="app.loadSchedDeduct()">↺</button>
+                    </div>
+                    <div id="sdTableWrap" class="table-responsive">
+                        <div class="text-muted small">Loading…</div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- ================================================
+                 LEAVE BALANCES — pre-baked. All IDs match leave-ui.js.
+                 ================================================ -->
+            <div class="page-section" id="page-leavebal">
+                <!-- View balances -->
+                <div class="table-container mb-4">
+                    <div class="page-toolbar mb-3">
+                        <h5>Leave Balances</h5>
+                        <div class="d-flex gap-2">
+                            <input type="text" id="balSearch" class="form-control form-control-sm"
+                                style="width:170px" placeholder="Filter by Employee ID">
+                            <button class="btn btn-outline-secondary btn-sm" onclick="app.loadLeaveBalances()">
+                                ↺ Load
+                            </button>
+                        </div>
+                    </div>
+                    <div id="balTableWrap" class="table-responsive">
+                        <div class="text-muted small">Click Load to view balances.</div>
+                    </div>
+                </div>
+                <!-- Add/Edit + Encash -->
+                <div class="row g-4 mb-4">
+                    <div class="col-lg-6">
+                        <div class="table-container h-100">
+                            <h6 class="mb-3">Add / Edit Balance</h6>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label class="form-label small mb-1">Employee ID</label>
+                                    <input id="ubEmp" class="form-control form-control-sm" placeholder="MT-00001">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small mb-1">Type</label>
+                                    <select id="ubType" class="form-select form-select-sm"></select>
+                                </div>
+                                <div class="col-4">
+                                    <label class="form-label small mb-1">Entitled</label>
+                                    <input id="ubEnt" type="number" class="form-control form-control-sm">
+                                </div>
+                                <div class="col-4">
+                                    <label class="form-label small mb-1">Taken</label>
+                                    <input id="ubTaken" type="number" class="form-control form-control-sm" value="0">
+                                </div>
+                                <div class="col-4">
+                                    <label class="form-label small mb-1">Encashed</label>
+                                    <input id="ubEnc" type="number" class="form-control form-control-sm" value="0">
+                                </div>
+                            </div>
+                            <button class="btn btn-primary btn-sm mt-3" onclick="app.saveLeaveBalance()">
+                                Save Balance
+                            </button>
+                            <div id="ubStatus" class="mt-2"></div>
+                            <div class="text-muted small mt-1">
+                                Remaining is computed as Entitled − Taken − Encashed.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="table-container h-100">
+                            <h6 class="mb-3">Encash Leave</h6>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label class="form-label small mb-1">Employee ID</label>
+                                    <input id="enEmp" class="form-control form-control-sm" placeholder="MT-00001">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small mb-1">Type (encashable only)</label>
+                                    <select id="enType" class="form-select form-select-sm"></select>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small mb-1">Days</label>
+                                    <input id="enDays" type="number" class="form-control form-control-sm" min="1">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small mb-1">Encash Date</label>
+                                    <input id="enDate" type="date" class="form-control form-control-sm">
+                                </div>
+                            </div>
+                            <button class="btn btn-success btn-sm mt-3" onclick="app.encashLeave()">
+                                Encash
+                            </button>
+                            <div id="enStatus" class="mt-2"></div>
+                            <div class="text-muted small mt-1">
+                                Amount = Basic ÷ 30 × days (60 days = 2 basic salaries). Reduces Remaining
+                                and is paid in the run ending on/after the encash date.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Bulk Upload + Migration -->
+                <div class="row g-4 mb-4">
+                    <div class="col-lg-7">
+                        <div class="table-container h-100">
+                            <h6 class="mb-3">Bulk Upload Balances</h6>
+                            <div class="text-muted small mb-1">
+                                Paste rows: <code>EmployeeID, Type, Entitled, Taken, Encashed</code>
+                                (one per line; Taken/Encashed optional).
+                            </div>
+                            <textarea id="bulkText" class="form-control form-control-sm" rows="6"
+                                placeholder="MT-00001, Annual, 30, 4, 0&#10;MT-00002, Sick, 15, 0, 0"></textarea>
+                            <button class="btn btn-primary btn-sm mt-2" onclick="app.bulkUploadLeave()">
+                                Upload
+                            </button>
+                            <div id="bulkStatus" class="mt-2"></div>
+                        </div>
+                    </div>
+                    <div class="col-lg-5">
+                        <div class="table-container h-100">
+                            <h6 class="mb-3">Migrate Old Balances</h6>
+                            <div class="text-muted small mb-2">
+                                Pulls the old Vacation / Sick Leave tabs and matches names to Employee IDs.
+                                Preview first, then commit.
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-outline-secondary btn-sm" onclick="app.migrateLeave(false)">
+                                    Preview
+                                </button>
+                                <button class="btn btn-warning btn-sm" onclick="app.migrateLeave(true)">
+                                    Commit
+                                </button>
+                            </div>
+                            <div id="migStatus" class="mt-2"></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Encashment History -->
+                <div class="table-container">
+                    <div class="page-toolbar mb-2">
+                        <h6 class="mb-0">Encashment History</h6>
+                        <button class="btn btn-outline-secondary btn-sm" onclick="app.loadEncashHistory()">
+                            ↺ Load
+                        </button>
+                    </div>
+                    <div id="encHistWrap" class="table-responsive">
+                        <div class="text-muted small">Click Load to view past encashments and reprint vouchers.</div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- ================================================
+                 LEAVE TYPES — pre-baked. ltTableWrap required.
+                 ================================================ -->
+            <div class="page-section" id="page-leavetypes">
+                <div class="table-container">
+                    <div class="page-toolbar mb-3">
+                        <h5>Leave Types</h5>
+                        <button class="btn btn-primary btn-sm" onclick="app.openLeaveType()">+ New Type</button>
+                    </div>
+                    <div id="ltTableWrap" class="table-responsive">
+                        <div class="text-muted small">Loading…</div>
+                    </div>
+                    <div class="text-muted small mt-2">
+                        <b>Is Paid = No</b> → payroll deducts those days (Basic ÷ 26 × days).
+                        <b>Excludes From Payroll = Yes</b> → status flips to On Leave.
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- ================================================
+                 LEAVE ALLOCATION — pre-baked. All IDs match leavetypes-ui.js.
+                 ================================================ -->
+            <div class="page-section" id="page-leavealloc">
+                <div class="table-container mb-4">
+                    <h5 class="mb-3">Allocate Leave</h5>
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label small mb-1">Leave Type</label>
+                            <select id="alType" class="form-select form-select-sm"></select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small mb-1">Days</label>
+                            <input id="alDays" type="number" class="form-control form-control-sm" min="0">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small mb-1">Mode</label>
+                            <select id="alMode" class="form-select form-select-sm">
+                                <option value="set">Set to</option>
+                                <option value="topup">Top-up (add)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small mb-1">Apply to</label>
+                            <select id="alScope" class="form-select form-select-sm" onchange="app.allocScopeChange()">
+                                <option value="all">All employees</option>
+                                <option value="branch">A branch</option>
+                                <option value="ids">Specific IDs</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-primary btn-sm w-100" onclick="app.doAllocate()">Allocate</button>
+                        </div>
+                        <div class="col-md-6" id="alScopeExtraWrap" style="display:none">
+                            <label class="form-label small mb-1" id="alScopeExtraLabel"></label>
+                            <input id="alScopeExtra" class="form-control form-control-sm">
+                        </div>
+                    </div>
+                    <div id="alStatus" class="mt-2"></div>
+                </div>
+                <div class="table-container">
+                    <h6 class="mb-2">One-time migration: Remaining Vacation → Annual</h6>
+                    <div class="text-muted small mb-2">
+                        Seeds each employee's current HR Maya <b>Remaining Vacation</b> into their
+                        <b>Annual</b> balance. Run once. Preview first.
+                    </div>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="app.migrateAnnual(true)">Preview</button>
+                    <button class="btn btn-warning btn-sm ms-2" onclick="app.migrateAnnual(false)">Commit</button>
+                    <div id="migAnnualStatus" class="mt-2"></div>
+                </div>
+            </div>
+
+
+            <!-- ================================================
+                 GRANT LEAVE — pre-baked. All IDs match grant-ui.js.
+                 ================================================ -->
+            <div class="page-section" id="page-grantleave">
+                <div id="reactivateWrap"></div>
+                <div class="table-container">
+                    <div class="page-toolbar mb-3">
+                        <h5>Grant Leave</h5>
+                        <div class="d-flex gap-2">
+                            <input type="text" id="grantSearch" class="form-control form-control-sm"
+                                style="width:200px" placeholder="Search name / ID">
+                            <button class="btn btn-warning btn-sm" onclick="app.applyStatusNow()"
+                                title="Flip anyone currently on leave to On Leave, and list those to reactivate">
+                                Apply Status Changes Now
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="app.loadGrantPage()">
+                                ↺ Refresh
+                            </button>
+                        </div>
+                    </div>
+                    <div id="grantTableWrap" class="table-responsive">
+                        <div class="text-muted small">Loading…</div>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /#content -->
+    </div><!-- /.wrapper -->
+</div><!-- /#mainApp -->
+
+
+<!-- ============================================================
+     MODALS — unchanged from original; Bootstrap handles display
+     ============================================================ -->
+
+<!-- Employee Modal -->
+<div class="modal fade" id="employeeModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="employeeModalTitle">Add Employee</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="employeeForm">
+                    <div class="row">
+                        <div class="col-12"><h6 class="border-bottom pb-2 mb-3">Personal Information</h6></div>
+                        <div class="col-md-4 mb-3"><label class="form-label">Name (English) <span class="text-danger">*</span></label><input type="text" class="form-control" id="empNameEnglish" required></div>
+                        <div class="col-md-4 mb-3"><label class="form-label">Name (Arabic) <span class="text-danger">*</span></label><input type="text" class="form-control" id="empNameArabic" required></div>
+                        <div class="col-md-4 mb-3"><label class="form-label">Civil ID <span class="text-danger">*</span></label><input type="text" class="form-control" id="empCivilId" required></div>
+                        <div class="col-md-4 mb-3"><label class="form-label">IBAN</label><input type="text" class="form-control" id="empIban" placeholder="KW.. (optional)"></div>
+                        <div class="col-md-4 mb-3"><label class="form-label">Passport No</label><input type="text" class="form-control" id="empPassport"></div>
+                        <div class="col-md-4 mb-3"><label class="form-label">Nationality</label><input type="text" class="form-control" id="empNationality"></div>
+                        <div class="col-md-4 mb-3"><label class="form-label">Designation</label><input type="text" class="form-control" id="empDesignation"></div>
+                        <div class="col-md-4 mb-3"><label class="form-label">Email</label><input type="email" class="form-control" id="empEmail"></div>
+                        <div class="col-md-4 mb-3"><label class="form-label">Mobile</label><input type="text" class="form-control" id="empMobile"></div>
+                        <div class="col-md-4 mb-3"><label class="form-label">WhatsApp</label><input type="text" class="form-control" id="empWhatsapp"></div>
+                        <div class="col-md-4 mb-3"><label class="form-label">Salary <span class="text-danger">*</span></label><input type="number" class="form-control" id="empSalary" required step="0.01"></div>
+                        <div class="col-md-4 mb-3"><label class="form-label">Date of Join</label><input type="date" class="form-control" id="empDateOfJoin"></div>
+                        <div class="col-md-4 mb-3"><label class="form-label">Status</label>
+                            <select class="form-control" id="empStatus">
+                                <option value="Active">Active</option>
+                                <option value="Inactive">Inactive</option>
+                                <option value="On Leave">On Leave</option>
+                            </select>
+                        </div>
+                        <div class="col-12 mt-3"><h6 class="border-bottom pb-2 mb-3">Document Details</h6></div>
+                        <div class="col-md-3 mb-3"><label class="form-label">Health Card Issued</label><input type="date" class="form-control" id="empHealthIssued"></div>
+                        <div class="col-md-3 mb-3"><label class="form-label">Health Card Expiry</label><input type="date" class="form-control" id="empHealthExpiry"></div>
+                        <div class="col-md-3 mb-3"><label class="form-label">CID Issued</label><input type="date" class="form-control" id="empCidIssued"></div>
+                        <div class="col-md-3 mb-3"><label class="form-label">CID Expiry</label><input type="date" class="form-control" id="empCidExpiry"></div>
+                        <div class="col-md-3 mb-3"><label class="form-label">Passport Issued</label><input type="date" class="form-control" id="empPassportIssued"></div>
+                        <div class="col-md-3 mb-3"><label class="form-label">Passport Expiry</label><input type="date" class="form-control" id="empPassportExpiry"></div>
+                        <div class="col-md-3 mb-3"><label class="form-label">Contact (Kuwait)</label><input type="text" class="form-control" id="empContactKuwait"></div>
+                        <div class="col-md-3 mb-3"><label class="form-label">Contact (Home)</label><input type="text" class="form-control" id="empContactHome"></div>
+                        <div class="col-12 mt-3"><h6 class="border-bottom pb-2 mb-3">Leave &amp; Vacation</h6></div>
+                        <div class="col-md-3 mb-3"><label class="form-label">Total Vacation Days</label><input type="number" class="form-control" id="empTotalVacation" value="0"></div>
+                        <div class="col-md-3 mb-3"><label class="form-label">Vacation Taken</label><input type="number" class="form-control" id="empVacationTaken" value="0"></div>
+                        <div class="col-md-3 mb-3"><label class="form-label">Remaining Vacation</label><input type="number" class="form-control" id="empRemainingVacation" value="0"></div>
+                        <div class="col-md-3 mb-3"><label class="form-label">Sick Days Taken</label><input type="number" class="form-control" id="empSickDays" value="0"></div>
+                        <div class="col-md-6 mb-3"><label class="form-label">Last Vacation Start</label><input type="date" class="form-control" id="empLastVacationStart"></div>
+                        <div class="col-md-6 mb-3"><label class="form-label">Last Vacation End</label><input type="date" class="form-control" id="empLastVacationEnd"></div>
+                        <div class="col-12 mb-3"><label class="form-label">Remarks</label><textarea class="form-control" id="empRemarks" rows="2"></textarea></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="app.saveEmployee()">Save Employee</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- MODALS -->
-<div class="modal fade" id="employeeModal" tabindex="-1">
-    <div class="modal-dialog modal-xl"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="employeeModalTitle">Add Employee</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-    <div class="modal-body"><form id="employeeForm"><div class="row">
-        <div class="col-12"><h6 class="border-bottom pb-2 mb-3">Personal Information</h6></div>
-        <div class="col-md-4 mb-3"><label class="form-label">Name (English) <span class="text-danger">*</span></label><input type="text" class="form-control" id="empNameEnglish" required></div>
-        <div class="col-md-4 mb-3"><label class="form-label">Name (Arabic) <span class="text-danger">*</span></label><input type="text" class="form-control" id="empNameArabic" required></div>
-        <div class="col-md-4 mb-3"><label class="form-label">Civil ID <span class="text-danger">*</span></label><input type="text" class="form-control" id="empCivilId" required></div>
-        <div class="col-md-4 mb-3"><label class="form-label">IBAN</label><input type="text" class="form-control" id="empIban" placeholder="KW.. (optional)"></div>
-        <div class="col-md-4 mb-3"><label class="form-label">Passport No</label><input type="text" class="form-control" id="empPassport"></div>
-        <div class="col-md-4 mb-3"><label class="form-label">Nationality</label><input type="text" class="form-control" id="empNationality"></div>
-        <div class="col-md-4 mb-3"><label class="form-label">Designation</label><input type="text" class="form-control" id="empDesignation"></div>
-        <div class="col-md-4 mb-3"><label class="form-label">Email</label><input type="email" class="form-control" id="empEmail"></div>
-        <div class="col-md-4 mb-3"><label class="form-label">Mobile</label><input type="text" class="form-control" id="empMobile"></div>
-        <div class="col-md-4 mb-3"><label class="form-label">WhatsApp</label><input type="text" class="form-control" id="empWhatsapp"></div>
-        <div class="col-md-4 mb-3"><label class="form-label">Salary <span class="text-danger">*</span></label><input type="number" class="form-control" id="empSalary" required step="0.01"></div>
-        <div class="col-md-4 mb-3"><label class="form-label">Date of Join</label><input type="date" class="form-control" id="empDateOfJoin"></div>
-        <div class="col-md-4 mb-3"><label class="form-label">Status</label><select class="form-control" id="empStatus"><option value="Active">Active</option><option value="Inactive">Inactive</option><option value="On Leave">On Leave</option></select></div>
-        <div class="col-12 mt-3"><h6 class="border-bottom pb-2 mb-3">Document Details</h6></div>
-        <div class="col-md-3 mb-3"><label class="form-label">Health Card Issued</label><input type="date" class="form-control" id="empHealthIssued"></div>
-        <div class="col-md-3 mb-3"><label class="form-label">Health Card Expiry</label><input type="date" class="form-control" id="empHealthExpiry"></div>
-        <div class="col-md-3 mb-3"><label class="form-label">CID Issued</label><input type="date" class="form-control" id="empCidIssued"></div>
-        <div class="col-md-3 mb-3"><label class="form-label">CID Expiry</label><input type="date" class="form-control" id="empCidExpiry"></div>
-        <div class="col-md-3 mb-3"><label class="form-label">Passport Issued</label><input type="date" class="form-control" id="empPassportIssued"></div>
-        <div class="col-md-3 mb-3"><label class="form-label">Passport Expiry</label><input type="date" class="form-control" id="empPassportExpiry"></div>
-        <div class="col-md-3 mb-3"><label class="form-label">Contact (Kuwait)</label><input type="text" class="form-control" id="empContactKuwait"></div>
-        <div class="col-md-3 mb-3"><label class="form-label">Contact (Home)</label><input type="text" class="form-control" id="empContactHome"></div>
-        <div class="col-12 mt-3"><h6 class="border-bottom pb-2 mb-3">Leave & Vacation</h6></div>
-        <div class="col-md-3 mb-3"><label class="form-label">Total Vacation Days</label><input type="number" class="form-control" id="empTotalVacation" value="0"></div>
-        <div class="col-md-3 mb-3"><label class="form-label">Vacation Taken</label><input type="number" class="form-control" id="empVacationTaken" value="0"></div>
-        <div class="col-md-3 mb-3"><label class="form-label">Remaining Vacation</label><input type="number" class="form-control" id="empRemainingVacation" value="0"></div>
-        <div class="col-md-3 mb-3"><label class="form-label">Sick Days Taken</label><input type="number" class="form-control" id="empSickDays" value="0"></div>
-        <div class="col-md-6 mb-3"><label class="form-label">Last Vacation Start</label><input type="date" class="form-control" id="empLastVacationStart"></div>
-        <div class="col-md-6 mb-3"><label class="form-label">Last Vacation End</label><input type="date" class="form-control" id="empLastVacationEnd"></div>
-        <div class="col-12 mb-3"><label class="form-label">Remarks</label><textarea class="form-control" id="empRemarks" rows="2"></textarea></div>
-    </div></form></div>
-    <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button><button type="button" class="btn btn-primary" onclick="app.saveEmployee()">Save Employee</button></div></div></div>
-</div>
-
-<!-- ATTENDANCE MODAL (4-STAGE) -->
+<!-- Attendance Modal -->
 <div class="modal fade" id="attendanceModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-calendar-check"></i> Mark Attendance</h5>
+                <h5 class="modal-title">Mark Attendance</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <form id="attendanceForm">
                     <div class="mb-3">
                         <label class="form-label">Search / Select Employee</label>
-                        <input type="text" class="form-control" id="attendanceEmployeeSearch" placeholder="Type ID or Name to search..." onkeyup="app.filterAttendanceEmployeeList()">
-                        <select class="form-select mt-2" id="attendanceEmployeeSelect" size="4" onchange="app.selectAttendanceEmployee()">
-                            <option value="" disabled selected>Select an employee...</option>
+                        <input type="text" class="form-control" id="attendanceEmployeeSearch"
+                            placeholder="Type ID or Name to search…" onkeyup="app.filterAttendanceEmployeeList()">
+                        <select class="form-select mt-2" id="attendanceEmployeeSelect" size="4"
+                            onchange="app.selectAttendanceEmployee()">
+                            <option value="" disabled selected>Select an employee…</option>
                         </select>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Selected Employee</label>
-                        <input type="text" class="form-control" id="attendanceEmployeeName" readonly placeholder="Employee Name will appear here">
+                        <input type="text" class="form-control" id="attendanceEmployeeName" readonly
+                            placeholder="Employee Name will appear here">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Date</label>
@@ -253,48 +1560,56 @@
                     <div class="mb-3">
                         <label class="form-label">Stage</label>
                         <div class="d-flex gap-2 flex-wrap">
-                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="app.setAttendanceStage('Check In')">Check In</button>
-                            <button type="button" class="btn btn-outline-warning btn-sm" onclick="app.setAttendanceStage('Break Out')">Break Out</button>
-                            <button type="button" class="btn btn-outline-info btn-sm" onclick="app.setAttendanceStage('Break In')">Break In</button>
-                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="app.setAttendanceStage('Check Out')">Check Out</button>
+                            <button type="button" class="btn btn-outline-primary btn-sm"
+                                onclick="app.setAttendanceStage('Check In')">Check In</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm"
+                                onclick="app.setAttendanceStage('Break Out')">Break Out</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm"
+                                onclick="app.setAttendanceStage('Break In')">Break In</button>
+                            <button type="button" class="btn btn-outline-danger btn-sm"
+                                onclick="app.setAttendanceStage('Check Out')">Check Out</button>
                         </div>
-                        <input type="text" class="form-control mt-2" id="attendanceStage" readonly placeholder="Select a stage above">
+                        <input type="text" class="form-control mt-2" id="attendanceStage" readonly
+                            placeholder="Select a stage above">
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-primary" onclick="app.submitAttendance()">Submit Attendance</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- LEAVE REQUEST MODAL (SEARCHABLE + BALANCE) -->
+<!-- Leave Request Modal -->
 <div class="modal fade" id="leaveModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-clock"></i> New Leave Request</h5>
+                <h5 class="modal-title">New Leave Request</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <form id="leaveForm">
                     <div class="mb-3">
                         <label class="form-label">Search / Select Employee</label>
-                        <input type="text" class="form-control" id="leaveEmployeeSearch" placeholder="Type ID or Name to search..." onkeyup="app.filterLeaveEmployeeList()">
-                        <select class="form-select mt-2" id="leaveEmployeeSelect" size="4" onchange="app.selectLeaveEmployee()">
-                            <option value="" disabled selected>Select an employee...</option>
+                        <input type="text" class="form-control" id="leaveEmployeeSearch"
+                            placeholder="Type ID or Name to search…" onkeyup="app.filterLeaveEmployeeList()">
+                        <select class="form-select mt-2" id="leaveEmployeeSelect" size="4"
+                            onchange="app.selectLeaveEmployee()">
+                            <option value="" disabled selected>Select an employee…</option>
                         </select>
                     </div>
                     <div class="mb-3 p-2 bg-light rounded">
                         <div class="d-flex justify-content-between">
                             <span><strong>Employee Name:</strong> <span id="leaveEmployeeName">-</span></span>
-                            <span><strong>Available Balance:</strong> <span id="leaveBalanceDisplay" class="text-success fw-bold">0 days</span></span>
+                            <span><strong>Available Balance:</strong>
+                                <span id="leaveBalanceDisplay" class="fw-bold" style="color:var(--hr-accent)">0 days</span>
+                            </span>
                         </div>
                         <div id="leaveErrorDisplay" class="mt-1 text-danger small"></div>
                     </div>
-                    
                     <div class="mb-3">
                         <label class="form-label">Start Date</label>
                         <input type="date" class="form-control" id="leaveStart" required>
@@ -322,29 +1637,44 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
                 <button type="button" class="btn btn-primary" onclick="app.submitLeaveRequest()">Submit Request</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- PERFORMANCE REVIEW MODAL -->
+<!-- Performance Review Modal -->
 <div class="modal fade" id="reviewModal" tabindex="-1">
-    <div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Add Performance Review</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-    <div class="modal-body"><form id="reviewForm">
-        <div class="mb-3"><label class="form-label">Employee ID</label><input type="text" class="form-control" id="reviewEmpId" required></div>
-        <div class="mb-3"><label class="form-label">Employee Name</label><input type="text" class="form-control" id="reviewEmployeeName" required></div>
-        <div class="mb-3"><label class="form-label">Review Date</label><input type="date" class="form-control" id="reviewDate" required></div>
-        <div class="mb-3"><label class="form-label">Reviewer</label><input type="text" class="form-control" id="reviewer" required></div>
-        <div class="mb-3"><label class="form-label">Rating (1-5)</label><input type="number" class="form-control" id="reviewRating" min="1" max="5" value="3" required></div>
-        <div class="mb-3"><label class="form-label">Comments</label><textarea class="form-control" id="reviewComments" rows="3"></textarea></div>
-        <div class="mb-3"><label class="form-label">Goals / Next Steps</label><textarea class="form-control" id="reviewGoals" rows="2"></textarea></div>
-    </form></div>
-    <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button><button type="button" class="btn btn-primary" onclick="app.submitReview()">Save Review</button></div></div></div>
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Performance Review</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="reviewForm">
+                    <div class="mb-3"><label class="form-label">Employee ID</label><input type="text" class="form-control" id="reviewEmpId" required></div>
+                    <div class="mb-3"><label class="form-label">Employee Name</label><input type="text" class="form-control" id="reviewEmployeeName" required></div>
+                    <div class="mb-3"><label class="form-label">Review Date</label><input type="date" class="form-control" id="reviewDate" required></div>
+                    <div class="mb-3"><label class="form-label">Reviewer</label><input type="text" class="form-control" id="reviewer" required></div>
+                    <div class="mb-3"><label class="form-label">Rating (1–5)</label><input type="number" class="form-control" id="reviewRating" min="1" max="5" value="3" required></div>
+                    <div class="mb-3"><label class="form-label">Comments</label><textarea class="form-control" id="reviewComments" rows="3"></textarea></div>
+                    <div class="mb-3"><label class="form-label">Goals / Next Steps</label><textarea class="form-control" id="reviewGoals" rows="2"></textarea></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="app.submitReview()">Save Review</button>
+            </div>
+        </div>
+    </div>
 </div>
 
-<!-- SCRIPTS -->
+
+<!-- ============================================================
+     SCRIPTS — order unchanged from original
+     ============================================================ -->
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
@@ -366,6 +1696,8 @@
 <script src="locations-ui.js"></script>
 <script src="ot-ui.js"></script>
 <script src="ot-review-ui.js"></script>
+
+<!-- Google Sign-In bootstrap -->
 <script>
     function safeInitGoogle() {
         if (typeof google !== 'undefined' && typeof initGoogleAuth === 'function') {
@@ -375,10 +1707,89 @@
         return false;
     }
     if (!safeInitGoogle()) {
-        window.addEventListener('load', function() {
-            safeInitGoogle();
+        window.addEventListener('load', function () { safeInitGoogle(); });
+    }
+</script>
+
+<!-- ============================================================
+     PAGE ROUTING PATCH
+     Runs after all JS loads.
+     - Intercepts sidebar nav clicks to set correct title + group label.
+     - Populates sdMonth select with current + next 11 months.
+     - Populates otDate and prEnd / payrollPeriodEnd defaults to today.
+     ============================================================ -->
+<script>
+(function () {
+    'use strict';
+
+    /* Page metadata: maps data-page value → {title, group} */
+    var PAGE_META = {
+        dashboard    : { title: 'Dashboard',            group: 'Overview' },
+        employees    : { title: 'Employees',            group: 'People'   },
+        reviews      : { title: 'Performance Reviews',  group: 'People'   },
+        attendance   : { title: 'Attendance',           group: 'Time'     },
+        shifts       : { title: 'Shifts',               group: 'Time'     },
+        locations    : { title: 'Locations',            group: 'Time'     },
+        ot           : { title: 'Overtime',             group: 'Time'     },
+        otreview     : { title: 'OT Review',            group: 'Time'     },
+        payroll      : { title: 'Payroll',              group: 'Pay'      },
+        payrollreview: { title: 'Payroll Review',       group: 'Pay'      },
+        scheddeduct  : { title: 'Scheduled Deductions', group: 'Pay'      },
+        leavebal     : { title: 'Leave Balances',       group: 'Admin'    },
+        leavetypes   : { title: 'Leave Types',          group: 'Admin'    },
+        leavealloc   : { title: 'Leave Allocation',     group: 'Admin'    },
+        grantleave   : { title: 'Grant Leave',          group: 'Admin'    }
+    };
+
+    var titleEl = document.getElementById('pageTitle');
+    var groupEl = document.getElementById('pageGroup');
+
+    /* Event delegation on sidebar — fires AFTER app.js element-level handlers */
+    var sidebar = document.getElementById('sidebar');
+    if (sidebar) {
+        sidebar.addEventListener('click', function (e) {
+            var link = e.target.closest('[data-page]');
+            if (!link) return;
+            var pid  = link.getAttribute('data-page');
+            var meta = PAGE_META[pid];
+            if (!meta) return;
+            if (titleEl) titleEl.innerText = meta.title;
+            if (groupEl) groupEl.innerText  = meta.group;
         });
     }
+
+    /* Populate sdMonth with current + next 11 months (matches scheduled-deductions-ui.js) */
+    document.addEventListener('DOMContentLoaded', function () {
+        var sdMonth = document.getElementById('sdMonth');
+        if (sdMonth && sdMonth.options.length === 0) {
+            var now = new Date();
+            for (var i = 0; i < 12; i++) {
+                var d   = new Date(now.getFullYear(), now.getMonth() + i, 1);
+                var lbl = d.toLocaleString('en-US', { month: 'short' }) + '-' + d.getFullYear();
+                var opt = document.createElement('option');
+                opt.text = lbl;
+                sdMonth.add(opt);
+            }
+        }
+
+        /* Set today defaults on date inputs where UI files normally inject todayIso() */
+        function todayISO() {
+            var d = new Date();
+            return d.getFullYear() + '-' +
+                   String(d.getMonth() + 1).padStart(2, '0') + '-' +
+                   String(d.getDate()).padStart(2, '0');
+        }
+        var today = todayISO();
+        ['otDate', 'orTo', 'prEnd', 'payrollPeriodEnd'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el && !el.value) el.value = today;
+        });
+        /* enDate default for encash */
+        var enDate = document.getElementById('enDate');
+        if (enDate && !enDate.value) enDate.value = today;
+    });
+
+})();
 </script>
 
 </body>
