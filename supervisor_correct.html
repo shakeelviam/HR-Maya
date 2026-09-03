@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maya HR — Attendance Correction (01–03 Sep)</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+<style>
+  body{background:#f2f4f7;font-family:'Segoe UI',sans-serif;padding:16px;}
+  .wrap{max-width:860px;margin:0 auto;}
+  .brand{text-align:center;margin-bottom:14px;} .brand i{font-size:2rem;color:#0d6efd;}
+  .card{border:none;box-shadow:0 4px 14px rgba(0,0,0,0.06);border-radius:14px;margin-bottom:16px;}
+  .needs{background:#fff3cd;}
+  .done{background:#d1e7dd;}
+  th,td{font-size:0.88rem;vertical-align:middle;}
+  .tm{width:92px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand"><i class="bi bi-pencil-square"></i><h4 class="mb-0">Attendance Correction</h4>
+    <div class="text-muted small">01–03 September 2026 only</div></div>
+
+  <div class="card"><div class="card-body">
+    <div class="row g-2 align-items-end">
+      <div class="col-sm-5"><label class="form-label small mb-1">Supervisor</label>
+        <select id="supPick" class="form-select form-select-sm" onchange="onSup()"><option value="">— select your name —</option></select></div>
+      <div class="col-sm-5"><label class="form-label small mb-1">Location</label>
+        <input id="locBox" class="form-control form-control-sm" readonly></div>
+      <div class="col-sm-2"><button class="btn btn-primary btn-sm w-100" onclick="loadSessions()"><i class="bi bi-search"></i> Load</button></div>
+    </div>
+    <div id="msg" class="small mt-2"></div>
+  </div></div>
+
+  <div class="card"><div class="card-body">
+    <h6><i class="bi bi-list-check"></i> Sessions to review <span class="text-muted small">(highlighted = needs correction)</span></h6>
+    <div id="sessWrap" class="table-responsive"><div class="text-muted small">Pick your name and Load.</div></div>
+  </div></div>
+
+  <div class="card"><div class="card-body">
+    <h6><i class="bi bi-plus-circle"></i> Add missing attendance (from WhatsApp list)</h6>
+    <div class="row g-2 align-items-end">
+      <div class="col-sm-3"><label class="form-label small mb-1">Employee</label><select id="addEmp" class="form-select form-select-sm"></select></div>
+      <div class="col-sm-2"><label class="form-label small mb-1">Date</label><input type="date" id="addDate" class="form-control form-control-sm" min="2026-09-01" max="2026-09-03" value="2026-09-02"></div>
+      <div class="col-sm-2"><label class="form-label small mb-1">Shift</label><select id="addShift" class="form-select form-select-sm"></select></div>
+      <div class="col-sm-1"><label class="form-label small mb-1">In</label><input type="time" id="addIn" class="form-control form-control-sm"></div>
+      <div class="col-sm-1"><label class="form-label small mb-1">Out</label><input type="time" id="addOut" class="form-control form-control-sm"></div>
+      <div class="col-sm-1"><div class="form-check mt-3"><input type="checkbox" class="form-check-input" id="addNext"><label class="form-check-label small" for="addNext">+1d</label></div></div>
+      <div class="col-sm-2"><button class="btn btn-success btn-sm w-100" onclick="addSession()">Add</button></div>
+    </div>
+    <div class="text-muted small mt-1">Tick "+1d" if check-out is after midnight (next day). Out-of-shift punches are fine — enter the real times.</div>
+    <div id="addMsg" class="small mt-2"></div>
+  </div></div>
+</div>
+
+<script>
+const EXEC_URL = 'https://script.google.com/macros/s/AKfycbyG5XLC79FnyLtSGGWunhJwU83SV0b0kz3y1FKdal-JBcTUM-X0ax134konYyTaKxYiiQ/exec';
+let SUP_MAP = {}, DATA = null;
+function toDd(iso){ if(!iso) return ''; const [y,m,d]=iso.split('-'); return d+'-'+m+'-'+y; }
+async function api(qs){ const r=await fetch(EXEC_URL+'?'+qs+'&_='+Date.now(),{cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status); const d=await r.json(); if(!d.success) throw new Error(d.error||'err'); return d; }
+async function post(m,b){ for(let a=0;a<2;a++){ try{ const r=await fetch(EXEC_URL+'?method='+m,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(b)}); if(!r.ok) throw new Error('HTTP '+r.status); const d=await r.json(); if(!d.success) throw new Error(d.error||'err'); return d; }catch(e){ if(a===1) throw e; await new Promise(res=>setTimeout(res,800)); } } }
+
+async function load(){
+  try{ const d=await api('method=getLocationSupervisors');
+    (d.data||[]).forEach(loc=>(loc.supervisors||[]).forEach(s=>{ SUP_MAP[s.id]={name:s.name,location:loc.location}; }));
+    document.getElementById('supPick').innerHTML='<option value="">— select your name —</option>'+
+      Object.keys(SUP_MAP).map(id=>'<option value="'+id+'">'+SUP_MAP[id].name+' — '+SUP_MAP[id].location+'</option>').join('');
+  }catch(e){ document.getElementById('msg').innerHTML='<span class="text-danger">Load error: '+e.message+'</span>'; }
+}
+function onSup(){ const id=document.getElementById('supPick').value; document.getElementById('locBox').value=SUP_MAP[id]?SUP_MAP[id].location:''; }
+
+async function loadSessions(){
+  const loc=document.getElementById('locBox').value.trim();
+  if(!loc){ document.getElementById('msg').innerHTML='<span class="text-danger">Select your name.</span>'; return; }
+  const wrap=document.getElementById('sessWrap'); wrap.innerHTML='<div class="text-muted small">Loading…</div>';
+  try{
+    DATA=await api('method=getSupervisorSessions&location='+encodeURIComponent(loc));
+    document.getElementById('addEmp').innerHTML=(DATA.employees||[]).map(e=>'<option value="'+e.id+'">'+e.name+' ('+e.id+')</option>').join('');
+    document.getElementById('addShift').innerHTML='<option value="">—</option>'+(DATA.shifts||[]).map(s=>'<option>'+s+'</option>').join('');
+    renderSessions();
+  }catch(e){ wrap.innerHTML='<div class="alert alert-danger mb-0">'+e.message+'</div>'; }
+}
+function renderSessions(){
+  const wrap=document.getElementById('sessWrap');
+  if(!DATA.sessions.length){ wrap.innerHTML='<div class="text-muted small">No sessions for this location in 01–03 Sep.</div>'; return; }
+  const body=DATA.sessions.map((s,i)=>
+    '<tr class="'+(s.broken?'needs':'')+'" data-i="'+i+'"><td>'+s.name+'</td><td>'+s.date+'</td>'+
+    '<td><input type="time" class="form-control form-control-sm tm sc-in" value="'+s.checkIn+'"></td>'+
+    '<td><input type="time" class="form-control form-control-sm tm sc-out" value="'+s.checkOut+'"></td>'+
+    '<td><input type="checkbox" class="form-check-input sc-next"></td>'+
+    '<td>'+(s.presence==null?'—':s.presence+'h')+(s.broken?' <span class="badge bg-warning text-dark">'+s.reason+'</span>':'')+'</td>'+
+    '<td class="text-end"><button class="btn btn-primary btn-sm" onclick="saveCorrect('+i+',this)">Save</button></td></tr>').join('');
+  wrap.innerHTML='<table class="table table-sm align-middle"><thead><tr><th>Name</th><th>Date</th><th>In</th><th>Out</th><th>+1d</th><th>Presence</th><th></th></tr></thead><tbody>'+body+'</tbody></table>';
+}
+async function saveCorrect(i,btn){
+  const s=DATA.sessions[i]; const tr=document.querySelector('tr[data-i="'+i+'"]');
+  const payload={ empId:s.empId, date:s.date, ciRow:s.ciRow, coRow:s.coRow,
+    checkIn:tr.querySelector('.sc-in').value, checkOut:tr.querySelector('.sc-out').value,
+    coNextDay:tr.querySelector('.sc-next').checked, by:supName() };
+  btn.disabled=true; btn.innerText='…';
+  try{ const d=await post('correctSession',payload); tr.className='done'; btn.innerText='Saved ✓'; }
+  catch(e){ alert(e.message); btn.disabled=false; btn.innerText='Save'; }
+}
+async function addSession(){
+  const m=document.getElementById('addMsg');
+  const payload={ empId:document.getElementById('addEmp').value, date:toDd(document.getElementById('addDate').value),
+    shift:document.getElementById('addShift').value, checkIn:document.getElementById('addIn').value,
+    checkOut:document.getElementById('addOut').value, coNextDay:document.getElementById('addNext').checked,
+    location:document.getElementById('locBox').value.trim(), by:supName() };
+  if(!payload.empId||!payload.checkIn||!payload.checkOut){ m.innerHTML='<span class="text-danger">Employee, in and out required.</span>'; return; }
+  try{ const d=await post('addSession',payload); m.innerHTML='<span class="text-success">'+d.message+'</span>'; loadSessions(); }
+  catch(e){ m.innerHTML='<span class="text-danger">'+e.message+'</span>'; }
+}
+function supName(){ const id=document.getElementById('supPick').value; return SUP_MAP[id]?SUP_MAP[id].name+' ('+id+')':'Supervisor'; }
+load();
+</script>
+</body>
+</html>
