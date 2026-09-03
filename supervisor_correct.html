@@ -14,7 +14,8 @@
   .needs{background:#fff3cd;}
   .done{background:#d1e7dd;}
   th,td{font-size:0.88rem;vertical-align:middle;}
-  .tm{width:92px;}
+  .tm{width:130px;min-width:130px;}
+  .sc-in-lbl,.sc-out-lbl{font-weight:600;color:#0d6efd;font-size:0.9rem;margin-top:2px;}
 </style>
 </head>
 <body>
@@ -44,8 +45,8 @@
       <div class="col-sm-3"><label class="form-label small mb-1">Employee</label><select id="addEmp" class="form-select form-select-sm"></select></div>
       <div class="col-sm-2"><label class="form-label small mb-1">Date</label><input type="date" id="addDate" class="form-control form-control-sm" min="2026-09-01" max="2026-09-03" value="2026-09-02"></div>
       <div class="col-sm-2"><label class="form-label small mb-1">Shift</label><select id="addShift" class="form-select form-select-sm"></select></div>
-      <div class="col-sm-1"><label class="form-label small mb-1">In</label><input type="time" id="addIn" class="form-control form-control-sm"></div>
-      <div class="col-sm-1"><label class="form-label small mb-1">Out</label><input type="time" id="addOut" class="form-control form-control-sm"></div>
+      <div class="col-sm-2"><label class="form-label small mb-1">In</label><input type="time" id="addIn" class="form-control form-control-sm"></div>
+      <div class="col-sm-2"><label class="form-label small mb-1">Out</label><input type="time" id="addOut" class="form-control form-control-sm"></div>
       <div class="col-sm-1"><div class="form-check mt-3"><input type="checkbox" class="form-check-input" id="addNext"><label class="form-check-label small" for="addNext">+1d</label></div></div>
       <div class="col-sm-2"><button class="btn btn-success btn-sm w-100" onclick="addSession()">Add</button></div>
     </div>
