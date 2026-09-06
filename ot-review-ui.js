@@ -1,7 +1,7 @@
 // ============================================================
 // ot-review-ui.js — OT Review: verify attendance-computed OT,
 // post to OT_Entries.
-// All hour values display as "Xh Ym" not decimal.
+// All hour values display and input as "Xh Ym" not decimal.
 // ============================================================
 
 (function () {
@@ -15,7 +15,7 @@
     return el && el.innerText && el.innerText !== 'Loading...' ? el.innerText.trim() : 'Compiler';
   }
 
-  // ── Core display helper — decimal hours → "Xh Ym" ──────────────────
+  // ── Decimal hours → "Xh Ym" ────────────────────────────────────────
   function toHM(h) {
     if (h == null || h === '' || isNaN(Number(h))) return '—';
     h = Number(h);
@@ -24,26 +24,45 @@
     h = Math.abs(h);
     const hrs = Math.floor(h);
     const min = Math.round((h - hrs) * 60);
-    let s = '';
-    if (hrs > 0) s += hrs + 'h';
-    if (min > 0) s += (s ? ' ' : '') + min + 'm';
+    let s = (hrs > 0 ? hrs + 'h' : '') + (min > 0 ? (hrs > 0 ? ' ' : '') + min + 'm' : '');
     return (neg ? '-' : '') + (s || '0h');
   }
 
-  // Format the computedOt field which can be a string like
-  // "5.87h (presence 14.87h)" or "incomplete punch" or "no punch"
+  // ── Decimal → { h, m } for populating H+M inputs ─────────────────
+  function decToHM(dec) {
+    dec = Math.max(0, Number(dec) || 0);
+    return { h: Math.floor(dec), m: Math.round((dec - Math.floor(dec)) * 60) };
+  }
+
+  // ── Read H+M inputs → decimal hours ──────────────────────────────
+  function hmToDec(hEl, mEl) {
+    const h = parseInt(hEl ? hEl.value : 0) || 0;
+    const m = parseInt(mEl ? mEl.value : 0) || 0;
+    return h + m / 60;
+  }
+
+  // ── Render a compact H+M input pair ──────────────────────────────
+  function hmInputs(dec, clsH, clsM, w) {
+    const { h, m } = decToHM(dec);
+    w = w || '50px';
+    return '<div class="d-flex align-items-center gap-1">' +
+      '<input type="number" class="form-control form-control-sm ' + clsH + '" ' +
+        'min="0" max="99" value="' + h + '" style="width:' + w + ';text-align:center">' +
+      '<span class="text-muted small">h</span>' +
+      '<input type="number" class="form-control form-control-sm ' + clsM + '" ' +
+        'min="0" max="59" value="' + m + '" style="width:' + w + ';text-align:center">' +
+      '<span class="text-muted small">m</span>' +
+    '</div>';
+  }
+
+  // ── Format computedOt string from backend ─────────────────────────
   function fmtComputed(raw) {
     if (!raw || raw === '—') return '—';
-    // Already a text flag — leave as-is
     if (/incomplete|no punch/i.test(raw)) {
       return '<span class="text-warning small">' + raw + '</span>';
     }
-    // Try to extract numeric OT and presence from "X.XXh (presence Y.YYh)"
     const m = raw.match(/([\d.]+)h\s*\(presence\s*([\d.]+)h\)/);
-    if (m) {
-      return toHM(m[1]) + ' <span class="text-muted small">(presence ' + toHM(m[2]) + ')</span>';
-    }
-    // Single number like "5.87h"
+    if (m) return toHM(m[1]) + ' <span class="text-muted small">(presence ' + toHM(m[2]) + ')</span>';
     const n = raw.match(/([\d.]+)h?/);
     if (n) return toHM(n[1]);
     return raw;
@@ -105,13 +124,13 @@
               '<label class="form-check-label small" for="orFlagsOnly">Flagged only</label></div>' +
           '</div>' +
           '<div class="text-muted small mt-2">OT = presence − shift Normal Hours. ' +
-            'Hours shown as <b>Xh Ym</b>. Edit decimal in the OT column before posting.</div>' +
+            'Enter hours and minutes directly — no decimals.</div>' +
         '</div>' +
         '<div id="orTableWrap" class="table-container table-responsive">' +
           '<div class="text-muted small">Pick a range and click Compute.</div></div>' +
         '<div id="orPostBar"></div>';
       anchor.parentElement.appendChild(s);
-      const se = s.querySelector('#orSearch');  if (se) se.addEventListener('input', () => app.renderOtDraft());
+      const se = s.querySelector('#orSearch');    if (se) se.addEventListener('input', () => app.renderOtDraft());
       const fo = s.querySelector('#orFlagsOnly'); if (fo) fo.addEventListener('change', () => app.renderOtDraft());
     }
   });
@@ -146,28 +165,21 @@
         if (!d.rows || !d.rows.length) { wrap.innerHTML = ''; return; }
 
         const body = d.rows.map(r => {
-          const geo  = /^OK/.test(r.geoFlag)
+          const geo = /^OK/.test(r.geoFlag)
             ? '<span class="text-success small">' + r.geoFlag + '</span>'
             : '<span class="text-danger small">'  + (r.geoFlag || '—') + '</span>';
-          // Claimed: decimal input (for editing) + HM label
-          const claimedHm = toHM(r.hours);
+          // H+M inputs for claimed hours
+          const claimedInputs = hmInputs(r.hours, 'po-h', 'po-m', '48px');
           return '<tr data-row="' + r.row + '">' +
             '<td style="font-size:12px;font-family:monospace">' + r.empId + '</td>' +
             '<td>' + r.name + '</td>' +
             '<td>' + r.date + '</td>' +
-            // Claimed — editable input with HM display
-            '<td>' +
-              '<div class="d-flex align-items-center gap-1">' +
-                '<input type="number" step="0.25" class="form-control form-control-sm po-hrs"' +
-                  ' value="' + r.hours + '" style="width:70px"' +
-                  ' oninput="this.nextElementSibling.innerText=window.otHM(this.value)">' +
-                '<span class="text-muted small">' + claimedHm + '</span>' +
-              '</div>' +
-            '</td>' +
-            // Computed — formatted
+            '<td>' + claimedInputs + '</td>' +
             '<td class="small"><b>' + fmtComputed(r.computedOt) + '</b></td>' +
             '<td>' + geo + '</td>' +
-            '<td class="small text-muted">' + (typeof window.fmtTs === 'function' ? window.fmtTs(r.submitted) : (r.submitted || '')) + '</td>' +
+            '<td class="small text-muted">' +
+              (typeof window.fmtTs === 'function' ? window.fmtTs(r.submitted) : (r.submitted || '')) +
+            '</td>' +
             '<td class="text-end">' +
               '<button class="btn btn-success btn-sm me-1" onclick="app.approvePending(' + r.row + ')">' +
                 '<i class="bi bi-check"></i></button>' +
@@ -187,17 +199,15 @@
               '<th>Geo</th><th>Submitted</th><th></th>' +
             '</tr></thead><tbody>' + body + '</tbody>' +
           '</table></div>' +
-          '<div class="text-muted small">Edit <b>Claimed</b> before approving if it differs from Computed. ' +
+          '<div class="text-muted small">Edit <b>Claimed</b> hours &amp; minutes before approving. ' +
             'Approved rows go to OT_Entries.</div>';
       } catch (e) { wrap.innerHTML = ''; }
     };
 
-    // Expose toHM globally so inline oninput can call it
-    window.otHM = toHM;
-
     app.approvePending = async function (row) {
       const tr  = document.querySelector('#orPendingWrap tr[data-row="' + row + '"]');
-      const hrs = tr ? tr.querySelector('.po-hrs').value : '';
+      const dec = tr ? hmToDec(tr.querySelector('.po-h'), tr.querySelector('.po-m')) : 0;
+      const hrs = dec.toFixed(4);
       try {
         const d = await callApi(
           'method=approvePendingOt&row=' + row +
@@ -238,6 +248,8 @@
           ? '<span class="badge bg-success">Full</span>'
           : '—';
         const presenceDisplay = r.presence == null ? '—' : toHM(r.presence);
+        // H+M inputs for OT
+        const otInputs = hmInputs(r.ot || 0, 'or-h', 'or-m', '46px');
         return '<tr data-i="' + r._i + '"' + (r.flags ? ' class="table-warning"' : '') + '>' +
           '<td style="font-size:12px;font-family:monospace">' + r.empId + '</td>' +
           '<td>' + r.name + '</td>' +
@@ -245,24 +257,15 @@
           '<td>' + (r.shift || '<span class="text-danger">—</span>') + '</td>' +
           '<td>' + (r.checkIn  || '—') + '</td>' +
           '<td>' + (r.checkOut || '—') + '</td>' +
-          // Presence — formatted as Xh Ym
           '<td class="text-end">' + presenceDisplay + '</td>' +
           '<td>' + dayBadge + '</td>' +
           '<td class="text-end">' + r.breakMin +
             (r.breakOver ? ' <span class="text-danger">(+' + r.breakOver + ')</span>' : '') +
           '</td>' +
-          // OT — editable decimal input + live HM preview
-          '<td>' +
-            '<div class="d-flex align-items-center gap-1">' +
-              '<input type="number" step="0.01" class="form-control form-control-sm or-ot text-end"' +
-                ' value="' + (r.ot || 0) + '" style="width:70px"' +
-                ' oninput="this.nextElementSibling.innerText=window.otHM(this.value)">' +
-              '<span class="text-muted small" style="white-space:nowrap">' + toHM(r.ot || 0) + '</span>' +
-            '</div>' +
-          '</td>' +
+          '<td>' + otInputs + '</td>' +
           '<td>' + flagCell + '</td>' +
           '<td class="text-center">' +
-            '<input type="checkbox" class="form-check-input or-pick"' + (r.ot > 0 ? ' checked' : '') + '>' +
+            '<input type="checkbox" class="form-check-input or-pick"' + ((r.ot > 0) ? ' checked' : '') + '>' +
           '</td>' +
         '</tr>';
       }).join('');
@@ -285,10 +288,20 @@
     };
 
     app.renderOtPostBar = function () {
-      const totalHm = toHM(DRAFT ? DRAFT.totalOt : 0);
+      // Sum up all ticked OT from H+M inputs
+      const totalDec = (() => {
+        if (!DRAFT) return 0;
+        let t = 0;
+        document.querySelectorAll('#orTableWrap tr[data-i]').forEach(tr => {
+          if (tr.querySelector('.or-pick') && tr.querySelector('.or-pick').checked) {
+            t += hmToDec(tr.querySelector('.or-h'), tr.querySelector('.or-m'));
+          }
+        });
+        return t;
+      })();
       document.getElementById('orPostBar').innerHTML =
         '<div class="table-container d-flex justify-content-between align-items-center flex-wrap gap-2">' +
-          '<div class="text-muted small">Total OT in range: <b>' + totalHm + '</b>' +
+          '<div class="text-muted small">Total OT in range: <b>' + toHM(DRAFT ? DRAFT.totalOt : 0) + '</b>' +
             ' across ' + (DRAFT ? DRAFT.count : 0) + ' day-rows. ' +
             'Only ticked rows with OT &gt; 0 are posted.</div>' +
           '<button class="btn btn-success" onclick="app.postOt()">' +
@@ -301,7 +314,7 @@
       document.querySelectorAll('#orTableWrap tr[data-i]').forEach(tr => {
         if (!tr.querySelector('.or-pick').checked) return;
         const r  = DRAFT.rows[+tr.getAttribute('data-i')];
-        const ot = Number(tr.querySelector('.or-ot').value) || 0;
+        const ot = hmToDec(tr.querySelector('.or-h'), tr.querySelector('.or-m'));
         if (ot > 0) picks.push({ empId: r.empId, name: r.name, date: r.date, ot, remark: 'Auto from attendance' });
       });
       if (!picks.length) { alert('No ticked rows with OT > 0 to post.'); return; }
