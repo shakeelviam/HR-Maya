@@ -37,12 +37,17 @@
     if (h == null || h === '' || isNaN(Number(h))) return '—';
     h = Number(h);
     if (h === 0) return '0h';
-    const neg = h < 0;
-    h = Math.abs(h);
-    const hrs = Math.floor(h);
-    const min = Math.round((h - hrs) * 60);
+    const neg = h < 0; h = Math.abs(h);
+    const hrs = Math.floor(h), min = Math.round((h - hrs) * 60);
     let s = (hrs > 0 ? hrs + 'h' : '') + (min > 0 ? (hrs > 0 ? ' ' : '') + min + 'm' : '');
     return (neg ? '-' : '') + (s || '0h');
+  }
+  function decToHM(dec) {
+    dec = Math.max(0, Number(dec) || 0);
+    return { h: Math.floor(dec), m: Math.round((dec - Math.floor(dec)) * 60) };
+  }
+  function hmToDec(hEl, mEl) {
+    return (parseInt(hEl ? hEl.value : 0) || 0) + (parseInt(mEl ? mEl.value : 0) || 0) / 60;
   }
 
 
@@ -86,8 +91,13 @@
                 '<input type="hidden" id="otEmp">' +
                 '<select id="otEmpResults" class="form-select form-select-sm mt-1" size="5" style="display:none;position:absolute;z-index:30;min-width:240px" onchange="app.otPickEmployee(this.value)"></select>' +
                 '<div id="otEmpPicked" class="small text-success mt-1"></div></div>' +
-              '<div class="col-auto"><label class="form-label small mb-1">OT Hours</label>' +
-                '<input type="number" id="otHours" class="form-control form-control-sm" step="0.25" min="0" style="width:110px"></div>' +
+              '<div class="col-auto"><label class="form-label small mb-1">OT</label>' +
+                '<div class="d-flex align-items-center gap-1">' +
+                '<input type="number" id="otH" class="form-control form-control-sm" min="0" max="23" value="0" style="width:54px;text-align:center" placeholder="h">' +
+                '<span class="text-muted small">h</span>' +
+                '<input type="number" id="otM" class="form-control form-control-sm" min="0" max="59" value="0" style="width:54px;text-align:center" placeholder="m">' +
+                '<span class="text-muted small">m</span>' +
+                '</div></div>' +
               '<div class="col-auto"><label class="form-label small mb-1">Remark</label>' +
                 '<input type="text" id="otRemark" class="form-control form-control-sm" placeholder="optional"></div>' +
               '<div class="col-auto">' +
@@ -163,7 +173,7 @@
       const status = document.getElementById('otAddStatus');
       const dateIso = document.getElementById('otDate').value;
       const empId = document.getElementById('otEmp').value.trim();
-      const hours = document.getElementById('otHours').value;
+      const hours = hmToDec(document.getElementById('otH'), document.getElementById('otM'));
       const remark = document.getElementById('otRemark').value.trim();
       if (!dateIso || !empId || !hours) { status.innerHTML = '<div class="alert alert-warning mb-0">Date, Employee (pick from search) and OT Hours are required.</div>'; return; }
       const btn = document.getElementById('otAddBtn'); const orig = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
@@ -173,7 +183,7 @@
           '&remark=' + encodeURIComponent(remark) + '&by=' + encodeURIComponent(userEmail() || 'Dashboard');
         const data = await callApi(qs);
         status.innerHTML = '<div class="alert alert-success mb-0"><i class="bi bi-check-circle"></i> ' + data.message + '</div>';
-        document.getElementById('otHours').value = ''; document.getElementById('otRemark').value = '';
+        document.getElementById('otH').value = '0'; document.getElementById('otM').value = '0'; document.getElementById('otRemark').value = '';
       } catch (err) { status.innerHTML = '<div class="alert alert-danger mb-0">' + err.message + '</div>'; }
       finally { btn.disabled = false; btn.innerHTML = orig; }
     };
@@ -196,13 +206,13 @@
         if (!data.data || !data.data.length) { wrap.innerHTML = '<div class="text-muted small">No OT in this range.</div>'; return; }
         const body = data.data.map(r =>
           '<tr><td>' + r.empId + '</td><td>' + r.name + '</td><td class="text-end">' + r.days + '</td>' +
-          '<td class="text-end">' + toHM(r.hours) + '</td><td class="text-end">' + money(r.rate) + '</td>' +
+          '<td class="text-end">' + r.hours + '</td><td class="text-end">' + money(r.rate) + '</td>' +
           '<td class="text-end fw-bold">' + money(r.amount) + '</td></tr>').join('');
         wrap.innerHTML = '<table class="table table-sm table-striped"><thead><tr>' +
           '<th>ID</th><th>Name</th><th class="text-end">Days</th><th class="text-end">OT Hours</th>' +
           '<th class="text-end">Rate</th><th class="text-end">OT Amount</th></tr></thead><tbody>' + body + '</tbody>' +
           '<tfoot><tr class="fw-bold"><td colspan="3">TOTALS (' + data.employees + ')</td>' +
-          '<td class="text-end">' + toHM(data.totalHours) + '</td><td></td><td class="text-end">' + money(data.totalAmount) + '</td></tr></tfoot></table>';
+          '<td class="text-end">' + data.totalHours + '</td><td></td><td class="text-end">' + money(data.totalAmount) + '</td></tr></tfoot></table>';
       } catch (err) { wrap.innerHTML = '<div class="alert alert-danger mb-0">' + err.message + '</div>'; }
     };
 
