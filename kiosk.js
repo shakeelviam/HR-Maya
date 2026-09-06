@@ -110,14 +110,15 @@ function updateButtons(status) {
 
 // ── Day Off screen ────────────────────────────────────────────────────
 function showDayOffScreen(host) {
-    // Compute date bounds for backdated picker
+    // Compute date bounds for backdated picker using LOCAL date (not UTC)
     const today = new Date();
-    const maxBack = new Date(today);
-    maxBack.setDate(maxBack.getDate() - 1);   // yesterday at most
-    const minBack = new Date(today);
-    minBack.setDate(minBack.getDate() - 7);   // up to 7 days back
-    const maxIso = maxBack.toISOString().split('T')[0];
-    const minIso = minBack.toISOString().split('T')[0];
+    const maxBack = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
+    const minBack = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 7);
+    const toIsoLocal = d => d.getFullYear() + '-' +
+      String(d.getMonth()+1).padStart(2,'0') + '-' +
+      String(d.getDate()).padStart(2,'0');
+    const maxIso = toIsoLocal(maxBack);
+    const minIso = toIsoLocal(minBack);
 
     host.innerHTML =
         '<div class="dayoff-card">' +
