@@ -45,9 +45,15 @@ body{font-family:'Noto Sans',sans-serif;color:#222;background:#fff;line-height:1
 .cover h1{font-family:'Space Grotesk',sans-serif;font-size:2.6rem;font-weight:700;margin-bottom:12px}
 .cover h2{font-size:1.3rem;font-weight:400;opacity:0.7;margin-bottom:30px}
 .cover-langs{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;margin-bottom:40px}
-.cover-langs span{
+.cover-langs a{
   background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);
   border-radius:8px;padding:6px 18px;font-size:1rem;
+  color:#fff;text-decoration:none;
+  transition:background 0.15s,border-color 0.15s;
+  cursor:pointer;
+}
+.cover-langs a:hover{
+  background:rgba(255,255,255,0.22);border-color:rgba(255,255,255,0.5);
 }
 .cover-company{opacity:0.5;font-size:0.9rem;margin-top:auto}
 
@@ -193,10 +199,10 @@ body{font-family:'Noto Sans',sans-serif;color:#222;background:#fff;line-height:1
   <h1>Maya HR Kiosk</h1>
   <h2>Staff Training Guide · कर्मचारी प्रशिक्षण मार्गदर्शिका</h2>
   <div class="cover-langs">
-    <span>🇬🇧 English</span>
-    <span>🇮🇳 हिन्दी</span>
-    <span>🇳🇵 नेपाली</span>
-    <span>🇧🇩 বাংলা</span>
+    <a href="#en">🇬🇧 English</a>
+    <a href="#hi">🇮🇳 हिन्दी</a>
+    <a href="#np">🇳🇵 नेपाली</a>
+    <a href="#bn">🇧🇩 বাংলা</a>
   </div>
   <p style="opacity:0.6;max-width:480px;font-size:0.95rem">
     This guide explains how to use the attendance kiosk tablet at your branch.
