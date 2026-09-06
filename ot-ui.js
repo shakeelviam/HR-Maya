@@ -33,6 +33,19 @@
     return data;
   }
 
+  function toHM(h) {
+    if (h == null || h === '' || isNaN(Number(h))) return '—';
+    h = Number(h);
+    if (h === 0) return '0h';
+    const neg = h < 0;
+    h = Math.abs(h);
+    const hrs = Math.floor(h);
+    const min = Math.round((h - hrs) * 60);
+    let s = (hrs > 0 ? hrs + 'h' : '') + (min > 0 ? (hrs > 0 ? ' ' : '') + min + 'm' : '');
+    return (neg ? '-' : '') + (s || '0h');
+  }
+
+
   document.addEventListener('DOMContentLoaded', function () {
     const navList = document.querySelector('#sidebar ul.nav');
     if (navList && !document.querySelector('[data-page="ot"]')) {
@@ -183,13 +196,13 @@
         if (!data.data || !data.data.length) { wrap.innerHTML = '<div class="text-muted small">No OT in this range.</div>'; return; }
         const body = data.data.map(r =>
           '<tr><td>' + r.empId + '</td><td>' + r.name + '</td><td class="text-end">' + r.days + '</td>' +
-          '<td class="text-end">' + r.hours + '</td><td class="text-end">' + money(r.rate) + '</td>' +
+          '<td class="text-end">' + toHM(r.hours) + '</td><td class="text-end">' + money(r.rate) + '</td>' +
           '<td class="text-end fw-bold">' + money(r.amount) + '</td></tr>').join('');
         wrap.innerHTML = '<table class="table table-sm table-striped"><thead><tr>' +
           '<th>ID</th><th>Name</th><th class="text-end">Days</th><th class="text-end">OT Hours</th>' +
           '<th class="text-end">Rate</th><th class="text-end">OT Amount</th></tr></thead><tbody>' + body + '</tbody>' +
           '<tfoot><tr class="fw-bold"><td colspan="3">TOTALS (' + data.employees + ')</td>' +
-          '<td class="text-end">' + data.totalHours + '</td><td></td><td class="text-end">' + money(data.totalAmount) + '</td></tr></tfoot></table>';
+          '<td class="text-end">' + toHM(data.totalHours) + '</td><td></td><td class="text-end">' + money(data.totalAmount) + '</td></tr></tfoot></table>';
       } catch (err) { wrap.innerHTML = '<div class="alert alert-danger mb-0">' + err.message + '</div>'; }
     };
 
