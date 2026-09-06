@@ -12,7 +12,7 @@ function initGoogleAuth() {
         document.getElementById("googleLoginButton"),
         { theme: "outline", size: "large" }
     );
-    google.accounts.id.prompt(); 
+    google.accounts.id.prompt();
 }
 
 // Google Identity Services (GIS) Callback
@@ -20,8 +20,14 @@ function handleCredentialResponse(response) {
     const responsePayload = decodeJwtResponse(response.credential);
     const userEmail = responsePayload.email;
 
-    // 🔒 SECURITY CHECK: Is this email authorized?
-    if (!CONFIG.AUTHORIZED_EMAILS.includes(userEmail)) {
+    // 🔒 SECURITY CHECK: case-insensitive + trimmed so capitalisation
+    // differences (e.g. Gmail returning mixed case) never block a valid user.
+    const normalizedEmail = userEmail.trim().toLowerCase();
+    const isAuthorized = CONFIG.AUTHORIZED_EMAILS
+        .map(e => e.trim().toLowerCase())
+        .includes(normalizedEmail);
+
+    if (!isAuthorized) {
         alert(`Access Denied.\n"${userEmail}" is not an authorized email for ${CONFIG.APP_NAME}.`);
         handleSignOut();
         return;
@@ -30,7 +36,7 @@ function handleCredentialResponse(response) {
     // ✅ Authorized: Switch UI from Login to Main App
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('mainApp').style.display = 'block';
-    
+
     // Set user info in top bar
     document.getElementById('userEmail').innerText = userEmail;
     if (responsePayload.picture) {
