@@ -228,13 +228,14 @@
         transition: border-color .15s;
     }
     #backdatedDate:focus { border-color: var(--teal); }
-    .btn-submit-back {
+    .btn-submit-backdated, .btn-submit-back {
         width: 100%; border: none; border-radius: 10px;
         background: var(--do-bg); color: var(--do-fg);
         padding: 13px; font-size: 14px; font-weight: 700;
         cursor: pointer; font-family: 'Space Grotesk', sans-serif;
+        transition: opacity .12s;
     }
-    .btn-submit-back:disabled { opacity: .6; }
+    .btn-submit-backdated:disabled, .btn-submit-back:disabled { opacity: .6; cursor: default; }
     #backdatedMsg { font-size: 13px; min-height: 20px; margin-top: 8px; text-align: center; }
 
     /* ── Done screen ─────────────────────────────────────────────── */
