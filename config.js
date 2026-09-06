@@ -12,6 +12,7 @@ const CONFIG = {
         'operations@maya.com.kw',
         'hr@maya.com.kw',
         'm.nady194@gmail.com',
+        '3abwd.3@gmail.com',
         'a_a_al_samhan@icloud.com'
     ],
     
