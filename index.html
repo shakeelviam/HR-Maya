@@ -1719,6 +1719,37 @@
      - Populates otDate and prEnd / payrollPeriodEnd defaults to today.
      ============================================================ -->
 <script>
+// ── Global timestamp formatters — available to all *-ui.js files ──────
+// Kuwait is UTC+3. GAS serialises Date objects as ISO UTC strings.
+// fmtTs('2026-09-04T20:36:34.000Z') → '04-09-2026 23:36'
+window.fmtTs = function (val) {
+    if (!val) return '—';
+    var s = String(val).trim();
+    if (/^\d{2}-\d{2}-\d{4}/.test(s)) return s; // already dd-mm-yyyy …
+    var d = new Date(s);
+    if (isNaN(d.getTime())) return s;
+    var kw  = new Date(d.getTime() + 3 * 3600000); // UTC → Kuwait (+3)
+    var pad = function(n) { return String(n).padStart(2,'0'); };
+    return pad(kw.getUTCDate())    + '-' +
+           pad(kw.getUTCMonth()+1) + '-' +
+           kw.getUTCFullYear()     + ' ' +
+           pad(kw.getUTCHours())   + ':' +
+           pad(kw.getUTCMinutes());
+};
+// fmtDate — date only, no time
+window.fmtDate = function (val) {
+    if (!val) return '—';
+    var s = String(val).trim();
+    if (/^\d{2}-\d{2}-\d{4}$/.test(s)) return s;
+    var d = new Date(s);
+    if (isNaN(d.getTime())) return s;
+    var kw  = new Date(d.getTime() + 3 * 3600000);
+    var pad = function(n) { return String(n).padStart(2,'0'); };
+    return pad(kw.getUTCDate()) + '-' + pad(kw.getUTCMonth()+1) + '-' + kw.getUTCFullYear();
+};
+</script>
+
+<script>
 (function () {
     'use strict';
 
