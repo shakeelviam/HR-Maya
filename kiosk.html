@@ -257,7 +257,98 @@
     }
     .done-sub { color: var(--muted); font-size: 14px; }
 
-    /* ── OT modal ────────────────────────────────────────────────── */
+    /* ── Aliases matching kiosk.js injected class names ────────────── */
+
+    /* Day Off screen */
+    .dayoff-title {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 20px; font-weight: 700;
+        color: var(--text); margin-bottom: 22px; text-align: center;
+    }
+    .dayoff-btn-row { display: flex; gap: 12px; margin-bottom: 18px; }
+
+    .btn-dayoff-yes {
+        flex: 1; border: none; border-radius: 16px;
+        background: var(--do-bg); color: var(--do-fg);
+        padding: 18px 10px; font-size: 15px; font-weight: 700;
+        cursor: pointer; font-family: 'Space Grotesk', sans-serif;
+        display: flex; flex-direction: column; align-items: center; gap: 6px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.12); transition: opacity .12s;
+    }
+    .btn-dayoff-yes:active { opacity: .85; }
+    .btn-dayoff-yes i { font-size: 26px; }
+
+    .btn-checkin-go {
+        flex: 1; border: none; border-radius: 16px;
+        background: var(--ci-bg); color: var(--ci-fg);
+        padding: 18px 10px; font-size: 15px; font-weight: 700;
+        cursor: pointer; font-family: 'Space Grotesk', sans-serif;
+        display: flex; flex-direction: column; align-items: center; gap: 6px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.12); transition: opacity .12s;
+    }
+    .btn-checkin-go:active { opacity: .85; }
+    .btn-checkin-go i { font-size: 26px; }
+
+    .btn-backdated-toggle {
+        background: none; border: none;
+        color: var(--muted); font-size: 13px;
+        text-decoration: underline; cursor: pointer;
+        font-family: system-ui, sans-serif; padding: 0;
+        width: 100%; text-align: center;
+    }
+
+    /* Stage buttons — single full-width */
+    .stage-btn-single {
+        width: 100%; min-height: 190px; border: none;
+        border-radius: 20px; cursor: pointer;
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 700; font-size: 22px;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center; gap: 10px;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+        transition: transform .12s;
+    }
+    .stage-btn-single:active { transform: scale(0.97); }
+    .stage-btn-single:disabled { opacity: .6; cursor: default; }
+    .stage-btn-single i { font-size: 48px; }
+
+    /* Stage colours */
+    .btn-check-in  { background: var(--ci-bg); color: var(--ci-fg); }
+    .btn-break-out { background: var(--bo-bg); color: var(--bo-fg); }
+    .btn-break-in  { background: var(--bi-bg); color: var(--bi-fg); }
+    .btn-check-out { background: var(--co-bg); color: var(--co-fg); }
+
+    /* Half-width pair for after-break (two-column) */
+    .btn-half {
+        flex: 1; min-height: 140px; border: none;
+        border-radius: 18px; cursor: pointer;
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 700; font-size: 17px;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center; gap: 8px;
+        box-shadow: 0 5px 12px rgba(0,0,0,0.14);
+        transition: transform .12s;
+    }
+    .btn-half:active { transform: scale(0.97); }
+    .btn-half:disabled { opacity: .6; }
+    .btn-half i { font-size: 34px; }
+    .btn-half.btn-break-out { background: var(--bo-bg); color: var(--bo-fg); }
+    .btn-half.btn-check-out { background: var(--co-bg); color: var(--co-fg); }
+
+    /* Two-button row wrapper */
+    .two-btn-row { display: flex; gap: 12px; }
+    .two-btn-wrap { display: flex; flex-direction: column; gap: 12px; }
+
+    /* Stage done screen */
+    .stage-done {
+        background: #fff; border-radius: 20px;
+        padding: 44px 20px; text-align: center;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        color: var(--ci-bg);
+    }
+    .stage-done i { font-size: 64px; display: block; margin-bottom: 10px; }
+    .done-title { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 19px; }
+    .done-sub { color: var(--muted); font-size: 14px; margin-top: 4px; }
     .ot-overlay {
         display: none; position: fixed; inset: 0;
         background: rgba(0,0,0,0.55); z-index: 999;
