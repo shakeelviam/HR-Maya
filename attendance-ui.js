@@ -70,12 +70,15 @@
           const flag = /OK/.test(r.flag) ? '<span class="text-success small">' + r.flag + '</span>'
             : /MANUAL/.test(r.flag) ? '<span class="text-primary small">' + r.flag + '</span>'
             : '<span class="text-danger small">' + (r.flag || '—') + '</span>';
-          const tm = (r.ts.split(' ')[1] || '').slice(0, 5);
-          return '<tr><td>' + r.empId + '</td><td>' + (r.name || '') + '</td><td>' + r.date + '</td><td>' + tm + '</td><td>' + r.stage + '</td><td>' + (r.branch || '') + '</td><td>' + flag + '</td>' +
+          // r.ts may come back as "3 Sep 2026 10:51:32" (GAS locale) or "03/09/2026 10:51:32".
+          // Regex matches the first HH:mm pattern regardless of surrounding format.
+          const tmMatch = String(r.ts || '').match(/(\d{1,2}:\d{2})/);
+          const tm = tmMatch ? tmMatch[1] : '';
+          return '<tr><td>' + r.empId + '</td><td>' + (r.name || '') + '</td><td>' + r.date + '</td><td>' + tm + '</td><td>' + (r.shift || '—') + '</td><td>' + r.stage + '</td><td>' + (r.branch || '') + '</td><td>' + flag + '</td>' +
             '<td class="text-end"><button class="btn btn-outline-secondary btn-sm me-1" onclick="app.openEditPunch(' + r.row + ',\'' + r.stage + '\',\'' + tm + '\',\'' + String(r.branch || '').replace(/'/g,"\\'") + '\')"><i class="bi bi-pencil"></i></button>' +
               '<button class="btn btn-outline-danger btn-sm" onclick="app.deletePunch(' + r.row + ',\'' + r.empId + '\',\'' + r.stage + '\')"><i class="bi bi-trash"></i></button></td></tr>';
         }).join('');
-        wrap.innerHTML = '<table class="table table-sm table-striped align-middle"><thead><tr><th>ID</th><th>Name</th><th>Date</th><th>Time</th><th>Stage</th><th>Location</th><th>Geo</th><th></th></tr></thead><tbody>' + body + '</tbody></table>';
+        wrap.innerHTML = '<table class="table table-sm table-striped align-middle"><thead><tr><th>ID</th><th>Name</th><th>Date</th><th>Time</th><th>Shift</th><th>Stage</th><th>Location</th><th>Geo</th><th></th></tr></thead><tbody>' + body + '</tbody></table>';
       } catch (err) { wrap.innerHTML = '<div class="alert alert-danger mb-0">' + err.message + '</div>'; }
     };
 
