@@ -1756,13 +1756,19 @@
             if (titleEl) titleEl.innerText = meta.title;
             if (groupEl) groupEl.innerText  = meta.group;
 
-            /* Trigger data loads for pages whose *-ui.js click handlers are skipped
-               because nav items are pre-baked (the handlers were only attached to
-               dynamically injected items, not pre-baked ones). */
+            /* Trigger data loads for every page whose *-ui.js click handler is skipped
+               because nav items are pre-baked. Each line mirrors exactly what the
+               original click handler called in the corresponding *-ui.js file. */
             setTimeout(function () {
                 if (typeof app === 'undefined') return;
-                if (pid === 'locations'  && app.loadLocations)  app.loadLocations();
-                if (pid === 'grantleave' && app.loadGrantPage)  app.loadGrantPage();
+                if (pid === 'shifts'      && app.loadShiftsPage)     app.loadShiftsPage();
+                if (pid === 'locations'   && app.loadLocations)      app.loadLocations();
+                if (pid === 'ot'          && app.otLoadRoster)       app.otLoadRoster();
+                if (pid === 'scheddeduct' && app.loadSchedDeduct)    app.loadSchedDeduct();
+                if (pid === 'leavebal'    && app.loadLeaveTypes)     app.loadLeaveTypes();
+                if (pid === 'grantleave'  && app.loadGrantPage)      app.loadGrantPage();
+                if (pid === 'leavetypes'  && app.loadLeaveTypesPage) app.loadLeaveTypesPage();
+                if (pid === 'leavealloc'  && app.loadAllocPage)      app.loadAllocPage();
             }, 0);
         });
     }
