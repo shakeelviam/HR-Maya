@@ -167,7 +167,7 @@
             // Computed — formatted
             '<td class="small"><b>' + fmtComputed(r.computedOt) + '</b></td>' +
             '<td>' + geo + '</td>' +
-            '<td class="small text-muted">' + (r.submitted || '') + '</td>' +
+            '<td class="small text-muted">' + (typeof window.fmtTs === 'function' ? window.fmtTs(r.submitted) : (r.submitted || '')) + '</td>' +
             '<td class="text-end">' +
               '<button class="btn btn-success btn-sm me-1" onclick="app.approvePending(' + r.row + ')">' +
                 '<i class="bi bi-check"></i></button>' +
