@@ -47,3 +47,16 @@ function markKioskAttendance(empId, pin, stage, lat, lng) {
 function getDailyKioskStatus(empId) {
     return gsRequest('getDailyKioskStatus', { empId: empId });
 }
+
+// Backdated Day Off — employee logs a Day Off for a specific past date.
+// Requires new GAS backend method: markBackdatedDayOff
+// See KioskBackend.gs for the backend implementation.
+function markBackdatedDayOff(empId, pin, dateDd, lat, lng) {
+    return gsRequest('markBackdatedDayOff', {
+        empId : empId,
+        pin   : pin,
+        date  : dateDd,                          // dd-mm-yyyy
+        lat   : (lat  == null ? '' : lat),
+        lng   : (lng  == null ? '' : lng)
+    });
+}
