@@ -7,67 +7,230 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
     <style>
-        :root { --primary: #0d6efd; }
-        body { background-color: #f0f2f5; font-family: 'Segoe UI', sans-serif; height: 100vh; display: flex; align-items: center; justify-content: center; margin: 0; }
-        .kiosk-container { width: 100%; max-width: 500px; padding: 20px; }
-        .login-card { background: white; border-radius: 20px; padding: 40px 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; }
+        :root {
+            --green  : #198754;
+            --yellow : #ffc107;
+            --cyan   : #0dcaf0;
+            --red    : #dc3545;
+            --orange : #fd7e14;
+            --teal   : oklch(0.65 0.13 190);
+        }
+        * { box-sizing: border-box; }
+        body {
+            background: #f0f2f5;
+            font-family: 'Segoe UI', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 16px;
+        }
+        .kiosk-container { width: 100%; max-width: 500px; }
+
+        /* ── Login card ─────────────────────────────────────── */
+        .login-card {
+            background: #fff;
+            border-radius: 20px;
+            padding: 40px 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+        }
         .login-card h3 { font-weight: 600; color: #1a1a2e; margin-bottom: 25px; }
-        .login-card .form-control { font-size: 1.1rem; text-align: center; padding: 12px; height: 55px; }
-        .login-card .btn-kiosk-login { width: 100%; height: 55px; font-size: 1.2rem; font-weight: 600; margin-top: 15px; background: var(--primary); color: white; border: none; }
-        .login-card .btn-kiosk-login:disabled { opacity: 0.6; }
+        .login-card .form-control {
+            font-size: 1.1rem; text-align: center;
+            padding: 12px; height: 55px;
+        }
+        #kioskLoginBtn {
+            width: 100%; height: 55px;
+            font-size: 1.2rem; font-weight: 600; margin-top: 15px;
+            background: var(--teal); color: #fff; border: none;
+            border-radius: 10px; cursor: pointer;
+        }
+        #kioskLoginBtn:disabled { opacity: 0.6; }
         #kioskError { color: #dc3545; min-height: 24px; font-size: 0.95rem; margin-top: 10px; }
+
+        /* ── Dashboard ──────────────────────────────────────── */
         #kioskDashboard { display: none; }
-        .kiosk-header { background: white; border-radius: 15px; padding: 20px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .kiosk-header {
+            background: #fff; border-radius: 15px; padding: 18px;
+            text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            margin-bottom: 18px;
+        }
         .kiosk-header h4 { margin: 0; font-weight: 600; }
         .kiosk-header small { color: #6c757d; }
-        .stage-btn-single { width: 100%; min-height: 200px; border: none; border-radius: 20px; font-size: 2rem; font-weight: 700; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; box-shadow: 0 6px 16px rgba(0,0,0,0.15); transition: transform 0.15s; }
+
+        /* ── Stage buttons — common ─────────────────────────── */
+        .stage-btn-single {
+            width: 100%; min-height: 200px; border: none; border-radius: 20px;
+            font-size: 2rem; font-weight: 700; color: #fff;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 12px;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+            transition: transform 0.12s; cursor: pointer;
+        }
         .stage-btn-single i { font-size: 4rem; }
         .stage-btn-single:active { transform: scale(0.97); }
-        .btn-check-in { background: #198754; }
-        .btn-break-out { background: #ffc107; color: #333; }
-        .btn-break-in { background: #0dcaf0; color: #333; }
-        .btn-check-out { background: #dc3545; }
-        .stage-done { text-align:center; padding:40px 20px; background:#fff; border-radius:20px; box-shadow:0 6px 16px rgba(0,0,0,0.08); color:#198754; }
-        .stage-done i { font-size:4rem; } .stage-done div { font-size:1.4rem; font-weight:700; margin-top:8px; }
-        .stage-done-sub { font-size:0.95rem !important; font-weight:400 !important; color:#6c757d; margin-top:4px; }
-        .btn-ot { width: 100%; margin-top: 15px; height: 60px; border: none; border-radius: 15px; background: #fd7e14; color: white; font-size: 1.15rem; font-weight: 600; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .btn-ot:active { transform: scale(0.97); }
-        .logout-container { text-align: right; margin-top: 15px; }
-        .btn-logout { background: transparent; color: #6c757d; border: 1px solid #dee2e6; font-size: 0.9rem; padding: 8px 20px; border-radius: 20px; }
-        .btn-logout:hover { background: #f8f9fa; border-color: #adb5bd; }
-        .ot-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center; }
-        .ot-box { background:#fff; border-radius:16px; padding:24px; max-width:380px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,0.3); }
+        .stage-btn-single:disabled { opacity: 0.6; cursor: default; }
+
+        .btn-check-in  { background: var(--green); }
+        .btn-break-out { background: var(--yellow); color: #333; }
+        .btn-break-in  { background: var(--cyan);   color: #333; }
+        .btn-check-out { background: var(--red); }
+
+        /* ── Two-button layout (multi-break: after check-in or after break) */
+        .two-btn-wrap { display: flex; flex-direction: column; gap: 14px; }
+        .two-btn-row  { display: flex; gap: 14px; }
+        .btn-half {
+            flex: 1; min-height: 140px; border: none; border-radius: 18px;
+            font-size: 1.4rem; font-weight: 700; color: #fff;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 8px;
+            box-shadow: 0 5px 12px rgba(0,0,0,0.12);
+            transition: transform 0.12s; cursor: pointer;
+        }
+        .btn-half i { font-size: 2.4rem; }
+        .btn-half:active { transform: scale(0.97); }
+        .btn-half:disabled { opacity: 0.6; }
+        .btn-half.btn-break-out { background: var(--yellow); color: #333; }
+        .btn-half.btn-check-out { background: var(--red); }
+
+        /* Secondary skip-break button under Check In */
+        .btn-skip {
+            width: 100%; height: 56px; border: 2px solid #dee2e6;
+            border-radius: 12px; background: #fff; color: #555;
+            font-size: 1rem; font-weight: 600; cursor: pointer;
+            transition: background 0.12s;
+        }
+        .btn-skip:hover { background: #f8f9fa; }
+        .btn-skip:active { transform: scale(0.98); }
+
+        /* ── Day Off screen ─────────────────────────────────── */
+        .dayoff-card {
+            background: #fff; border-radius: 20px; padding: 28px 20px;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.08); text-align: center;
+        }
+        .dayoff-card h4 {
+            font-size: 1.5rem; font-weight: 700;
+            color: #1a1a2e; margin-bottom: 22px;
+        }
+        .dayoff-btn-row { display: flex; gap: 14px; margin-bottom: 20px; }
+        .btn-dayoff-yes {
+            flex: 1; height: 90px; border: none; border-radius: 16px;
+            background: #6c757d; color: #fff;
+            font-size: 1.3rem; font-weight: 700; cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.12);
+            transition: transform 0.12s;
+        }
+        .btn-dayoff-yes:active { transform: scale(0.97); }
+        .btn-checkin-go {
+            flex: 1; height: 90px; border: none; border-radius: 16px;
+            background: var(--green); color: #fff;
+            font-size: 1.3rem; font-weight: 700; cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.12);
+            transition: transform 0.12s;
+        }
+        .btn-checkin-go:active { transform: scale(0.97); }
+
+        /* Backdated section */
+        .btn-backdated-toggle {
+            background: none; border: none; color: #6c757d;
+            font-size: 0.9rem; cursor: pointer; text-decoration: underline;
+            padding: 0; margin-bottom: 0;
+        }
+        #backdatedSection {
+            display: none; margin-top: 16px;
+            border-top: 1px solid #e9ecef; padding-top: 16px;
+        }
+        #backdatedSection label { font-size: 0.9rem; color: #555; margin-bottom: 6px; display: block; }
+        #backdatedSection input[type=date] {
+            width: 100%; padding: 10px; border: 1px solid #ced4da;
+            border-radius: 8px; font-size: 1rem; margin-bottom: 10px;
+        }
+        .btn-submit-backdated {
+            width: 100%; height: 50px; border: none; border-radius: 10px;
+            background: #6c757d; color: #fff;
+            font-size: 1rem; font-weight: 600; cursor: pointer;
+        }
+        .btn-submit-backdated:disabled { opacity: 0.6; }
+        #backdatedMsg { min-height: 22px; font-size: 0.9rem; margin-top: 8px; }
+
+        /* ── Completed screen ───────────────────────────────── */
+        .stage-done {
+            text-align: center; padding: 40px 20px;
+            background: #fff; border-radius: 20px;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+            color: var(--green);
+        }
+        .stage-done i { font-size: 4rem; }
+        .stage-done .done-title { font-size: 1.4rem; font-weight: 700; margin-top: 8px; }
+        .stage-done .done-sub { font-size: 0.95rem; color: #6c757d; margin-top: 4px; }
+
+        /* ── OT button + Logout ─────────────────────────────── */
+        .btn-ot {
+            width: 100%; margin-top: 14px; height: 58px; border: none;
+            border-radius: 14px; background: var(--orange); color: #fff;
+            font-size: 1.1rem; font-weight: 600;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); cursor: pointer;
+        }
+        .btn-ot:active { transform: scale(0.98); }
+        .logout-container { text-align: right; margin-top: 14px; }
+        .btn-logout {
+            background: transparent; color: #6c757d;
+            border: 1px solid #dee2e6; font-size: 0.9rem;
+            padding: 8px 20px; border-radius: 20px; cursor: pointer;
+        }
+        .btn-logout:hover { background: #f8f9fa; }
+
+        /* ── OT submit modal ────────────────────────────────── */
+        .ot-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.5); z-index: 9999;
+            align-items: center; justify-content: center;
+        }
+        .ot-box {
+            background: #fff; border-radius: 16px; padding: 24px;
+            max-width: 380px; width: 90%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
     </style>
 </head>
 <body>
 
 <div class="kiosk-container">
+
+    <!-- ── Login ───────────────────────────────────────────── -->
     <div id="loginScreen" class="login-card">
-        <i class="bi bi-building" style="font-size: 3.5rem; color: var(--primary);"></i>
+        <i class="bi bi-building" style="font-size:3.5rem;color:var(--teal)"></i>
         <h3>Maya HR Kiosk</h3>
-        <p class="text-muted">Enter your ID and PIN to clock in/out</p>
+        <p class="text-muted">Enter your ID and PIN</p>
         <div class="mb-3">
-            <input type="text" class="form-control" id="kioskEmpId" placeholder="Employee ID" autocomplete="off">
+            <input type="text" class="form-control" id="kioskEmpId"
+                placeholder="Employee ID" autocomplete="off">
         </div>
         <div class="mb-2">
-            <input type="password" class="form-control" id="kioskPin" placeholder="PIN" maxlength="4" inputmode="numeric">
+            <input type="password" class="form-control" id="kioskPin"
+                placeholder="PIN" maxlength="4" inputmode="numeric">
         </div>
         <div id="kioskError"></div>
-        <button class="btn-kiosk-login" id="kioskLoginBtn" onclick="kioskLogin()">
+        <button id="kioskLoginBtn" onclick="kioskLogin()">
             <i class="bi bi-box-arrow-in-right"></i> Clock In / Out
         </button>
-        <p class="mt-3 text-muted" style="font-size: 0.8rem;">For authorized staff use only</p>
+        <p class="mt-3 text-muted" style="font-size:0.8rem">For authorized staff use only</p>
     </div>
 
+    <!-- ── Dashboard ──────────────────────────────────────── -->
     <div id="kioskDashboard">
         <div class="kiosk-header">
             <h4 id="kioskEmpName">Welcome</h4>
             <small id="kioskEmpIdDisplay">ID: ---</small>
         </div>
 
+        <!-- Stage buttons injected here -->
         <div id="stageHost"></div>
 
-        <button class="btn-ot" onclick="openOtSubmit()">
+        <!-- Submit OT (shown unless done for day) -->
+        <button class="btn-ot" id="otBtn" onclick="openOtSubmit()">
             <i class="bi bi-clock-history"></i> Submit Overtime
         </button>
 
@@ -79,28 +242,32 @@
     </div>
 </div>
 
-<!-- SUBMIT OT MODAL -->
+<!-- ── OT submit modal ─────────────────────────────────────── -->
 <div id="otModal" class="ot-overlay">
     <div class="ot-box">
-        <h5 style="margin-bottom:16px"><i class="bi bi-clock-history"></i> Submit Overtime</h5>
+        <h5 style="margin-bottom:16px">
+            <i class="bi bi-clock-history"></i> Submit Overtime
+        </h5>
         <label style="font-size:0.9rem;color:#555">Date</label>
         <input type="date" id="otDate" class="form-control" style="margin-bottom:12px">
         <label style="font-size:0.9rem;color:#555">OT Hours (e.g. 2.5)</label>
-        <input type="number" step="0.25" min="0" id="otHours" class="form-control" style="margin-bottom:12px" placeholder="Hours">
+        <input type="number" step="0.25" min="0" id="otHours"
+            class="form-control" style="margin-bottom:12px" placeholder="Hours">
         <div id="otMsg" style="min-height:22px;font-size:0.9rem;margin-bottom:10px"></div>
         <div style="display:flex;gap:10px">
             <button class="btn btn-secondary" style="flex:1" onclick="closeOtSubmit()">Cancel</button>
-            <button class="btn btn-warning" style="flex:1;font-weight:600" id="otSubmitBtn" onclick="submitOt()">Submit</button>
+            <button class="btn btn-warning" style="flex:1;font-weight:600"
+                id="otSubmitBtn" onclick="submitOt()">Submit</button>
         </div>
-        <div style="font-size:0.78rem;color:#888;margin-top:10px">Submit right after Check Out, at your location. Reviewed by HR before it is paid.</div>
+        <div style="font-size:0.78rem;color:#888;margin-top:10px">
+            Submit right after Check Out. HR reviews before it is paid.
+        </div>
     </div>
 </div>
 
-<!-- SCRIPTS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="config.js"></script>
 <script src="api.js"></script>
 <script src="kiosk.js"></script>
-
 </body>
 </html>
