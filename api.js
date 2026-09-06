@@ -48,15 +48,22 @@ function getDailyKioskStatus(empId) {
     return gsRequest('getDailyKioskStatus', { empId: empId });
 }
 
-// Backdated Day Off — employee logs a Day Off for a specific past date.
-// Requires new GAS backend method: markBackdatedDayOff
-// See KioskBackend.gs for the backend implementation.
+// Backdated Day Off — reuses the existing addAttendancePunch endpoint
+// so NO new GAS method or redeployment is needed.
 function markBackdatedDayOff(empId, pin, dateDd, lat, lng) {
-    return gsRequest('markBackdatedDayOff', {
-        empId : empId,
-        pin   : pin,
-        date  : dateDd,                          // dd-mm-yyyy
-        lat   : (lat  == null ? '' : lat),
-        lng   : (lng  == null ? '' : lng)
-    });
+    const url = CONFIG.API_URL.replace('/dev', '/exec');
+    return fetch(url + '?method=addAttendancePunch', {
+        method : 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body   : JSON.stringify({
+            empId   : empId,
+            date    : dateDd,   // dd-mm-yyyy — backend uses this date
+            time    : '00:00',
+            stage   : 'Day Off',
+            location: '',
+            by      : empId + ' (kiosk self-report)'
+        })
+    })
+    .then(res => res.json())
+    .catch(err => ({ success: false, error: err.message || 'Connection error' }));
 }
