@@ -3,269 +3,357 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Maya HR - Staff Kiosk</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <title>Maya HR Kiosk</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --green  : #198754;
-            --yellow : #ffc107;
-            --cyan   : #0dcaf0;
-            --red    : #dc3545;
-            --orange : #fd7e14;
-            --teal   : oklch(0.65 0.13 190);
-        }
-        * { box-sizing: border-box; }
-        body {
-            background: #f0f2f5;
-            font-family: 'Segoe UI', sans-serif;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0;
-            padding: 16px;
-        }
-        .kiosk-container { width: 100%; max-width: 500px; }
+    /* ── Design tokens (from Maya_HR_Kiosk_dc.html) ─────────────── */
+    :root {
+        --dark        : oklch(0.16 0.02 200);
+        --teal        : oklch(0.65 0.13 190);
+        --muted       : oklch(0.52 0.01 200);
+        --border      : oklch(0.85 0.005 200);
+        --text        : oklch(0.20 0.01 200);
 
-        /* ── Login card ─────────────────────────────────────── */
-        .login-card {
-            background: #fff;
-            border-radius: 20px;
-            padding: 40px 25px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-        .login-card h3 { font-weight: 600; color: #1a1a2e; margin-bottom: 25px; }
-        .login-card .form-control {
-            font-size: 1.1rem; text-align: center;
-            padding: 12px; height: 55px;
-        }
-        #kioskLoginBtn {
-            width: 100%; height: 55px;
-            font-size: 1.2rem; font-weight: 600; margin-top: 15px;
-            background: var(--teal); color: #fff; border: none;
-            border-radius: 10px; cursor: pointer;
-        }
-        #kioskLoginBtn:disabled { opacity: 0.6; }
-        #kioskError { color: #dc3545; min-height: 24px; font-size: 0.95rem; margin-top: 10px; }
+        /* Stage button colours */
+        --ci-bg : oklch(0.60 0.14 165);  /* Check In  — green  */
+        --ci-fg : #fff;
+        --bo-bg : oklch(0.75 0.13 85);   /* Break Out — amber  */
+        --bo-fg : oklch(0.25 0.05 85);
+        --bi-bg : oklch(0.70 0.10 190);  /* Break In  — teal   */
+        --bi-fg : #fff;
+        --co-bg : oklch(0.55 0.16 25);   /* Check Out — red    */
+        --co-fg : #fff;
+        --do-bg : oklch(0.50 0.01 200);  /* Day Off   — slate  */
+        --do-fg : #fff;
+        --ot-bg : oklch(0.75 0.13 85);   /* OT button — amber  */
+        --ot-fg : oklch(0.25 0.05 85);
+    }
 
-        /* ── Dashboard ──────────────────────────────────────── */
-        #kioskDashboard { display: none; }
-        .kiosk-header {
-            background: #fff; border-radius: 15px; padding: 18px;
-            text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-            margin-bottom: 18px;
-        }
-        .kiosk-header h4 { margin: 0; font-weight: 600; }
-        .kiosk-header small { color: #6c757d; }
+    /* ── Reset ───────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+        min-height: 100vh;
+        background: var(--dark);
+        font-family: system-ui, -apple-system, sans-serif;
+        display: flex; align-items: center; justify-content: center;
+        padding: 24px;
+    }
+    .wrap { width: 100%; max-width: 420px; }
 
-        /* ── Stage buttons — common ─────────────────────────── */
-        .stage-btn-single {
-            width: 100%; min-height: 200px; border: none; border-radius: 20px;
-            font-size: 2rem; font-weight: 700; color: #fff;
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center; gap: 12px;
-            box-shadow: 0 6px 16px rgba(0,0,0,0.15);
-            transition: transform 0.12s; cursor: pointer;
-        }
-        .stage-btn-single i { font-size: 4rem; }
-        .stage-btn-single:active { transform: scale(0.97); }
-        .stage-btn-single:disabled { opacity: 0.6; cursor: default; }
+    /* ── Cards ───────────────────────────────────────────────────── */
+    .card {
+        background: #fff;
+        border-radius: 22px;
+        padding: 44px 30px;
+        text-align: center;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+    }
+    .header-card {
+        background: #fff;
+        border-radius: 18px;
+        padding: 22px;
+        text-align: center;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        margin-bottom: 14px;
+    }
+    .dayoff-card {
+        background: #fff;
+        border-radius: 20px;
+        padding: 30px 22px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    }
 
-        .btn-check-in  { background: var(--green); }
-        .btn-break-out { background: var(--yellow); color: #333; }
-        .btn-break-in  { background: var(--cyan);   color: #333; }
-        .btn-check-out { background: var(--red); }
+    /* ── Logo ────────────────────────────────────────────────────── */
+    .logo {
+        width: 56px; height: 56px;
+        border-radius: 14px;
+        background: var(--teal); color: var(--dark);
+        display: flex; align-items: center; justify-content: center;
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 700; font-size: 24px;
+        margin: 0 auto 18px;
+    }
+    .card h1 {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 22px; font-weight: 600;
+        color: var(--text); margin-bottom: 6px;
+    }
+    .card .subtitle { color: var(--muted); font-size: 14px; margin-bottom: 26px; }
+    .card .footer-note { color: oklch(0.6 0.01 200); font-size: 12px; margin-top: 18px; }
 
-        /* ── Two-button layout (multi-break: after check-in or after break) */
-        .two-btn-wrap { display: flex; flex-direction: column; gap: 14px; }
-        .two-btn-row  { display: flex; gap: 14px; }
-        .btn-half {
-            flex: 1; min-height: 140px; border: none; border-radius: 18px;
-            font-size: 1.4rem; font-weight: 700; color: #fff;
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center; gap: 8px;
-            box-shadow: 0 5px 12px rgba(0,0,0,0.12);
-            transition: transform 0.12s; cursor: pointer;
-        }
-        .btn-half i { font-size: 2.4rem; }
-        .btn-half:active { transform: scale(0.97); }
-        .btn-half:disabled { opacity: 0.6; }
-        .btn-half.btn-break-out { background: var(--yellow); color: #333; }
-        .btn-half.btn-check-out { background: var(--red); }
+    /* ── Employee header ─────────────────────────────────────────── */
+    .header-card h2 {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 19px; font-weight: 600;
+        color: var(--text); margin-bottom: 4px;
+    }
+    .header-card .emp-id {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 13px; color: var(--muted);
+    }
 
-        /* Secondary skip-break button under Check In */
-        .btn-skip {
-            width: 100%; height: 56px; border: 2px solid #dee2e6;
-            border-radius: 12px; background: #fff; color: #555;
-            font-size: 1rem; font-weight: 600; cursor: pointer;
-            transition: background 0.12s;
-        }
-        .btn-skip:hover { background: #f8f9fa; }
-        .btn-skip:active { transform: scale(0.98); }
+    /* ── Inputs ──────────────────────────────────────────────────── */
+    .kiosk-input {
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 14px;
+        font-size: 16px;
+        text-align: center;
+        outline: none;
+        transition: border-color .15s;
+        margin-bottom: 12px;
+        font-family: system-ui, sans-serif;
+    }
+    .kiosk-input:focus { border-color: var(--teal); box-shadow: 0 0 0 3px oklch(0.65 0.13 190 / .12); }
+    .pin-input {
+        letter-spacing: 6px;
+        font-family: 'JetBrains Mono', monospace;
+        margin-bottom: 0;
+    }
+    #kioskError { min-height: 20px; color: oklch(0.55 0.16 25); font-size: 13px; margin: 8px 0; }
 
-        /* ── Day Off screen ─────────────────────────────────── */
-        .dayoff-card {
-            background: #fff; border-radius: 20px; padding: 28px 20px;
-            box-shadow: 0 6px 16px rgba(0,0,0,0.08); text-align: center;
-        }
-        .dayoff-card h4 {
-            font-size: 1.5rem; font-weight: 700;
-            color: #1a1a2e; margin-bottom: 22px;
-        }
-        .dayoff-btn-row { display: flex; gap: 14px; margin-bottom: 20px; }
-        .btn-dayoff-yes {
-            flex: 1; height: 90px; border: none; border-radius: 16px;
-            background: #6c757d; color: #fff;
-            font-size: 1.3rem; font-weight: 700; cursor: pointer;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.12);
-            transition: transform 0.12s;
-        }
-        .btn-dayoff-yes:active { transform: scale(0.97); }
-        .btn-checkin-go {
-            flex: 1; height: 90px; border: none; border-radius: 16px;
-            background: var(--green); color: #fff;
-            font-size: 1.3rem; font-weight: 700; cursor: pointer;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.12);
-            transition: transform 0.12s;
-        }
-        .btn-checkin-go:active { transform: scale(0.97); }
+    /* ── Buttons ─────────────────────────────────────────────────── */
+    .btn-primary {
+        width: 100%; border: none; border-radius: 10px;
+        background: var(--teal); color: var(--dark);
+        padding: 16px; font-size: 16px; font-weight: 700;
+        margin-top: 14px; cursor: pointer;
+        font-family: 'Space Grotesk', sans-serif;
+        transition: opacity .12s;
+    }
+    .btn-primary:active { opacity: .85; }
+    .btn-primary:disabled { opacity: .6; cursor: default; }
 
-        /* Backdated section */
-        .btn-backdated-toggle {
-            background: none; border: none; color: #6c757d;
-            font-size: 0.9rem; cursor: pointer; text-decoration: underline;
-            padding: 0; margin-bottom: 0;
-        }
-        #backdatedSection {
-            display: none; margin-top: 16px;
-            border-top: 1px solid #e9ecef; padding-top: 16px;
-        }
-        #backdatedSection label { font-size: 0.9rem; color: #555; margin-bottom: 6px; display: block; }
-        #backdatedSection input[type=date] {
-            width: 100%; padding: 10px; border: 1px solid #ced4da;
-            border-radius: 8px; font-size: 1rem; margin-bottom: 10px;
-        }
-        .btn-submit-backdated {
-            width: 100%; height: 50px; border: none; border-radius: 10px;
-            background: #6c757d; color: #fff;
-            font-size: 1rem; font-weight: 600; cursor: pointer;
-        }
-        .btn-submit-backdated:disabled { opacity: 0.6; }
-        #backdatedMsg { min-height: 22px; font-size: 0.9rem; margin-top: 8px; }
+    /* Big stage buttons */
+    .stage-btn {
+        width: 100%; min-height: 190px; border: none;
+        border-radius: 20px; cursor: pointer;
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 700; font-size: 22px;
+        display: flex; flex-direction: column;
+        align-items: center; justify-content: center; gap: 10px;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+        transition: transform .12s;
+    }
+    .stage-btn:active { transform: scale(0.97); }
+    .stage-btn:disabled { opacity: .6; cursor: default; }
+    .stage-btn i { font-size: 48px; }
+    .btn-ci  { background: var(--ci-bg); color: var(--ci-fg); }
+    .btn-bo  { background: var(--bo-bg); color: var(--bo-fg); }
+    .btn-bi  { background: var(--bi-bg); color: var(--bi-fg); }
+    .btn-co  { background: var(--co-bg); color: var(--co-fg); }
 
-        /* ── Completed screen ───────────────────────────────── */
-        .stage-done {
-            text-align: center; padding: 40px 20px;
-            background: #fff; border-radius: 20px;
-            box-shadow: 0 6px 16px rgba(0,0,0,0.08);
-            color: var(--green);
-        }
-        .stage-done i { font-size: 4rem; }
-        .stage-done .done-title { font-size: 1.4rem; font-weight: 700; margin-top: 8px; }
-        .stage-done .done-sub { font-size: 0.95rem; color: #6c757d; margin-top: 4px; }
+    /* Half-width pair for after-break state */
+    .two-col { display: flex; gap: 12px; }
+    .two-col .stage-btn { min-height: 140px; font-size: 17px; flex: 1; }
+    .two-col .stage-btn i { font-size: 34px; }
 
-        /* ── OT button + Logout ─────────────────────────────── */
-        .btn-ot {
-            width: 100%; margin-top: 14px; height: 58px; border: none;
-            border-radius: 14px; background: var(--orange); color: #fff;
-            font-size: 1.1rem; font-weight: 600;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1); cursor: pointer;
-        }
-        .btn-ot:active { transform: scale(0.98); }
-        .logout-container { text-align: right; margin-top: 14px; }
-        .btn-logout {
-            background: transparent; color: #6c757d;
-            border: 1px solid #dee2e6; font-size: 0.9rem;
-            padding: 8px 20px; border-radius: 20px; cursor: pointer;
-        }
-        .btn-logout:hover { background: #f8f9fa; }
+    /* Skip-break secondary */
+    .btn-skip {
+        width: 100%; margin-top: 10px;
+        border: 1px solid var(--border); border-radius: 10px;
+        background: #fff; color: var(--muted);
+        padding: 13px; font-size: 14px; font-weight: 600;
+        cursor: pointer; font-family: 'Space Grotesk', sans-serif;
+        transition: background .12s;
+    }
+    .btn-skip:hover { background: oklch(0.97 0.002 200); }
+    .btn-skip:active { transform: scale(0.98); }
 
-        /* ── OT submit modal ────────────────────────────────── */
-        .ot-overlay {
-            display: none; position: fixed; inset: 0;
-            background: rgba(0,0,0,0.5); z-index: 9999;
-            align-items: center; justify-content: center;
-        }
-        .ot-box {
-            background: #fff; border-radius: 16px; padding: 24px;
-            max-width: 380px; width: 90%;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        }
+    /* OT button */
+    .btn-ot {
+        width: 100%; border: none; border-radius: 14px;
+        background: var(--ot-bg); color: var(--ot-fg);
+        padding: 16px; font-size: 15px; font-weight: 700;
+        margin-top: 14px; cursor: pointer;
+        font-family: 'Space Grotesk', sans-serif;
+        transition: opacity .12s;
+    }
+    .btn-ot:active { opacity: .85; }
+
+    /* Logout */
+    .btn-logout {
+        background: transparent;
+        border: 1px solid rgba(255,255,255,0.3);
+        color: oklch(0.85 0.01 200);
+        border-radius: 20px; padding: 8px 18px;
+        font-size: 13px; cursor: pointer;
+        font-family: 'Space Grotesk', sans-serif;
+        transition: border-color .12s;
+    }
+    .btn-logout:hover { border-color: rgba(255,255,255,0.55); }
+    .logout-row { text-align: right; margin-top: 16px; }
+
+    /* ── Day Off screen ──────────────────────────────────────────── */
+    .dayoff-title {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 20px; font-weight: 700;
+        color: var(--text); margin-bottom: 22px;
+    }
+    .dayoff-row { display: flex; gap: 12px; margin-bottom: 18px; }
+    .btn-do {
+        flex: 1; border: none; border-radius: 16px;
+        background: var(--do-bg); color: var(--do-fg);
+        padding: 18px 10px; font-size: 15px; font-weight: 700;
+        cursor: pointer; font-family: 'Space Grotesk', sans-serif;
+        display: flex; flex-direction: column; align-items: center; gap: 6px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.12); transition: opacity .12s;
+    }
+    .btn-do:active { opacity: .85; }
+    .btn-do.green { background: var(--ci-bg); color: var(--ci-fg); }
+    .btn-do i { font-size: 26px; }
+    .btn-backdated {
+        background: none; border: none;
+        color: var(--muted); font-size: 13px;
+        text-decoration: underline; cursor: pointer;
+        font-family: system-ui, sans-serif; padding: 0;
+        width: 100%; text-align: center; margin-bottom: 0;
+    }
+    #backdatedSection {
+        display: none;
+        border-top: 1px solid var(--border);
+        padding-top: 16px; margin-top: 16px;
+    }
+    .field-label {
+        font-size: 12px; color: var(--muted);
+        font-weight: 600; margin-bottom: 6px; display: block;
+        text-align: left;
+    }
+    #backdatedDate {
+        width: 100%; border: 1px solid var(--border);
+        border-radius: 10px; padding: 12px; font-size: 15px;
+        margin-bottom: 10px; outline: none;
+        transition: border-color .15s;
+    }
+    #backdatedDate:focus { border-color: var(--teal); }
+    .btn-submit-back {
+        width: 100%; border: none; border-radius: 10px;
+        background: var(--do-bg); color: var(--do-fg);
+        padding: 13px; font-size: 14px; font-weight: 700;
+        cursor: pointer; font-family: 'Space Grotesk', sans-serif;
+    }
+    .btn-submit-back:disabled { opacity: .6; }
+    #backdatedMsg { font-size: 13px; min-height: 20px; margin-top: 8px; text-align: center; }
+
+    /* ── Done screen ─────────────────────────────────────────────── */
+    .done-card {
+        background: #fff; border-radius: 20px;
+        padding: 44px 20px; text-align: center;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    }
+    .done-icon {
+        width: 70px; height: 70px; border-radius: 50%;
+        background: oklch(0.94 0.05 165);
+        color: oklch(0.40 0.10 165);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 32px; font-weight: 700; margin: 0 auto 14px;
+    }
+    .done-title {
+        font-family: 'Space Grotesk', sans-serif;
+        font-weight: 700; font-size: 19px;
+        color: oklch(0.40 0.10 165); margin-bottom: 6px;
+    }
+    .done-sub { color: var(--muted); font-size: 14px; }
+
+    /* ── OT modal ────────────────────────────────────────────────── */
+    .ot-overlay {
+        display: none; position: fixed; inset: 0;
+        background: rgba(0,0,0,0.55); z-index: 999;
+        align-items: center; justify-content: center; padding: 20px;
+    }
+    .ot-box {
+        background: #fff; border-radius: 16px;
+        padding: 26px; max-width: 360px; width: 100%;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+    }
+    .ot-box h3 {
+        font-family: 'Space Grotesk', sans-serif;
+        font-size: 17px; font-weight: 600;
+        margin-bottom: 16px; color: var(--text);
+    }
+    .modal-date-input, .modal-hours-input {
+        width: 100%; border: 1px solid var(--border);
+        border-radius: 10px; padding: 14px;
+        font-size: 15px; margin-bottom: 14px;
+        outline: none; font-family: system-ui, sans-serif;
+        transition: border-color .15s;
+    }
+    .modal-date-input:focus, .modal-hours-input:focus { border-color: var(--teal); }
+    .modal-hours-input { margin-bottom: 16px; }
+    .modal-row { display: flex; gap: 10px; }
+    .btn-cancel {
+        flex: 1; border: 1px solid var(--border);
+        border-radius: 10px; background: transparent;
+        color: oklch(0.4 0.01 200); padding: 14px;
+        font-size: 15px; font-weight: 600; cursor: pointer;
+        font-family: 'Space Grotesk', sans-serif;
+    }
+    .btn-submit-ot {
+        flex: 1; border: none; border-radius: 10px;
+        background: var(--ot-bg); color: var(--ot-fg);
+        padding: 14px; font-size: 15px; font-weight: 700;
+        cursor: pointer; font-family: 'Space Grotesk', sans-serif;
+    }
+    .btn-submit-ot:disabled { opacity: .6; }
+    #otMsg { font-size: 12px; color: var(--muted); margin-top: 12px; min-height: 18px; }
+    .ot-note { font-size: 12px; color: oklch(0.6 0.01 200); margin-top: 12px; }
     </style>
 </head>
 <body>
+<div class="wrap">
 
-<div class="kiosk-container">
-
-    <!-- ── Login ───────────────────────────────────────────── -->
-    <div id="loginScreen" class="login-card">
-        <i class="bi bi-building" style="font-size:3.5rem;color:var(--teal)"></i>
-        <h3>Maya HR Kiosk</h3>
-        <p class="text-muted">Enter your ID and PIN</p>
-        <div class="mb-3">
-            <input type="text" class="form-control" id="kioskEmpId"
-                placeholder="Employee ID" autocomplete="off">
-        </div>
-        <div class="mb-2">
-            <input type="password" class="form-control" id="kioskPin"
-                placeholder="PIN" maxlength="4" inputmode="numeric">
-        </div>
+    <!-- ── LOGIN ──────────────────────────────────────────────────── -->
+    <div id="loginScreen" class="card">
+        <div class="logo">M</div>
+        <h1>Maya HR Kiosk</h1>
+        <p class="subtitle">Enter your ID and PIN to clock in/out</p>
+        <input type="text"     class="kiosk-input"            id="kioskEmpId" placeholder="Employee ID" autocomplete="off">
+        <input type="password" class="kiosk-input pin-input"  id="kioskPin"   placeholder="PIN" maxlength="4" inputmode="numeric">
         <div id="kioskError"></div>
-        <button id="kioskLoginBtn" onclick="kioskLogin()">
-            <i class="bi bi-box-arrow-in-right"></i> Clock In / Out
-        </button>
-        <p class="mt-3 text-muted" style="font-size:0.8rem">For authorized staff use only</p>
+        <button class="btn-primary" id="kioskLoginBtn" onclick="kioskLogin()">Log In</button>
+        <p class="footer-note">For authorized staff use only</p>
     </div>
 
-    <!-- ── Dashboard ──────────────────────────────────────── -->
-    <div id="kioskDashboard">
-        <div class="kiosk-header">
-            <h4 id="kioskEmpName">Welcome</h4>
-            <small id="kioskEmpIdDisplay">ID: ---</small>
+    <!-- ── DASHBOARD ──────────────────────────────────────────────── -->
+    <div id="kioskDashboard" style="display:none">
+
+        <div class="header-card">
+            <h2 id="kioskEmpName">Welcome</h2>
+            <div class="emp-id" id="kioskEmpIdDisplay">ID: —</div>
         </div>
 
-        <!-- Stage buttons injected here -->
+        <!-- Stage area injected here -->
         <div id="stageHost"></div>
 
-        <!-- Submit OT (shown unless done for day) -->
-        <button class="btn-ot" id="otBtn" onclick="openOtSubmit()">
-            <i class="bi bi-clock-history"></i> Submit Overtime
-        </button>
+        <button class="btn-ot" id="otBtn" onclick="openOtSubmit()">Submit Overtime</button>
 
-        <div class="logout-container">
-            <button class="btn-logout" onclick="kioskLogout()">
-                <i class="bi bi-box-arrow-right"></i> Logout
-            </button>
+        <div class="logout-row">
+            <button class="btn-logout" onclick="kioskLogout()">Logout</button>
         </div>
     </div>
 </div>
 
-<!-- ── OT submit modal ─────────────────────────────────────── -->
+<!-- ── OT MODAL ───────────────────────────────────────────────────── -->
 <div id="otModal" class="ot-overlay">
     <div class="ot-box">
-        <h5 style="margin-bottom:16px">
-            <i class="bi bi-clock-history"></i> Submit Overtime
-        </h5>
-        <label style="font-size:0.9rem;color:#555">Date</label>
-        <input type="date" id="otDate" class="form-control" style="margin-bottom:12px">
-        <label style="font-size:0.9rem;color:#555">OT Hours (e.g. 2.5)</label>
-        <input type="number" step="0.25" min="0" id="otHours"
-            class="form-control" style="margin-bottom:12px" placeholder="Hours">
-        <div id="otMsg" style="min-height:22px;font-size:0.9rem;margin-bottom:10px"></div>
-        <div style="display:flex;gap:10px">
-            <button class="btn btn-secondary" style="flex:1" onclick="closeOtSubmit()">Cancel</button>
-            <button class="btn btn-warning" style="flex:1;font-weight:600"
-                id="otSubmitBtn" onclick="submitOt()">Submit</button>
+        <h3>Submit Overtime</h3>
+        <span class="field-label">Date</span>
+        <input type="date" id="otDate" class="modal-date-input">
+        <span class="field-label">OT Hours (e.g. 2.5)</span>
+        <input type="number" step="0.25" min="0" id="otHours" class="modal-hours-input" placeholder="Hours">
+        <div class="modal-row">
+            <button class="btn-cancel" onclick="closeOtSubmit()">Cancel</button>
+            <button class="btn-submit-ot" id="otSubmitBtn" onclick="submitOt()">Submit</button>
         </div>
-        <div style="font-size:0.78rem;color:#888;margin-top:10px">
-            Submit right after Check Out. HR reviews before it is paid.
-        </div>
+        <p id="otMsg"></p>
+        <p class="ot-note">Submit right after Check Out, at your location. HR reviews before payment.</p>
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" crossorigin="anonymous"></script>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
 <script src="config.js"></script>
 <script src="api.js"></script>
 <script src="kiosk.js"></script>
