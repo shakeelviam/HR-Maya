@@ -67,6 +67,23 @@ body{background:var(--bg);font-family:system-ui,sans-serif;color:var(--text);mar
 .status-ok{color:oklch(0.4 0.1 165)}
 .status-err{color:var(--red)}
 
+/* Team list */
+.team-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:14px}
+.team-row:last-child{border-bottom:none}
+.team-row .id{color:var(--muted);font-size:12px;font-family:'JetBrains Mono',monospace;margin-left:6px}
+.needs-roster-badge{display:inline-block;background:oklch(0.94 0.05 25);color:oklch(0.5 0.14 25);
+  font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;margin-left:8px}
+
+/* Transfer request rows */
+.req-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
+.req-row:last-child{border-bottom:none}
+.req-meta{color:var(--muted);font-size:12px}
+.req-status{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.req-status.pending{background:oklch(0.94 0.05 85);color:oklch(0.45 0.12 85)}
+.req-status.approved{background:oklch(0.94 0.05 165);color:oklch(0.4 0.1 165)}
+.req-status.rejected{background:oklch(0.94 0.03 25);color:oklch(0.5 0.14 25)}
+.req-status.expired{background:oklch(0.94 0.003 200);color:oklch(0.4 0.01 200)}
+
 /* Discrepancies */
 .disc-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
 .disc-row:last-child{border-bottom:none}
@@ -107,14 +124,33 @@ body{background:var(--bg);font-family:system-ui,sans-serif;color:var(--text);mar
 
   <div class="container">
 
+    <!-- My Team (always shown — includes Transfer, even for exempt locations) -->
+    <div class="card" id="teamCard" style="display:none">
+      <h5><i class="bi bi-people"></i> My Team</h5>
+      <div id="teamExemptNote" style="display:none;color:var(--muted);font-size:13px;margin-bottom:12px"></div>
+      <div id="teamList"></div>
+    </div>
+
     <!-- Discrepancies -->
     <div class="card" id="discCard" style="display:none">
       <h5><i class="bi bi-exclamation-triangle" style="color:var(--amber)"></i> Needs Review</h5>
       <div id="discList"></div>
     </div>
 
+    <!-- Incoming Transfer Requests (I'm the destination — needs my approval) -->
+    <div class="card" id="incomingCard" style="display:none">
+      <h5><i class="bi bi-box-arrow-in-down"></i> Incoming Transfer Requests</h5>
+      <div id="incomingList"></div>
+    </div>
+
+    <!-- Outgoing Transfer Requests (I requested these — status only) -->
+    <div class="card" id="outgoingCard" style="display:none">
+      <h5><i class="bi bi-box-arrow-up"></i> My Transfer Requests</h5>
+      <div id="outgoingList"></div>
+    </div>
+
     <!-- Toolbar -->
-    <div class="card">
+    <div class="card" id="toolbarCard">
       <div class="toolbar">
         <div>
           <label>From</label>
@@ -134,10 +170,45 @@ body{background:var(--bg);font-family:system-ui,sans-serif;color:var(--text);mar
     </div>
 
     <!-- Grid -->
-    <div class="card" style="overflow-x:auto">
+    <div class="card" id="gridCard" style="overflow-x:auto">
       <div id="gridWrap"><p style="color:var(--muted)">Pick a date range and click Load.</p></div>
     </div>
 
+  </div>
+</div>
+
+<!-- ── TRANSFER REQUEST MODAL ────────────────────────── -->
+<div id="transferModal" class="modal-overlay">
+  <div class="modal-box">
+    <h5>Transfer Employee</h5>
+    <div class="sub" id="transferWho" style="color:var(--muted);font-size:13px"></div>
+    <label>To Location</label>
+    <select id="transferLocation" onchange="onTransferLocationChange()"></select>
+    <label>Effective Date</label>
+    <input type="date" id="transferDate">
+    <label>Reason (optional)</label>
+    <textarea id="transferReason" rows="2" placeholder="e.g. permanent reassignment"></textarea>
+    <div id="transferApprovalNote" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="btn btn-outline" style="flex:1" onclick="closeTransfer()">Cancel</button>
+      <button class="btn btn-success" style="flex:1" id="transferConfirmBtn" onclick="submitTransfer()">Send Request</button>
+    </div>
+    <div id="transferMsg" style="font-size:12px;margin-top:10px"></div>
+  </div>
+</div>
+
+<!-- ── REJECT MODAL (small note prompt) ──────────────── -->
+<div id="rejectModal" class="modal-overlay">
+  <div class="modal-box" style="max-width:340px">
+    <h5>Reject Transfer Request</h5>
+    <div class="sub" id="rejectWho" style="color:var(--muted);font-size:13px"></div>
+    <label>Note (optional)</label>
+    <textarea id="rejectNote" rows="2" placeholder="e.g. we already have full coverage"></textarea>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="btn btn-outline" style="flex:1" onclick="closeReject()">Cancel</button>
+      <button class="btn btn-outline" style="flex:1;color:var(--red);border-color:var(--red)" onclick="submitReject()">Reject</button>
+    </div>
+    <div id="rejectMsg" style="font-size:12px;margin-top:10px"></div>
   </div>
 </div>
 
