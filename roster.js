@@ -1,5 +1,10 @@
 // ============================================================
 // roster.js — Supervisor Roster Planner
+// ------------------------------------------------------------
+// One dropdown per cell: the location's own shifts (server-scoped,
+// never cross-location) + "Day Off". Selecting a shift name means
+// Working on that shift; selecting Day Off means Day Off. No
+// separate Working/shift two-step.
 // ============================================================
 
 let supId = null, supPin = null, currentData = null;
@@ -24,6 +29,11 @@ async function apiPost(method, body) {
 }
 
 // ── Login ──────────────────────────────────────────────────
+// Locations that don't use rostering — mirrors ROSTER_EXEMPT_LOCATIONS
+// in RosterBackend.gs. Checked here too so the message shows immediately
+// at login, before the supervisor tries to load an empty grid.
+const ROSTER_EXEMPT_LOCATIONS = ['Head Office', 'Driver Location'];
+
 async function doLogin() {
   const id  = document.getElementById('supId').value.trim();
   const pin = document.getElementById('supPin').value.trim();
@@ -40,6 +50,11 @@ async function doLogin() {
     document.getElementById('locName').innerText = res.location + ' — Roster';
     document.getElementById('supName').innerText = res.name + ' · ' + res.teamCount + ' staff';
 
+    if (ROSTER_EXEMPT_LOCATIONS.includes(res.location)) {
+      showExemptMessage(res.location);
+      return;
+    }
+
     const today = todayIso();
     document.getElementById('fromDate').value = today;
     const to = new Date(); to.setDate(to.getDate() + 6);
@@ -49,6 +64,18 @@ async function doLogin() {
   } catch (e) {
     err.innerText = 'Connection error.';
   }
+}
+
+function showExemptMessage(location) {
+  const why = location === 'Head Office'
+    ? 'Staff at Head Office are automatically marked present on working days — no roster needed.'
+    : 'Drivers work every day and self-report their day off directly on the kiosk — no roster needed.';
+  document.querySelector('.container').innerHTML =
+    '<div class="card" style="text-align:center;padding:40px 24px">' +
+      '<i class="bi bi-info-circle" style="font-size:2rem;color:var(--teal)"></i>' +
+      '<h5 style="margin-top:14px">' + location + ' doesn\'t use rostering</h5>' +
+      '<p style="color:var(--muted);max-width:420px;margin:8px auto 0">' + why + '</p>' +
+    '</div>';
 }
 
 function logout() {
@@ -98,6 +125,7 @@ async function loadRoster() {
   renderGrid();
 }
 
+// ── Grid render — ONE dropdown per cell: this location's shifts + Day Off ──
 function renderGrid() {
   const { employees, dates, shifts, cells } = currentData;
   const wrap = document.getElementById('gridWrap');
@@ -105,28 +133,33 @@ function renderGrid() {
   let head = '<tr><th class="emp-name-h">Employee</th>' +
     dates.map(d => '<th>' + d.slice(0,5) + '</th>').join('') + '</tr>';
 
+  // Shared option list: blank, Day Off, then this location's shifts only.
+  // `shifts` comes from getRosterRange, already scoped server-side to the
+  // logged-in supervisor's own location — never shows another location's shifts.
+  function buildOptions(selectedValue) {
+    let opts = '<option value=""' + (!selectedValue ? ' selected' : '') + '>—</option>';
+    opts += '<option value="Day Off"' + (selectedValue==='Day Off' ? ' selected' : '') + '>Day Off</option>';
+    shifts.forEach(s => {
+      opts += '<option value="' + s + '"' + (selectedValue===s ? ' selected' : '') + '>' + s + '</option>';
+    });
+    return opts;
+  }
+
   let body = employees.map(emp => {
     const rowCells = dates.map(date => {
       const c = (cells[emp.id] && cells[emp.id][date]) || {};
       if (c.locked) {
         return '<td><div class="cell-locked">' + c.lockReason + '</div></td>';
       }
-      const shiftOpts = shifts.map(s =>
-        '<option value="' + s + '"' + (c.shift===s?' selected':'') + '>' + s + '</option>'
-      ).join('');
-      const statusCls = c.status === 'Day Off' ? 'off' : c.status === 'Working' ? 'working' : '';
+      // Selected value: 'Day Off' or the shift name (implies Working)
+      const selectedValue = c.status === 'Day Off' ? 'Day Off' : (c.status === 'Working' ? c.shift : '');
+      const statusCls = selectedValue === 'Day Off' ? 'off' : selectedValue ? 'working' : '';
       const pubCls = c.published ? ' cell-published' : '';
-      return '<td class="' + (c.status ? '' : 'cell-empty') + '">' +
+      return '<td class="' + (selectedValue ? '' : 'cell-empty') + '">' +
         '<select class="cell-select ' + statusCls + pubCls + '" ' +
           'data-emp="' + emp.id + '" data-date="' + date + '" onchange="onCellChange(this)">' +
-          '<option value="">—</option>' +
-          '<option value="Working"' + (c.status==='Working'?' selected':'') + '>Working</option>' +
-          '<option value="Day Off"' + (c.status==='Day Off'?' selected':'') + '>Day Off</option>' +
+          buildOptions(selectedValue) +
         '</select>' +
-        (c.status === 'Working' ?
-          '<select class="cell-select mt-1" data-shift-for="' + emp.id + '|' + date + '" style="margin-top:3px">' +
-            shiftOpts +
-          '</select>' : '') +
         (c.published ? '<div style="font-size:10px;color:var(--green);margin-top:2px">' +
           '<i class="bi bi-check-circle-fill"></i> <a href="#" onclick="openAmend(\'' + emp.id + '\',\'' + emp.name.replace(/'/g,"\\'") + '\',\'' + date + '\');return false;" style="color:var(--amber)">amend</a></div>' : '') +
       '</td>';
@@ -137,14 +170,25 @@ function renderGrid() {
   wrap.innerHTML = '<table class="roster-table"><thead>' + head + '</thead><tbody>' + body + '</tbody></table>';
 }
 
+// Single dropdown changed: value is either 'Day Off', a shift name, or '' (blank)
 function onCellChange(sel) {
   const empId = sel.getAttribute('data-emp');
   const date  = sel.getAttribute('data-date');
   const val   = sel.value;
   if (!currentData.cells[empId]) currentData.cells[empId] = {};
   if (!currentData.cells[empId][date]) currentData.cells[empId][date] = {};
-  currentData.cells[empId][date].status = val;
-  renderGrid(); // re-render to show/hide shift dropdown
+
+  if (val === '') {
+    currentData.cells[empId][date].status = '';
+    currentData.cells[empId][date].shift = '';
+  } else if (val === 'Day Off') {
+    currentData.cells[empId][date].status = 'Day Off';
+    currentData.cells[empId][date].shift = '';
+  } else {
+    currentData.cells[empId][date].status = 'Working';
+    currentData.cells[empId][date].shift = val; // the shift name itself
+  }
+  renderGrid();
 }
 
 // ── Save / Publish ─────────────────────────────────────────
@@ -153,11 +197,10 @@ function collectCellsPayload() {
   document.querySelectorAll('.cell-select[data-emp]').forEach(sel => {
     const empId = sel.getAttribute('data-emp');
     const date  = sel.getAttribute('data-date');
-    const status = sel.value;
-    if (!status) return;
-    let shift = '';
-    const shiftSel = document.querySelector('[data-shift-for="' + empId + '|' + date + '"]');
-    if (shiftSel) shift = shiftSel.value;
+    const val   = sel.value;
+    if (!val) return;
+    const status = val === 'Day Off' ? 'Day Off' : 'Working';
+    const shift  = val === 'Day Off' ? '' : val;
     if (!out[empId]) out[empId] = {};
     out[empId][date] = { status, shift };
   });
@@ -196,9 +239,8 @@ async function copyPrevious() {
   Object.keys(res.cells).forEach(empId => {
     if (!currentData.cells[empId]) currentData.cells[empId] = {};
     Object.keys(res.cells[empId]).forEach(date => {
-      // Don't override a locked (on-leave) cell
       const existing = currentData.cells[empId][date] || {};
-      if (existing.locked) return;
+      if (existing.locked) return; // never override on-leave lock
       currentData.cells[empId][date] = { ...existing, ...res.cells[empId][date] };
     });
   });
@@ -213,6 +255,9 @@ function setStatus(msg, cls) {
 }
 
 // ── Amend modal ────────────────────────────────────────────
+// Kept as two explicit fields (Status + Shift) rather than one combined
+// dropdown — this is a deliberate, spacious action screen with a required
+// reason field, not a dense grid cell, so the extra clarity is worth it.
 let amendTarget = null;
 
 function openAmend(empId, empName, date) {
