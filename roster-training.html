@@ -134,6 +134,22 @@ body{font-family:system-ui,sans-serif;color:var(--text);background:#fff;line-hei
 .mock-textarea{border:1px solid var(--border);border-radius:5px;padding:6px;font-size:8px;
   width:100%;min-height:28px;color:#999}
 
+/* Team & transfer request mockups */
+.mock-team-row{display:flex;justify-content:space-between;align-items:center;
+  padding:8px 0;border-bottom:1px solid var(--border);font-size:9px}
+.mock-team-row:last-child{border-bottom:none}
+.mock-team-row .id{color:var(--muted);font-size:7.5px;font-family:'JetBrains Mono',monospace;margin-left:5px}
+.mock-badge-warn{display:inline-block;background:oklch(0.94 0.05 25);color:oklch(0.5 0.14 25);
+  font-size:6.5px;font-weight:600;padding:2px 6px;border-radius:8px;margin-left:6px}
+.mock-req-row{display:flex;justify-content:space-between;align-items:center;
+  padding:8px 0;border-bottom:1px solid var(--border);font-size:9px}
+.mock-req-row:last-child{border-bottom:none}
+.mock-req-meta{color:var(--muted);font-size:7.5px}
+.mock-status-pill{display:inline-block;padding:2px 8px;border-radius:10px;font-size:7px;font-weight:600}
+.mock-status-pending{background:oklch(0.94 0.05 85);color:oklch(0.45 0.12 85)}
+.mock-status-approved{background:oklch(0.94 0.05 165);color:oklch(0.4 0.1 165)}
+.mock-status-rejected{background:oklch(0.94 0.03 25);color:oklch(0.5 0.14 25)}
+
 /* Quick ref table */
 .ref-table{width:100%;border-collapse:collapse;margin-top:16px;font-size:0.9rem}
 .ref-table th{background:var(--dark);color:#fff;padding:10px 14px;text-align:left;font-size:0.85rem}
@@ -173,6 +189,7 @@ body{font-family:system-ui,sans-serif;color:var(--text);background:#fff;line-hei
   <a href="#save">6. Save &amp; Publish</a>
   <a href="#copy">7. Copy Previous</a>
   <a href="#amend">8. Emergency Amend</a>
+  <a href="#transfer">9. Transferring Staff</a>
   <a href="#reference">Quick Reference</a>
 </nav>
 
@@ -591,6 +608,184 @@ body{font-family:system-ui,sans-serif;color:var(--text);background:#fff;line-hei
 </section>
 
 <!-- ══════════════════════════════════════════════════════════
+     9. TRANSFERRING STAFF
+════════════════════════════════════════════════════════════ -->
+<section id="transfer" class="section">
+  <div class="section-header">
+    <div class="section-icon">🔄</div>
+    <div>
+      <h2>9. Transferring Staff to Another Location</h2>
+      <p>Move an employee to a different branch — some transfers need approval, others don't</p>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-left">
+      <div class="step-num">1</div>
+      <div class="step-title">My Team</div>
+      <p>Right after you log in, you'll always see a <strong>My Team</strong> card listing everyone on your team, with a <strong>Transfer</strong> button next to each name.</p>
+      <p>If someone's name has a small orange <strong>"No roster planned"</strong> tag next to it, it means they have no schedule set for today or any upcoming day — usually because they were just transferred to your team and are waiting for you to plan for them (see Step 6).</p>
+    </div>
+    <div class="mock-browser">
+      <div class="mock-browser-bar">
+        <div class="mock-dot" style="background:#ff5f57"></div>
+        <div class="mock-dot" style="background:#febc2e"></div>
+        <div class="mock-dot" style="background:#28c840"></div>
+      </div>
+      <div class="mock-browser-body">
+        <div class="mock-content">
+          <div class="mock-card">
+            <h6>👥 My Team</h6>
+            <div class="mock-team-row">
+              <div>Suman Karki<span class="id">MT-00053</span></div>
+              <button class="mock-btn mock-btn-outline">Transfer</button>
+            </div>
+            <div class="mock-team-row">
+              <div>Deb Bahadur Thapa<span class="id">MT-00013</span><span class="mock-badge-warn">No roster planned</span></div>
+              <button class="mock-btn mock-btn-outline">Transfer</button>
+            </div>
+            <div class="mock-team-row">
+              <div>Foudman Limbu<span class="id">MT-00018</span></div>
+              <button class="mock-btn mock-btn-outline">Transfer</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-left">
+      <div class="step-num">2</div>
+      <div class="step-title">Requesting a Transfer</div>
+      <ol>
+        <li>Tap <strong>Transfer</strong> next to the employee's name.</li>
+        <li>Pick the <strong>destination location</strong>.</li>
+        <li>Pick the <strong>effective date</strong> — today, or any date going forward. It can never be in the past.</li>
+        <li>Add a short <strong>reason</strong> if you like (optional).</li>
+        <li>Read the note under the form — it tells you whether this needs approval before you submit.</li>
+      </ol>
+      <div class="note">💡 You never choose a shift here. Once the employee arrives at their new location, that supervisor assigns their shift through the normal roster grid — the same as any new team member.</div>
+    </div>
+    <div class="mock-browser">
+      <div class="mock-browser-bar">
+        <div class="mock-dot" style="background:#ff5f57"></div>
+        <div class="mock-dot" style="background:#febc2e"></div>
+        <div class="mock-dot" style="background:#28c840"></div>
+      </div>
+      <div class="mock-browser-body">
+        <div class="mock-content" style="background:var(--dark)">
+          <div class="mock-modal-box">
+            <h6>Transfer Employee</h6>
+            <div class="who">Deb Bahadur Thapa (MT-00013)</div>
+            <span class="mock-label">To Location</span>
+            <div class="mock-in" style="text-align:left">Kaifan</div>
+            <span class="mock-label">Effective Date</span>
+            <div class="mock-in" style="text-align:left">16/09/2026</div>
+            <span class="mock-label">Reason (optional)</span>
+            <div class="mock-textarea">e.g. permanent reassignment</div>
+            <p style="font-size:7px;color:var(--muted);margin-top:6px">This will be sent to Kaifan's supervisor for approval.</p>
+            <div style="display:flex;gap:6px;margin-top:10px">
+              <button class="mock-btn mock-btn-outline" style="flex:1">Cancel</button>
+              <button class="mock-btn mock-btn-success" style="flex:1">Send Request</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-left">
+      <div class="step-num">3</div>
+      <div class="step-title">Which transfers need approval?</div>
+      <p>Moving someone between two normal branches (e.g. Ardiya to Kaifan) needs a yes from the <strong>receiving supervisor</strong> — they're the one taking on responsibility for that person, so they get to say yes or no.</p>
+      <p>Moving someone to or from <strong>Head Office</strong> or a <strong>Driver</strong> role skips approval entirely — those don't have a team roster to protect, so there's nothing to approve into. It just happens on the date you set.</p>
+      <div class="warn">⚠️ Either way, the transfer date can never be in the past. If you need to backdate a move, contact HR directly — that's not something this tool allows.</div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-left">
+      <div class="step-num">4</div>
+      <div class="step-title">If You're the One Approving</div>
+      <p>When someone requests to send you a team member, you'll see an <strong>Incoming Transfer Requests</strong> card when you log in.</p>
+      <ul>
+        <li><strong>Approve</strong> — if the effective date is today, it happens immediately. If it's a future date, it's scheduled and happens automatically that day.</li>
+        <li><strong>Reject</strong> — you can add a short note explaining why; the requesting supervisor will see it.</li>
+      </ul>
+    </div>
+    <div class="mock-browser">
+      <div class="mock-browser-bar">
+        <div class="mock-dot" style="background:#ff5f57"></div>
+        <div class="mock-dot" style="background:#febc2e"></div>
+        <div class="mock-dot" style="background:#28c840"></div>
+      </div>
+      <div class="mock-browser-body">
+        <div class="mock-content">
+          <div class="mock-card">
+            <h6>📥 Incoming Transfer Requests</h6>
+            <div class="mock-req-row">
+              <div>
+                <b>Deb Bahadur Thapa</b> (MT-00013) from <b>Ardiya</b><br>
+                <span class="mock-req-meta">Effective 16-09-2026 · requested by Keshab Alemagar</span>
+              </div>
+              <div style="display:flex;gap:4px">
+                <button class="mock-btn mock-btn-success">Approve</button>
+                <button class="mock-btn mock-btn-outline">Reject</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-left">
+      <div class="step-num">5</div>
+      <div class="step-title">Tracking Your Own Requests</div>
+      <p>A <strong>My Transfer Requests</strong> card shows anything you've sent that's still waiting, approved-but-not-yet-happened, or was rejected — with the reason, if one was given.</p>
+      <p>You can <strong>Cancel</strong> a request any time before it's actually happened, if plans change.</p>
+    </div>
+    <div class="mock-browser">
+      <div class="mock-browser-bar">
+        <div class="mock-dot" style="background:#ff5f57"></div>
+        <div class="mock-dot" style="background:#febc2e"></div>
+        <div class="mock-dot" style="background:#28c840"></div>
+      </div>
+      <div class="mock-browser-body">
+        <div class="mock-content">
+          <div class="mock-card">
+            <h6>📤 My Transfer Requests</h6>
+            <div class="mock-req-row">
+              <div>
+                <b>Deb Bahadur Thapa</b> (MT-00013) → <b>Kaifan</b><br>
+                <span class="mock-req-meta">Effective 16-09-2026</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px">
+                <span class="mock-status-pill mock-status-pending">Pending Approval</span>
+                <button class="mock-btn mock-btn-outline">Cancel</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-left">
+      <div class="step-num">6</div>
+      <div class="step-title">After the Transfer Happens</div>
+      <p>Once a transfer takes effect, the employee immediately shows up on the new location's <strong>My Team</strong> list — with the <strong>"No roster planned"</strong> tag, since nobody has scheduled them yet.</p>
+      <p>The receiving supervisor should plan their roster the same way as any team member — load a date range, pick their shift or Day Off for each day, and publish as usual.</p>
+      <div class="note">💡 There's no separate step to "accept" the employee once the transfer completes — they're simply on your team from that point on, same as everyone else.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════
      QUICK REFERENCE
 ════════════════════════════════════════════════════════════ -->
 <section id="reference" class="section">
@@ -612,6 +807,9 @@ body{font-family:system-ui,sans-serif;color:var(--text);background:#fff;line-hei
       <tr><td><b>Amend</b></td><td>Emergency edit on a published cell — reason required</td><td><span class="badge badge-green">Yes, immediately</span></td></tr>
       <tr><td>On-leave cell</td><td>Locked automatically from HR's leave records</td><td><span class="badge badge-teal">Always correct</span></td></tr>
       <tr><td>Discrepancy</td><td>Punch didn't match the plan — punch always wins</td><td><span class="badge badge-red">Review, not fix</span></td></tr>
+      <tr><td><b>Transfer request</b></td><td>Move an employee to another location, effective on a date you choose</td><td><span class="badge badge-amber">Needs approval (usually)</span></td></tr>
+      <tr><td>Transfer to/from Head Office or Driver</td><td>Same as above, but no approval needed</td><td><span class="badge badge-green">Automatic</span></td></tr>
+      <tr><td>"No roster planned" tag</td><td>Employee has no schedule at all — often a just-arrived transfer</td><td><span class="badge badge-red">Needs your attention</span></td></tr>
     </tbody>
   </table>
 </section>
