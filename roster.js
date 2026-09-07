@@ -1,13 +1,26 @@
 // ============================================================
-// roster.js — Supervisor Roster Planner
+// roster.js — Supervisor Roster Planner + Employee Transfer
 // ------------------------------------------------------------
-// One dropdown per cell: the location's own shifts (server-scoped,
-// never cross-location) + "Day Off". Selecting a shift name means
-// Working on that shift; selecting Day Off means Day Off. No
-// separate Working/shift two-step.
+// Transfer model:
+//   STANDARD (both from/to are regular rostering locations):
+//     Request → Pending Approval → destination supervisor
+//     Approves/Rejects. Approved + today's date = executes now.
+//     Approved + future date = waits for the 4 AM trigger.
+//   EXEMPT (either side is Head Office or Driver Location):
+//     No approval needed — executes immediately (today) or is
+//     auto-queued as Approved (future date), same as above from
+//     that point on.
+// No shift is chosen at transfer time — assigned later via normal
+// roster planning by the receiving supervisor. getMyTeam flags any
+// employee with zero future roster rows so this is never missed.
 // ============================================================
 
 let supId = null, supPin = null, currentData = null;
+
+// Mirrors ROSTER_EXEMPT_LOCATIONS in RosterBackend.gs — used here only
+// for immediate UI feedback (e.g. modal button label); the server is
+// the actual authority and re-checks everything independently.
+const ROSTER_EXEMPT_LOCATIONS = ['Head Office', 'Driver Location'];
 
 function todayIso() { return new Date().toISOString().split('T')[0]; }
 function isoToDd(iso) { const [y,m,d]=iso.split('-'); return d+'-'+m+'-'+y; }
@@ -29,10 +42,7 @@ async function apiPost(method, body) {
 }
 
 // ── Login ──────────────────────────────────────────────────
-// Locations that don't use rostering — mirrors ROSTER_EXEMPT_LOCATIONS
-// in RosterBackend.gs. Checked here too so the message shows immediately
-// at login, before the supervisor tries to load an empty grid.
-const ROSTER_EXEMPT_LOCATIONS = ['Head Office', 'Driver Location'];
+let ownLocation = null;
 
 async function doLogin() {
   const id  = document.getElementById('supId').value.trim();
@@ -44,19 +54,26 @@ async function doLogin() {
   try {
     const res = await api('voiceLogin', { supId: id, supPin: pin });
     if (!res.success) { err.innerText = res.error || 'Login failed.'; return; }
-    supId = id; supPin = pin;
+    supId = id; supPin = pin; ownLocation = res.location;
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('mainApp').style.display = 'block';
     document.getElementById('locName').innerText = res.location + ' — Roster';
     document.getElementById('supName').innerText = res.name + ' · ' + res.teamCount + ' staff';
 
+    // Team card, transfer requests — loaded for EVERY supervisor,
+    // exempt or not, since transfer works regardless of exemption.
+    loadMyTeam();
+    loadIncomingRequests();
+    loadOutgoingRequests();
+
     if (ROSTER_EXEMPT_LOCATIONS.includes(res.location)) {
-      showExemptMessage(res.location);
+      // No roster grid for exempt locations — hide toolbar + grid entirely.
+      document.getElementById('toolbarCard').style.display = 'none';
+      document.getElementById('gridCard').style.display = 'none';
       return;
     }
 
-    const today = todayIso();
-    document.getElementById('fromDate').value = today;
+    document.getElementById('fromDate').value = todayIso();
     const to = new Date(); to.setDate(to.getDate() + 6);
     document.getElementById('toDate').value = to.toISOString().split('T')[0];
 
@@ -66,24 +83,50 @@ async function doLogin() {
   }
 }
 
-function showExemptMessage(location) {
-  const why = location === 'Head Office'
-    ? 'Staff at Head Office are automatically marked present on working days — no roster needed.'
-    : 'Drivers work every day and self-report their day off directly on the kiosk — no roster needed.';
-  document.querySelector('.container').innerHTML =
-    '<div class="card" style="text-align:center;padding:40px 24px">' +
-      '<i class="bi bi-info-circle" style="font-size:2rem;color:var(--teal)"></i>' +
-      '<h5 style="margin-top:14px">' + location + ' doesn\'t use rostering</h5>' +
-      '<p style="color:var(--muted);max-width:420px;margin:8px auto 0">' + why + '</p>' +
-    '</div>';
-}
-
 function logout() {
-  supId = null; supPin = null; currentData = null;
+  supId = null; supPin = null; currentData = null; ownLocation = null;
   document.getElementById('mainApp').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('supId').value = '';
   document.getElementById('supPin').value = '';
+  document.getElementById('toolbarCard').style.display = '';
+  document.getElementById('gridCard').style.display = '';
+}
+
+// ── My Team ────────────────────────────────────────────────
+async function loadMyTeam() {
+  const res = await api('getMyTeam', { supId, supPin });
+  const card = document.getElementById('teamCard');
+  const list = document.getElementById('teamList');
+  const note = document.getElementById('teamExemptNote');
+  if (!res.success) { card.style.display = 'none'; return; }
+
+  card.style.display = 'block';
+
+  if (res.rosterExempt) {
+    note.style.display = 'block';
+    note.innerHTML = (res.location === 'Head Office'
+      ? 'Head Office staff are automatically marked present on working days — no roster needed. '
+      : 'Drivers work every day and self-report their day off via the kiosk — no roster needed. ') +
+      'You can still transfer someone to another location below.';
+  } else {
+    note.style.display = 'none';
+  }
+
+  if (!res.employees || !res.employees.length) {
+    list.innerHTML = '<p style="color:var(--muted);font-size:13px">No active staff on your team.</p>';
+    return;
+  }
+
+  list.innerHTML = res.employees.map(emp =>
+    '<div class="team-row">' +
+      '<div>' + emp.name + '<span class="id">' + emp.id + '</span>' +
+        (emp.needsRoster ? '<span class="needs-roster-badge">No roster planned</span>' : '') +
+      '</div>' +
+      '<button class="btn btn-outline" onclick="openTransfer(\'' + emp.id + '\',\'' +
+        emp.name.replace(/'/g,"\\'") + '\')">Transfer</button>' +
+    '</div>'
+  ).join('');
 }
 
 // ── Discrepancies panel ───────────────────────────────────
@@ -110,6 +153,155 @@ async function reviewDisc(rowNum) {
   loadDiscrepancies();
 }
 
+// ── Incoming Transfer Requests (I'm the destination) ──────────
+async function loadIncomingRequests() {
+  const res = await api('getIncomingTransferRequests', { supId, supPin });
+  const card = document.getElementById('incomingCard');
+  const list = document.getElementById('incomingList');
+  if (!res.success || !res.rows || !res.rows.length) { card.style.display = 'none'; return; }
+
+  card.style.display = 'block';
+  list.innerHTML = res.rows.map(r =>
+    '<div class="req-row">' +
+      '<div>' +
+        '<b>' + r.name + '</b> (' + r.empId + ') from <b>' + r.fromLocation + '</b><br>' +
+        '<span class="req-meta">Effective ' + r.effectiveDate + ' · requested by ' + r.requestedBy +
+          (r.reason ? ' · "' + r.reason + '"' : '') + '</span>' +
+      '</div>' +
+      '<div style="display:flex;gap:6px">' +
+        '<button class="btn btn-success" onclick="approveReq(' + r.rowNum + ')">Approve</button>' +
+        '<button class="btn btn-outline" onclick="openReject(' + r.rowNum + ',\'' +
+          r.name.replace(/'/g,"\\'") + '\')">Reject</button>' +
+      '</div>' +
+    '</div>'
+  ).join('');
+}
+
+async function approveReq(rowNum) {
+  const res = await api('approveTransfer', { supId, supPin, rowNum });
+  alert(res.success ? res.message : res.error);
+  loadIncomingRequests();
+  loadMyTeam();
+}
+
+let rejectTarget = null;
+function openReject(rowNum, name) {
+  rejectTarget = rowNum;
+  document.getElementById('rejectWho').innerText = name;
+  document.getElementById('rejectNote').value = '';
+  document.getElementById('rejectMsg').innerText = '';
+  document.getElementById('rejectModal').style.display = 'flex';
+}
+function closeReject() { document.getElementById('rejectModal').style.display = 'none'; }
+
+async function submitReject() {
+  const note = document.getElementById('rejectNote').value.trim();
+  const res = await api('rejectTransfer', { supId, supPin, rowNum: rejectTarget, note });
+  const msgEl = document.getElementById('rejectMsg');
+  if (res.success) {
+    msgEl.style.color = 'var(--green)'; msgEl.innerText = res.message;
+    setTimeout(() => { closeReject(); loadIncomingRequests(); }, 900);
+  } else {
+    msgEl.style.color = 'var(--red)'; msgEl.innerText = res.error;
+  }
+}
+
+// ── Outgoing Transfer Requests (I requested these) ────────────
+async function loadOutgoingRequests() {
+  const res = await api('getOutgoingTransferRequests', { supId, supPin });
+  const card = document.getElementById('outgoingCard');
+  const list = document.getElementById('outgoingList');
+  if (!res.success || !res.rows || !res.rows.length) { card.style.display = 'none'; return; }
+
+  card.style.display = 'block';
+  list.innerHTML = res.rows.map(r => {
+    const cls = r.status === 'Pending Approval' ? 'pending'
+              : r.status === 'Approved'         ? 'approved'
+              : r.status === 'Rejected'          ? 'rejected'
+              : 'expired';
+    const canCancel = r.status === 'Pending Approval' || r.status === 'Approved';
+    return '<div class="req-row">' +
+      '<div>' +
+        '<b>' + r.name + '</b> (' + r.empId + ') → <b>' + r.toLocation + '</b><br>' +
+        '<span class="req-meta">Effective ' + r.effectiveDate +
+          (r.rejectionNote ? ' · Note: "' + r.rejectionNote + '"' : '') + '</span>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:8px">' +
+        '<span class="req-status ' + cls + '">' + r.status + '</span>' +
+        (canCancel ? '<button class="btn btn-outline" onclick="cancelReq(' + r.rowNum + ')">Cancel</button>' : '') +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+async function cancelReq(rowNum) {
+  if (!confirm('Cancel this transfer request?')) return;
+  const res = await api('cancelTransferRequest', { supId, supPin, rowNum });
+  alert(res.success ? res.message : res.error);
+  loadOutgoingRequests();
+}
+
+// ── Transfer request modal ────────────────────────────────────
+let transferTarget = null;
+
+async function openTransfer(empId, empName) {
+  transferTarget = { empId, empName };
+  document.getElementById('transferWho').innerText = empName + ' (' + empId + ')';
+  document.getElementById('transferReason').value = '';
+  document.getElementById('transferDate').value = todayIso();
+  document.getElementById('transferDate').min = todayIso();
+  document.getElementById('transferMsg').innerText = '';
+
+  const locRes = await api('getActiveLocations', { supId, supPin });
+  const sel = document.getElementById('transferLocation');
+  sel.innerHTML = (locRes.locations || []).map(l => '<option value="' + l + '">' + l + '</option>').join('');
+
+  onTransferLocationChange();
+  document.getElementById('transferModal').style.display = 'flex';
+}
+
+function onTransferLocationChange() {
+  const toLoc = document.getElementById('transferLocation').value;
+  const isExempt = ROSTER_EXEMPT_LOCATIONS.includes(ownLocation) || ROSTER_EXEMPT_LOCATIONS.includes(toLoc);
+  const note = document.getElementById('transferApprovalNote');
+  const btn  = document.getElementById('transferConfirmBtn');
+
+  if (isExempt) {
+    note.innerText = 'No approval needed — one side is auto-managed.';
+    btn.innerText = 'Transfer';
+  } else {
+    note.innerText = 'This will be sent to ' + toLoc + "'s supervisor for approval.";
+    btn.innerText = 'Send Request';
+  }
+}
+
+function closeTransfer() { document.getElementById('transferModal').style.display = 'none'; }
+
+async function submitTransfer() {
+  const toLocation    = document.getElementById('transferLocation').value;
+  const effectiveDate = isoToDd(document.getElementById('transferDate').value);
+  const reason         = document.getElementById('transferReason').value.trim();
+  const msgEl          = document.getElementById('transferMsg');
+
+  if (!toLocation) { msgEl.style.color = 'var(--red)'; msgEl.innerText = 'Pick a destination location.'; return; }
+
+  const res = await apiPost('requestTransfer', {
+    supId, supPin, empId: transferTarget.empId, toLocation, effectiveDate, reason
+  });
+
+  if (res.success) {
+    msgEl.style.color = 'var(--green)'; msgEl.innerText = res.message;
+    setTimeout(() => {
+      closeTransfer();
+      loadMyTeam();
+      loadOutgoingRequests();
+      if (currentData) loadRoster();
+    }, 1200);
+  } else {
+    msgEl.style.color = 'var(--red)'; msgEl.innerText = res.error;
+  }
+}
+
 // ── Load roster grid ───────────────────────────────────────
 async function loadRoster() {
   const from = isoToDd(document.getElementById('fromDate').value);
@@ -133,9 +325,6 @@ function renderGrid() {
   let head = '<tr><th class="emp-name-h">Employee</th>' +
     dates.map(d => '<th>' + d.slice(0,5) + '</th>').join('') + '</tr>';
 
-  // Shared option list: blank, Day Off, then this location's shifts only.
-  // `shifts` comes from getRosterRange, already scoped server-side to the
-  // logged-in supervisor's own location — never shows another location's shifts.
   function buildOptions(selectedValue) {
     let opts = '<option value=""' + (!selectedValue ? ' selected' : '') + '>—</option>';
     opts += '<option value="Day Off"' + (selectedValue==='Day Off' ? ' selected' : '') + '>Day Off</option>';
@@ -151,7 +340,6 @@ function renderGrid() {
       if (c.locked) {
         return '<td><div class="cell-locked">' + c.lockReason + '</div></td>';
       }
-      // Selected value: 'Day Off' or the shift name (implies Working)
       const selectedValue = c.status === 'Day Off' ? 'Day Off' : (c.status === 'Working' ? c.shift : '');
       const statusCls = selectedValue === 'Day Off' ? 'off' : selectedValue ? 'working' : '';
       const pubCls = c.published ? ' cell-published' : '';
@@ -170,7 +358,6 @@ function renderGrid() {
   wrap.innerHTML = '<table class="roster-table"><thead>' + head + '</thead><tbody>' + body + '</tbody></table>';
 }
 
-// Single dropdown changed: value is either 'Day Off', a shift name, or '' (blank)
 function onCellChange(sel) {
   const empId = sel.getAttribute('data-emp');
   const date  = sel.getAttribute('data-date');
@@ -186,7 +373,7 @@ function onCellChange(sel) {
     currentData.cells[empId][date].shift = '';
   } else {
     currentData.cells[empId][date].status = 'Working';
-    currentData.cells[empId][date].shift = val; // the shift name itself
+    currentData.cells[empId][date].shift = val;
   }
   renderGrid();
 }
@@ -214,7 +401,7 @@ async function saveDraft() {
   const cells = collectCellsPayload();
   setStatus('Saving…', '');
   const res = await apiPost('saveRosterDraft', { supId, supPin, from, to, cells: JSON.stringify(cells) });
-  if (res.success) { setStatus(res.message, 'ok'); loadRoster(); }
+  if (res.success) { setStatus(res.message, 'ok'); loadRoster(); loadMyTeam(); }
   else setStatus(res.error, 'err');
 }
 
@@ -224,7 +411,7 @@ async function publish() {
   if (!confirm('Publish the roster for ' + from + ' to ' + to + '? This makes it live for attendance compilation.')) return;
   setStatus('Publishing…', '');
   const res = await api('publishRoster', { supId, supPin, from, to });
-  if (res.success) { setStatus(res.message, 'ok'); loadRoster(); }
+  if (res.success) { setStatus(res.message, 'ok'); loadRoster(); loadMyTeam(); }
   else setStatus(res.error, 'err');
 }
 
@@ -240,7 +427,7 @@ async function copyPrevious() {
     if (!currentData.cells[empId]) currentData.cells[empId] = {};
     Object.keys(res.cells[empId]).forEach(date => {
       const existing = currentData.cells[empId][date] || {};
-      if (existing.locked) return; // never override on-leave lock
+      if (existing.locked) return;
       currentData.cells[empId][date] = { ...existing, ...res.cells[empId][date] };
     });
   });
@@ -254,10 +441,7 @@ function setStatus(msg, cls) {
   el.className = cls === 'ok' ? 'status-ok' : cls === 'err' ? 'status-err' : '';
 }
 
-// ── Amend modal ────────────────────────────────────────────
-// Kept as two explicit fields (Status + Shift) rather than one combined
-// dropdown — this is a deliberate, spacious action screen with a required
-// reason field, not a dense grid cell, so the extra clarity is worth it.
+// ── Amend modal (unchanged from before) ──────────────────────
 let amendTarget = null;
 
 function openAmend(empId, empName, date) {
