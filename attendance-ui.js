@@ -60,8 +60,12 @@
         '<div class="table-container mb-3">' +
           '<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">' +
             '<h5 class="mb-0">Attendance Log</h5>' +
-            '<button class="btn btn-primary btn-sm" onclick="app.openAddPunch()">' +
-              '<i class="bi bi-plus-circle"></i> Add Punch</button>' +
+            '<div class="d-flex gap-2">' +
+              '<button class="btn btn-outline-danger btn-sm" onclick="app.openBackfillCheckouts()">' +
+                '<i class="bi bi-tools"></i> Backfill Missing Checkouts</button>' +
+              '<button class="btn btn-primary btn-sm" onclick="app.openAddPunch()">' +
+                '<i class="bi bi-plus-circle"></i> Add Punch</button>' +
+            '</div>' +
           '</div>' +
           '<div class="row g-2 align-items-end flex-wrap">' +
 
@@ -335,6 +339,136 @@
         }, 1000);
       } catch (err) {
         status.innerHTML = '<div class="alert alert-danger mb-0 py-1">' + err.message + '</div>';
+      }
+    };
+
+    // ── Backfill Missing Checkouts — Preview → Commit ───────────────────
+    // Never a single "just do it" button. Preview shows exactly what would
+    // be added and what's being skipped as still-in-progress; nothing is
+    // written until Commit is explicitly clicked, and Commit re-detects
+    // fresh server-side rather than trusting anything shown in preview.
+    app.openBackfillCheckouts = function () {
+      const html =
+        '<div class="modal fade" id="bfModal" tabindex="-1"><div class="modal-dialog modal-xl"><div class="modal-content">' +
+          '<div class="modal-header"><h5 class="modal-title">' +
+            '<i class="bi bi-tools"></i> Backfill Missing Checkouts</h5>' +
+            '<button class="btn-close" data-bs-dismiss="modal"></button></div>' +
+          '<div class="modal-body">' +
+            '<p class="text-muted small">Finds every Check In with no matching Check Out, and computes a ' +
+              'checkout using that employee\'s shift length. Anything still legitimately in progress ' +
+              '(the computed checkout would be in the future) is automatically excluded.</p>' +
+            '<div class="row g-2 align-items-end mb-3">' +
+              '<div class="col-auto"><label class="form-label small mb-1">From (optional)</label>' +
+                '<input type="date" id="bfFrom" class="form-control form-control-sm"></div>' +
+              '<div class="col-auto"><label class="form-label small mb-1">To (optional)</label>' +
+                '<input type="date" id="bfTo" class="form-control form-control-sm"></div>' +
+              '<div class="col-auto"><button class="btn btn-outline-secondary btn-sm" onclick="app.previewBackfill()">' +
+                '<i class="bi bi-search"></i> Preview</button></div>' +
+              '<div class="col-auto text-muted small">Leave both blank to scan your entire history.</div>' +
+            '</div>' +
+            '<div id="bfResults"><div class="text-muted small">Set a range (optional) and click Preview.</div></div>' +
+          '</div>' +
+          '<div class="modal-footer">' +
+            '<button class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>' +
+            '<button class="btn btn-danger" id="bfCommitBtn" style="display:none" onclick="app.commitBackfill()">' +
+              '<i class="bi bi-check2-circle"></i> Commit — Add These Checkouts</button>' +
+          '</div>' +
+        '</div></div></div>';
+      const old = document.getElementById('bfModal'); if (old) old.remove();
+      document.body.insertAdjacentHTML('beforeend', html);
+      new bootstrap.Modal(document.getElementById('bfModal')).show();
+    };
+
+    app.previewBackfill = async function () {
+      const wrap = document.getElementById('bfResults');
+      const commitBtn = document.getElementById('bfCommitBtn');
+      commitBtn.style.display = 'none';
+      wrap.innerHTML = '<div class="text-muted small"><span class="spinner-border spinner-border-sm"></span> Scanning entire attendance history…</div>';
+
+      const fromIso = document.getElementById('bfFrom').value;
+      const toIso   = document.getElementById('bfTo').value;
+      let qs = 'method=previewMissingCheckouts';
+      if (fromIso) qs += '&from=' + encodeURIComponent(toDd(fromIso));
+      if (toIso)   qs += '&to='   + encodeURIComponent(toDd(toIso));
+
+      try {
+        const d = await api(qs);
+        if (!d.success) { wrap.innerHTML = '<div class="alert alert-danger mb-0">' + d.error + '</div>'; return; }
+
+        if (!d.willFixCount && !d.skippedCount) {
+          wrap.innerHTML = '<div class="alert alert-success mb-0">No dangling Check Ins found in this range.</div>';
+          return;
+        }
+
+        let html = '';
+
+        if (d.willFixCount) {
+          html += '<div class="alert alert-warning mb-2">' +
+            '<b>' + d.willFixCount + '</b> checkout' + (d.willFixCount!==1?'s':'') + ' will be added ' +
+            '(Check In is never changed — only the missing Check Out):</div>' +
+            '<div class="table-responsive mb-3" style="max-height:280px;overflow-y:auto">' +
+            '<table class="table table-sm table-striped">' +
+              '<thead><tr><th>ID</th><th>Name</th><th>Date</th><th>Check In</th>' +
+                '<th>Basis</th><th>+OT</th><th>Computed Check Out</th></tr></thead>' +
+              '<tbody>' + d.willFix.map(f =>
+                '<tr><td style="font-family:monospace;font-size:12px">' + f.empId + '</td>' +
+                '<td>' + f.name + '</td><td>' + f.date + '</td><td>' + f.checkIn + '</td>' +
+                '<td class="small">' + f.basis + '</td>' +
+                '<td>' + (f.otHours > 0 ? f.otHours + 'h' : '—') + '</td>' +
+                '<td><b>' + f.computedCheckOut + '</b>' +
+                  (f.computedCheckOutDate !== f.date ? ' <span class="text-muted small">(' + f.computedCheckOutDate + ')</span>' : '') +
+                '</td></tr>'
+              ).join('') + '</tbody></table></div>';
+        }
+
+        if (d.skippedCount) {
+          html += '<div class="alert alert-secondary mb-0">' +
+            '<b>' + d.skippedCount + '</b> skipped — still in progress (computed checkout would be in the future):' +
+            '<ul class="mb-0 small mt-1">' + d.skippedInProgress.map(f =>
+              '<li>' + f.name + ' (' + f.empId + ') — checked in ' + f.date + ' ' + f.checkIn + '</li>'
+            ).join('') + '</ul></div>';
+        }
+
+        wrap.innerHTML = html;
+        if (d.willFixCount) commitBtn.style.display = 'inline-block';
+      } catch (err) {
+        wrap.innerHTML = '<div class="alert alert-danger mb-0">' + err.message + '</div>';
+      }
+    };
+
+    app.commitBackfill = async function () {
+      if (!confirm('This will write real Check Out rows to Attendance_Log and recompile Attendance_Daily for every affected date. Continue?')) return;
+
+      const wrap = document.getElementById('bfResults');
+      const commitBtn = document.getElementById('bfCommitBtn');
+      commitBtn.disabled = true;
+      wrap.insertAdjacentHTML('afterbegin', '<div class="alert alert-info" id="bfCommitStatus"><span class="spinner-border spinner-border-sm"></span> Writing checkouts and recompiling Attendance_Daily — this may take a moment…</div>');
+
+      const fromIso = document.getElementById('bfFrom').value;
+      const toIso   = document.getElementById('bfTo').value;
+      const payload = { by: adminEmail() };
+      if (fromIso) payload.from = toDd(fromIso);
+      if (toIso)   payload.to   = toDd(toIso);
+
+      try {
+        const d = await post('commitMissingCheckouts', payload);
+        const statusEl = document.getElementById('bfCommitStatus');
+        if (d.success) {
+          statusEl.className = 'alert alert-success';
+          statusEl.innerHTML = '<i class="bi bi-check-circle"></i> ' + d.message +
+            (d.recompiledDates && d.recompiledDates.length
+              ? '<div class="small mt-1">Recompiled: ' + d.recompiledDates.join(', ') + '</div>' : '');
+          commitBtn.style.display = 'none';
+        } else {
+          statusEl.className = 'alert alert-danger';
+          statusEl.innerText = d.error;
+          commitBtn.disabled = false;
+        }
+      } catch (err) {
+        const statusEl = document.getElementById('bfCommitStatus');
+        statusEl.className = 'alert alert-danger';
+        statusEl.innerText = err.message;
+        commitBtn.disabled = false;
       }
     };
 
