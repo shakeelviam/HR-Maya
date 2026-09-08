@@ -212,11 +212,6 @@
         font-family: system-ui, sans-serif; padding: 0;
         width: 100%; text-align: center; margin-bottom: 0;
     }
-    #backdatedSection {
-        display: none;
-        border-top: 1px solid var(--border);
-        padding-top: 16px; margin-top: 16px;
-    }
     .field-label {
         font-size: 12px; color: var(--muted);
         font-weight: 600; margin-bottom: 6px; display: block;
@@ -422,8 +417,30 @@
 
         <button class="btn-ot" id="otBtn" onclick="openOtSubmit()">Submit Overtime</button>
 
+        <!-- Always available, regardless of today's stage — this is about
+             a PAST date, unrelated to today's check-in status. -->
+        <button class="btn-backdated-toggle" style="margin-top:14px" onclick="openBackdatedModal()">
+            <i class="bi bi-calendar-x"></i> Log a previous Day Off
+        </button>
+
         <div class="logout-row">
             <button class="btn-logout" onclick="kioskLogout()">Logout</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── PERSISTENT BACKDATED DAY OFF MODAL ────────────────────────── -->
+<div id="backdatedModal" class="ot-overlay">
+    <div class="ot-box">
+        <h3>Log a Previous Day Off</h3>
+        <label class="field-label">Which day was your Day Off?</label>
+        <input type="date" id="backdatedDateModal" class="modal-date-input">
+        <div id="backdatedMsgModal" style="min-height:20px;font-size:13px;margin:8px 0"></div>
+        <div style="display:flex;gap:10px;margin-top:10px">
+            <button class="btn-cancel" onclick="closeBackdatedModal()">Cancel</button>
+            <button class="btn-submit-backdated" id="backdatedBtnModal" style="flex:1" onclick="doBackdatedDayOffModal()">
+                <i class="bi bi-check2"></i> Submit Day Off
+            </button>
         </div>
     </div>
 </div>
