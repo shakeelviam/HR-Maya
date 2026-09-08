@@ -110,16 +110,6 @@ function updateButtons(status) {
 
 // ── Day Off screen ────────────────────────────────────────────────────
 function showDayOffScreen(host) {
-    // Compute date bounds for backdated picker using LOCAL date (not UTC)
-    const today = new Date();
-    const maxBack = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
-    const minBack = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 7);
-    const toIsoLocal = d => d.getFullYear() + '-' +
-      String(d.getMonth()+1).padStart(2,'0') + '-' +
-      String(d.getDate()).padStart(2,'0');
-    const maxIso = toIsoLocal(maxBack);
-    const minIso = toIsoLocal(minBack);
-
     host.innerHTML =
         '<div class="dayoff-card">' +
             '<h4>Is today your Day Off?</h4>' +
@@ -133,23 +123,9 @@ function showDayOffScreen(host) {
                     'No — Check In' +
                 '</button>' +
             '</div>' +
-            '<button class="btn-backdated-toggle" onclick="toggleBackdated()">' +
-                '<i class="bi bi-calendar-x"></i> Log a previous Day Off' +
-            '</button>' +
-            '<div id="backdatedSection">' +
-                '<label>Which day was your Day Off?</label>' +
-                '<input type="date" id="backdatedDate" min="' + minIso + '" max="' + maxIso + '" value="' + maxIso + '">' +
-                '<div id="backdatedMsg"></div>' +
-                '<button class="btn-submit-backdated" id="backdatedBtn" onclick="doBackdatedDayOff()">' +
-                    '<i class="bi bi-check2"></i> Submit Day Off' +
-                '</button>' +
-            '</div>' +
         '</div>';
-}
-
-function toggleBackdated() {
-    const sec = document.getElementById('backdatedSection');
-    if (sec) sec.style.display = sec.style.display === 'none' ? 'block' : 'none';
+    // "Log a previous Day Off" now lives as a persistent link/modal below —
+    // same one regardless of today's stage, see openBackdatedModal().
 }
 
 // ── After Check In: Break Out (primary) + Check Out (secondary) ───────
@@ -237,15 +213,38 @@ function doCheckIn() {
 }
 
 // Submit a backdated Day Off (calls new backend method)
-async function doBackdatedDayOff() {
-    const dateIso = document.getElementById('backdatedDate').value;
-    const msgEl   = document.getElementById('backdatedMsg');
-    const btn     = document.getElementById('backdatedBtn');
+// ── Log a previous Day Off — persistent modal, available in every state
+// (before check-in, checked in, on break, checked out) since it's about
+// a PAST date and has nothing to do with today's live punch status. ────
+function openBackdatedModal() {
+    const today   = new Date();
+    const maxBack = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
+    const minBack = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 7);
+    const toIsoLocal = d => d.getFullYear() + '-' +
+      String(d.getMonth()+1).padStart(2,'0') + '-' +
+      String(d.getDate()).padStart(2,'0');
 
-    msgEl.style.color   = '#555';
-    msgEl.innerText     = '';
+    const dateEl = document.getElementById('backdatedDateModal');
+    dateEl.min   = toIsoLocal(minBack);
+    dateEl.max   = toIsoLocal(maxBack);
+    dateEl.value = toIsoLocal(maxBack);
+    document.getElementById('backdatedMsgModal').innerText = '';
+    document.getElementById('backdatedModal').style.display = 'flex';
+}
 
-    if (!dateIso) { msgEl.style.color='#c00'; msgEl.innerText='Select a date.'; return; }
+function closeBackdatedModal() {
+    document.getElementById('backdatedModal').style.display = 'none';
+}
+
+async function doBackdatedDayOffModal() {
+    const dateIso = document.getElementById('backdatedDateModal').value;
+    const msgEl   = document.getElementById('backdatedMsgModal');
+    const btn     = document.getElementById('backdatedBtnModal');
+
+    msgEl.style.color = '#555';
+    msgEl.innerText   = '';
+
+    if (!dateIso) { msgEl.style.color = '#c00'; msgEl.innerText = 'Select a date.'; return; }
 
     btn.disabled  = true;
     btn.innerText = 'Submitting…';
@@ -260,6 +259,7 @@ async function doBackdatedDayOff() {
         if (result && result.success) {
             msgEl.style.color = '#198754';
             msgEl.innerText   = result.message || 'Day Off recorded.';
+            setTimeout(closeBackdatedModal, 1400);
         } else {
             msgEl.style.color = '#c00';
             msgEl.innerText   = (result && result.error) || 'Could not record. Try again.';
