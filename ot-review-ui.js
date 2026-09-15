@@ -108,7 +108,28 @@
     if (anchor && anchor.parentElement && !document.getElementById('page-otreview')) {
       const s = document.createElement('div'); s.className = 'page-section'; s.id = 'page-otreview';
       s.innerHTML =
-        '<div id="orPendingWrap" class="table-container mb-3"></div>' +
+        '<div class="table-container mb-3">' +
+          '<h5 class="mb-1"><i class="bi bi-patch-check"></i> OT Verification</h5>' +
+          '<p class="text-muted small mb-2">Claims submitted by staff on the kiosk. ' +
+            'The claim is what you are verifying — punch figures are shown for context only ' +
+            'and do not decide anything. Nothing is paid until you submit.</p>' +
+          '<div class="row g-2 align-items-end mb-2">' +
+            '<div class="col-auto"><label class="form-label small mb-1">From</label>' +
+              '<input type="date" id="otvFrom" class="form-control form-control-sm"></div>' +
+            '<div class="col-auto"><label class="form-label small mb-1">To</label>' +
+              '<input type="date" id="otvTo" class="form-control form-control-sm"></div>' +
+            '<div class="col-auto"><button class="btn btn-primary btn-sm" onclick="app.loadOtVerify()">' +
+              '<i class="bi bi-search"></i> Load claims</button></div>' +
+            '<div class="col-auto"><button class="btn btn-outline-success btn-sm" onclick="app.otvBulk(\'approve\')">' +
+              'Approve all shown</button></div>' +
+            '<div class="col-auto"><button class="btn btn-outline-secondary btn-sm" onclick="app.otvClear()">' +
+              'Clear</button></div>' +
+          '</div>' +
+          '<div id="otvSummary" class="mb-2"></div>' +
+          '<div id="otvWrap" class="table-responsive"><div class="text-muted small">' +
+            'Pick a range and click Load claims.</div></div>' +
+          '<div id="otvBar" class="mt-2"></div>' +
+        '</div>' +
         '<div class="table-container mb-3">' +
           '<h5 class="mb-3"><i class="bi bi-clipboard-check"></i> OT Review &amp; Post</h5>' +
           '<div class="row g-2 align-items-end">' +
@@ -139,7 +160,7 @@
     if (typeof app === 'undefined') return setTimeout(attach, 50);
 
     app.loadOtDraft = async function () {
-      app.loadPendingOt();
+      app.loadOtVerify();
       const wrap = document.getElementById('orTableWrap');
       const from = document.getElementById('orFrom').value;
       const to   = document.getElementById('orTo').value;
@@ -156,73 +177,187 @@
       }
     };
 
-    // ── Pending OT (self-submitted by staff) ─────────────────────────
-    app.loadPendingOt = async function () {
-      const wrap = document.getElementById('orPendingWrap');
+    // ══════════════════════════════════════════════════════════════
+    // OT VERIFICATION — claims submitted by staff on the kiosk
+    // ══════════════════════════════════════════════════════════════
+    // The CLAIM is what is being verified. It is the employee's own
+    // statement of what they worked, so it is the starting point — not
+    // something to be silently overwritten by a computed figure.
+    //
+    // Punch data (computed OT, presence, in/out) is shown alongside as
+    // CONTEXT ONLY. It informs the decision; it does not make it.
+    //
+    // Nothing reaches OT_Entries until the verifier submits.
+    const FLAG_LABEL = {
+      'consistent'          : 'Matches punches',
+      'claim-above-punches' : 'Claim above punches',
+      'claim-below-punches' : 'Claim below punches',
+      'no-ot-in-punches'    : 'No OT in punches',
+      'incomplete-punch'    : 'Incomplete punch',
+      'no-attendance'       : 'No attendance row',
+      'not-present'         : 'Not marked Present',
+    };
+    let VROWS = [], VDEC = {}, VFILTER = null;
+
+    app.loadOtVerify = async function () {
+      const wrap = document.getElementById('otvWrap');
       if (!wrap) return;
+      wrap.innerHTML = '<div class="text-muted small">Loading claims…</div>';
       try {
-        const d = await callApi('method=getPendingOt');
-        if (!d.rows || !d.rows.length) { wrap.innerHTML = ''; return; }
-
-        const body = d.rows.map(r => {
-          const geo = /^OK/.test(r.geoFlag)
-            ? '<span class="text-success small">' + r.geoFlag + '</span>'
-            : '<span class="text-danger small">'  + (r.geoFlag || '—') + '</span>';
-          // H+M inputs for claimed hours
-          const claimedInputs = hmInputs(r.hours, 'po-h', 'po-m', '48px');
-          return '<tr data-row="' + r.row + '">' +
-            '<td style="font-size:12px;font-family:monospace">' + r.empId + '</td>' +
-            '<td>' + r.name + '</td>' +
-            '<td>' + r.date + '</td>' +
-            '<td>' + claimedInputs + '</td>' +
-            '<td class="small"><b>' + fmtComputed(r.computedOt) + '</b></td>' +
-            '<td>' + geo + '</td>' +
-            '<td class="small text-muted">' +
-              (typeof window.fmtTs === 'function' ? window.fmtTs(r.submitted) : (r.submitted || '')) +
-            '</td>' +
-            '<td class="text-end">' +
-              '<button class="btn btn-success btn-sm me-1" onclick="app.approvePending(' + r.row + ')">' +
-                '<i class="bi bi-check"></i></button>' +
-              '<button class="btn btn-outline-danger btn-sm" onclick="app.rejectPending(' + r.row + ')">' +
-                '<i class="bi bi-x"></i></button>' +
-            '</td>' +
-          '</tr>';
-        }).join('');
-
-        wrap.innerHTML =
-          '<h6 class="mb-2"><i class="bi bi-hourglass-split"></i> Self-submitted OT pending (' +
-            d.rows.length + ')</h6>' +
-          '<div class="table-responsive"><table class="table table-sm table-striped align-middle">' +
-            '<thead><tr>' +
-              '<th>ID</th><th>Name</th><th>Date</th>' +
-              '<th>Claimed</th><th>Computed (punch data)</th>' +
-              '<th>Geo</th><th>Submitted</th><th></th>' +
-            '</tr></thead><tbody>' + body + '</tbody>' +
-          '</table></div>' +
-          '<div class="text-muted small">Edit <b>Claimed</b> hours &amp; minutes before approving. ' +
-            'Approved rows go to OT_Entries.</div>';
-      } catch (e) { wrap.innerHTML = ''; }
+        let qs = 'method=getOtCompileList';
+        const f = document.getElementById('otvFrom');
+        const t = document.getElementById('otvTo');
+        if (f && f.value) qs += '&from=' + encodeURIComponent(toDd(f.value));
+        if (t && t.value) qs += '&to='   + encodeURIComponent(toDd(t.value));
+        const d = await callApi(qs);
+        VROWS = d.rows || []; VDEC = {}; VFILTER = null;
+        app.renderOtVerifySummary(d.summary, d.count);
+        app.renderOtVerify();
+      } catch (err) {
+        wrap.innerHTML = '<div class="alert alert-danger mb-0">' + err.message + '</div>';
+      }
     };
 
-    app.approvePending = async function (row) {
-      const tr  = document.querySelector('#orPendingWrap tr[data-row="' + row + '"]');
-      const dec = tr ? hmToDec(tr.querySelector('.po-h'), tr.querySelector('.po-m')) : 0;
-      const hrs = dec.toFixed(4);
-      try {
-        const d = await callApi(
-          'method=approvePendingOt&row=' + row +
-          '&hours=' + encodeURIComponent(hrs) +
-          '&by=' + encodeURIComponent(adminEmail())
-        );
-        alert(d.message);
-        app.loadPendingOt();
-      } catch (err) { alert(err.message); }
+    app.renderOtVerifySummary = function (summary, total) {
+      const el = document.getElementById('otvSummary');
+      if (!el) return;
+      if (!summary || !total) { el.innerHTML = ''; return; }
+      let h = '<span class="badge bg-dark me-1" style="cursor:pointer" ' +
+              'onclick="app.otvFilter(null)">All ' + total + '</span>';
+      Object.keys(summary).sort((a,b) => summary[b]-summary[a]).forEach(f => {
+        const cls = f === 'consistent' ? 'bg-success'
+                  : f === 'no-ot-in-punches' ? 'bg-danger'
+                  : f === 'claim-above-punches' ? 'bg-warning text-dark'
+                  : 'bg-secondary';
+        h += '<span class="badge ' + cls + ' me-1" style="cursor:pointer" ' +
+             'onclick="app.otvFilter(\'' + f + '\')">' +
+             (FLAG_LABEL[f] || f) + ' ' + summary[f] + '</span>';
+      });
+      el.innerHTML = h;
     };
 
-    app.rejectPending = async function (row) {
-      if (!confirm('Reject this OT submission?')) return;
-      try { await callApi('method=rejectPendingOt&row=' + row); app.loadPendingOt(); }
-      catch (err) { alert(err.message); }
+    app.otvFilter = function (f) { VFILTER = f; app.renderOtVerify(); };
+
+    app.renderOtVerify = function () {
+      const wrap = document.getElementById('otvWrap');
+      const list = VFILTER ? VROWS.filter(r => r.flag === VFILTER) : VROWS;
+      if (!list.length) {
+        wrap.innerHTML = '<div class="text-muted small">No pending claims in this range.</div>';
+        app.renderOtVerifyBar(); return;
+      }
+      const body = list.map(r => {
+        const d = VDEC[r.row];
+        const flagCls = r.flag === 'consistent' ? 'bg-success'
+                      : r.flag === 'no-ot-in-punches' ? 'bg-danger'
+                      : r.flag === 'claim-above-punches' ? 'bg-warning text-dark'
+                      : 'bg-secondary';
+        return '<tr' + (d ? ' class="table-light"' : '') + '>' +
+          '<td><b>' + r.name + '</b><br><span class="small text-muted" style="font-family:monospace">' + r.empId + '</span></td>' +
+          '<td style="font-family:monospace">' + r.date + '</td>' +
+          '<td class="small">' + (r.location || '—') + '<br><span class="text-muted">' + (r.shift || '') + '</span></td>' +
+          '<td><b style="font-size:1.05rem">' + r.claimedHm + '</b></td>' +
+          '<td class="small text-muted" style="font-family:monospace">' + r.computedHm + '</td>' +
+          '<td class="small text-muted" style="font-family:monospace">' + r.presenceHm + '</td>' +
+          '<td class="small text-muted" style="font-family:monospace">' +
+            (r.checkIn || '—') + ' → ' + (r.checkOut || '—') + '</td>' +
+          '<td><span class="badge ' + flagCls + '" title="' + r.flagWhy + '">' +
+            (FLAG_LABEL[r.flag] || r.flag) + '</span></td>' +
+          '<td><div class="btn-group btn-group-sm">' +
+            '<button class="btn ' + (d && d.decision==='approve' ? 'btn-success' : 'btn-outline-success') +
+              '" onclick="app.otvDecide(' + r.row + ',\'approve\')" title="Pay the claim as submitted">✓</button>' +
+            '<button class="btn ' + (d && d.decision==='adjust'  ? 'btn-warning' : 'btn-outline-warning') +
+              '" onclick="app.otvDecide(' + r.row + ',\'adjust\')" title="Pay a different amount">±</button>' +
+            '<button class="btn ' + (d && d.decision==='reject'  ? 'btn-danger'  : 'btn-outline-danger') +
+              '" onclick="app.otvDecide(' + r.row + ',\'reject\')" title="Pay nothing">✕</button>' +
+          '</div></td>' +
+          '<td><input class="form-control form-control-sm" style="width:72px;text-align:center;font-family:monospace" ' +
+            'id="otvh' + r.row + '" value="' + (d ? d.hours : r.claimed) + '" ' +
+            (d && d.decision==='reject' ? 'disabled' : '') +
+            ' onchange="app.otvHours(' + r.row + ')"></td>' +
+          '<td><input class="form-control form-control-sm" id="otvn' + r.row + '" ' +
+            'value="' + (d && d.note ? d.note : '') + '" placeholder="reason" ' +
+            'onchange="app.otvNote(' + r.row + ')"></td>' +
+        '</tr>';
+      }).join('');
+
+      wrap.innerHTML =
+        '<table class="table table-sm align-middle" style="min-width:1150px">' +
+          '<thead><tr>' +
+            '<th>Employee</th><th>Date</th><th>Location</th>' +
+            '<th>Claimed</th><th>Punches say</th><th>Presence</th><th>In / Out</th>' +
+            '<th>Flag</th><th>Decision</th><th>Pay</th><th>Note</th>' +
+          '</tr></thead><tbody>' + body + '</tbody>' +
+        '</table>';
+      app.renderOtVerifyBar();
+    };
+
+    app.otvDecide = function (row, decision) {
+      const r = VROWS.find(x => x.row === row);
+      if (VDEC[row] && VDEC[row].decision === decision) delete VDEC[row];
+      else VDEC[row] = { row: row, decision: decision,
+                         hours: decision === 'reject' ? 0 : (VDEC[row] ? VDEC[row].hours : r.claimed),
+                         note: VDEC[row] ? VDEC[row].note : '' };
+      app.renderOtVerify();
+    };
+    app.otvHours = function (row) {
+      const v = parseFloat(document.getElementById('otvh' + row).value);
+      const r = VROWS.find(x => x.row === row);
+      if (!VDEC[row]) VDEC[row] = { row: row, decision: 'adjust', hours: v, note: '' };
+      else VDEC[row].hours = v;
+      // Changing the figure means it is no longer the claim as submitted.
+      if (VDEC[row].decision === 'approve' && Math.abs(v - r.claimed) > 0.001)
+        VDEC[row].decision = 'adjust';
+      app.renderOtVerify();
+    };
+    app.otvNote = function (row) {
+      if (VDEC[row]) VDEC[row].note = document.getElementById('otvn' + row).value;
+    };
+
+    app.otvBulk = function (decision) {
+      const list = VFILTER ? VROWS.filter(r => r.flag === VFILTER) : VROWS;
+      if (!list.length) return;
+      if (!confirm(decision + ' all ' + list.length + ' claim(s) currently shown?')) return;
+      list.forEach(r => {
+        VDEC[r.row] = { row: r.row, decision: decision,
+                        hours: decision === 'reject' ? 0 : r.claimed, note: '' };
+      });
+      app.renderOtVerify();
+    };
+    app.otvClear = function () { VDEC = {}; app.renderOtVerify(); };
+
+    app.renderOtVerifyBar = function () {
+      const el = document.getElementById('otvBar');
+      if (!el) return;
+      const ds  = Object.keys(VDEC).map(k => VDEC[k]);
+      const pay = ds.filter(d => d.decision !== 'reject');
+      const rej = ds.filter(d => d.decision === 'reject');
+      const hrs = pay.reduce((s, d) => s + (Number(d.hours) || 0), 0);
+      el.innerHTML =
+        '<div class="d-flex justify-content-between align-items-center flex-wrap gap-2">' +
+          '<div class="small">' + (ds.length
+            ? '<b>' + pay.length + '</b> to pay (' + toHM(hrs) + ') · <b>' + rej.length +
+              '</b> rejected · ' + (VROWS.length - ds.length) + ' undecided'
+            : 'No decisions yet. Nothing will be submitted.') + '</div>' +
+          '<button class="btn btn-success btn-sm" ' + (ds.length ? '' : 'disabled') +
+            ' onclick="app.otvSubmit()"><i class="bi bi-check2-circle"></i> Submit decisions</button>' +
+        '</div>';
+    };
+
+    app.otvSubmit = async function () {
+      const ds = Object.keys(VDEC).map(k => VDEC[k]);
+      if (!ds.length) return;
+      const bad = ds.filter(d => d.decision !== 'reject' && (!d.hours || d.hours <= 0));
+      if (bad.length) { alert(bad.length + ' row(s) have no hours. Set an amount or reject them.'); return; }
+      if (!confirm('Submit ' + ds.length + ' decision(s)?\n\nApproved hours go to OT_Entries and will be paid.')) return;
+      const bar = document.getElementById('otvBar');
+      bar.innerHTML = '<div class="alert alert-info mb-0 py-2"><span class="spinner-border spinner-border-sm"></span> Submitting…</div>';
+      try {
+        const d = await callPost('postApprovedOt', { decisions: ds, by: adminEmail() });
+        alert(d.message + (d.errors && d.errors.length ? '\n\n' + d.errors.join('\n') : ''));
+        app.loadOtVerify();
+      } catch (err) {
+        bar.innerHTML = '<div class="alert alert-danger mb-0 py-2">' + err.message + '</div>';
+      }
     };
 
     // ── Attendance-computed OT draft ──────────────────────────────────
