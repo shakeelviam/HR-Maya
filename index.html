@@ -944,7 +944,47 @@
                  OT REVIEW — pre-baked. All IDs match ot-review-ui.js.
                  ================================================ -->
             <div class="page-section" id="page-otreview">
-                <div id="orPendingWrap" class="table-container mb-3"></div>
+                <!-- OT VERIFICATION — claims submitted by staff on the kiosk.
+                     The claim is what is being verified; punch figures are
+                     context only. Populated by ot-review-ui.js. -->
+                <div class="table-container mb-3">
+                    <h5 class="mb-1"><i class="bi bi-patch-check"></i> OT Verification</h5>
+                    <p class="text-muted small mb-2">
+                        Claims submitted by staff on the kiosk. The claim is what you are
+                        verifying — punch figures are shown for context only and do not
+                        decide anything. Nothing is paid until you submit.
+                    </p>
+                    <div class="row g-2 align-items-end mb-2">
+                        <div class="col-auto">
+                            <label class="form-label small mb-1">From</label>
+                            <input type="date" id="otvFrom" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-auto">
+                            <label class="form-label small mb-1">To</label>
+                            <input type="date" id="otvTo" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-auto">
+                            <button class="btn btn-primary btn-sm" onclick="app.loadOtVerify()">
+                                <i class="bi bi-search"></i> Load claims
+                            </button>
+                        </div>
+                        <div class="col-auto">
+                            <button class="btn btn-outline-success btn-sm" onclick="app.otvBulk('approve')">
+                                Approve all shown
+                            </button>
+                        </div>
+                        <div class="col-auto">
+                            <button class="btn btn-outline-secondary btn-sm" onclick="app.otvClear()">
+                                Clear
+                            </button>
+                        </div>
+                    </div>
+                    <div id="otvSummary" class="mb-2"></div>
+                    <div id="otvWrap" class="table-responsive">
+                        <div class="text-muted small">Pick a range and click Load claims.</div>
+                    </div>
+                    <div id="otvBar" class="mt-2"></div>
+                </div>
                 <div class="table-container mb-3">
                     <h5 class="mb-3">OT Review &amp; Post</h5>
                     <div class="row g-2 align-items-end">
