@@ -196,6 +196,8 @@
       'incomplete-punch'    : 'Incomplete punch',
       'no-attendance'       : 'No attendance row',
       'not-present'         : 'Not marked Present',
+      'overnight-spillover' : 'Overnight — belongs to prev day',
+      'worked-day-off'      : 'Worked a day off (no punches)',
     };
     let VROWS = [], VDEC = {}, VFILTER = null;
 
@@ -228,6 +230,8 @@
         const cls = f === 'consistent' ? 'bg-success'
                   : f === 'no-ot-in-punches' ? 'bg-danger'
                   : f === 'claim-above-punches' ? 'bg-warning text-dark'
+                  : f === 'overnight-spillover' ? 'bg-info text-dark'
+                  : f === 'worked-day-off' ? 'bg-dark'
                   : 'bg-secondary';
         h += '<span class="badge ' + cls + ' me-1" style="cursor:pointer" ' +
              'onclick="app.otvFilter(\'' + f + '\')">' +
@@ -250,13 +254,19 @@
         const flagCls = r.flag === 'consistent' ? 'bg-success'
                       : r.flag === 'no-ot-in-punches' ? 'bg-danger'
                       : r.flag === 'claim-above-punches' ? 'bg-warning text-dark'
+                      : r.flag === 'overnight-spillover' ? 'bg-info text-dark'
+                      : r.flag === 'worked-day-off' ? 'bg-dark'
                       : 'bg-secondary';
         return '<tr' + (d ? ' class="table-light"' : '') + '>' +
           '<td><b>' + r.name + '</b><br><span class="small text-muted" style="font-family:monospace">' + r.empId + '</span></td>' +
           '<td style="font-family:monospace">' + r.date + '</td>' +
           '<td class="small">' + (r.location || '—') + '<br><span class="text-muted">' + (r.shift || '') + '</span></td>' +
           '<td><b style="font-size:1.05rem">' + r.claimedHm + '</b></td>' +
-          '<td class="small text-muted" style="font-family:monospace">' + r.computedHm + '</td>' +
+          '<td class="small text-muted" style="font-family:monospace">' +
+            (r.flag === 'overnight-spillover' && r.prevComputedHm
+              ? '<span class="text-info-emphasis">' + r.prevComputedHm + '</span>' +
+                '<br><span style="font-size:10px">from ' + r.prevDate + '</span>'
+              : r.computedHm) + '</td>' +
           '<td class="small text-muted" style="font-family:monospace">' + r.presenceHm + '</td>' +
           '<td class="small text-muted" style="font-family:monospace">' +
             (r.checkIn || '—') + ' → ' + (r.checkOut || '—') + '</td>' +
