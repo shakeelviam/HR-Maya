@@ -198,6 +198,7 @@
       'not-present'         : 'Not marked Present',
       'overnight-spillover' : 'Overnight — belongs to prev day',
       'worked-day-off'      : 'Worked a day off (no punches)',
+      'no-punch-data'       : 'No punch data (manual/auto day)',
     };
     let VROWS = [], VDEC = {}, VFILTER = null;
 
@@ -232,6 +233,7 @@
                   : f === 'claim-above-punches' ? 'bg-warning text-dark'
                   : f === 'overnight-spillover' ? 'bg-info text-dark'
                   : f === 'worked-day-off' ? 'bg-dark'
+                  : f === 'no-punch-data' ? 'bg-light text-dark border'
                   : 'bg-secondary';
         h += '<span class="badge ' + cls + ' me-1" style="cursor:pointer" ' +
              'onclick="app.otvFilter(\'' + f + '\')">' +
@@ -256,6 +258,7 @@
                       : r.flag === 'claim-above-punches' ? 'bg-warning text-dark'
                       : r.flag === 'overnight-spillover' ? 'bg-info text-dark'
                       : r.flag === 'worked-day-off' ? 'bg-dark'
+                      : r.flag === 'no-punch-data' ? 'bg-light text-dark border'
                       : 'bg-secondary';
         return '<tr' + (d ? ' class="table-light"' : '') + '>' +
           '<td><b>' + r.name + '</b><br><span class="small text-muted" style="font-family:monospace">' + r.empId + '</span></td>' +
