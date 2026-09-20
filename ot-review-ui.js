@@ -200,7 +200,7 @@
       'worked-day-off'      : 'Worked a day off (no punches)',
       'no-punch-data'       : 'No punch data (manual/auto day)',
     };
-    let VROWS = [], VDEC = {}, VFILTER = null;
+    let VROWS = [], VDEC = {}, VFILTER = null, VVERIFIED = 0, VUNVERIFIED = 0;
 
     app.loadOtVerify = async function () {
       const wrap = document.getElementById('otvWrap');
@@ -214,6 +214,7 @@
         if (t && t.value) qs += '&to='   + encodeURIComponent(toDd(t.value));
         const d = await callApi(qs);
         VROWS = d.rows || []; VDEC = {}; VFILTER = null;
+        VVERIFIED = d.verified || 0; VUNVERIFIED = d.unverified || 0;
         app.renderOtVerifySummary(d.summary, d.count);
         app.renderOtVerify();
       } catch (err) {
@@ -227,6 +228,14 @@
       if (!summary || !total) { el.innerHTML = ''; return; }
       let h = '<span class="badge bg-dark me-1" style="cursor:pointer" ' +
               'onclick="app.otvFilter(null)">All ' + total + '</span>';
+      // The supervisor's statement is the only thing that can settle a claim
+      // the punches cannot, so it filters first.
+      if (VVERIFIED) h += '<span class="badge bg-primary me-1" style="cursor:pointer" ' +
+        'onclick="app.otvFilter(\'@verified\')" title="A supervisor has vouched for these">' +
+        'Supervisor verified ' + VVERIFIED + '</span>';
+      if (VUNVERIFIED) h += '<span class="badge bg-light text-dark border me-1" style="cursor:pointer" ' +
+        'onclick="app.otvFilter(\'@unverified\')" title="Nobody has vouched for these yet">' +
+        'Not verified ' + VUNVERIFIED + '</span>';
       Object.keys(summary).sort((a,b) => summary[b]-summary[a]).forEach(f => {
         const cls = f === 'consistent' ? 'bg-success'
                   : f === 'no-ot-in-punches' ? 'bg-danger'
@@ -244,9 +253,17 @@
 
     app.otvFilter = function (f) { VFILTER = f; app.renderOtVerify(); };
 
+    // The rows currently on screen. '@verified' / '@unverified' filter on the
+    // supervisor's answer rather than on a punch flag.
+    app.otvList = function () {
+      if (VFILTER === '@verified')   return VROWS.filter(r => r.supVerdict);
+      if (VFILTER === '@unverified') return VROWS.filter(r => !r.supVerdict);
+      return VFILTER ? VROWS.filter(r => r.flag === VFILTER) : VROWS;
+    };
+
     app.renderOtVerify = function () {
       const wrap = document.getElementById('otvWrap');
-      const list = VFILTER ? VROWS.filter(r => r.flag === VFILTER) : VROWS;
+      const list = app.otvList();
       if (!list.length) {
         wrap.innerHTML = '<div class="text-muted small">No pending claims in this range.</div>';
         app.renderOtVerifyBar(); return;
@@ -275,6 +292,12 @@
             (r.checkIn || '—') + ' → ' + (r.checkOut || '—') + '</td>' +
           '<td><span class="badge ' + flagCls + '" title="' + r.flagWhy + '">' +
             (FLAG_LABEL[r.flag] || r.flag) + '</span></td>' +
+          '<td class="small">' + (r.supVerdict
+            ? '<span class="badge ' + (r.supVerdict === 'Confirmed' ? 'bg-success'
+                : r.supVerdict === 'Partly' ? 'bg-warning text-dark' : 'bg-danger') + '">' +
+              r.supVerdict + (r.supHoursHm ? ' ' + r.supHoursHm : '') + '</span>' +
+              '<br><span class="text-muted" style="font-size:10px">' + (r.supBy || '') + '</span>'
+            : '<span class="text-muted">not asked yet</span>') + '</td>' +
           '<td><div class="btn-group btn-group-sm">' +
             '<button class="btn ' + (d && d.decision==='approve' ? 'btn-success' : 'btn-outline-success') +
               '" onclick="app.otvDecide(' + r.row + ',\'approve\')" title="Pay the claim as submitted">✓</button>' +
@@ -284,7 +307,7 @@
               '" onclick="app.otvDecide(' + r.row + ',\'reject\')" title="Pay nothing">✕</button>' +
           '</div></td>' +
           '<td><input class="form-control form-control-sm" style="width:72px;text-align:center;font-family:monospace" ' +
-            'id="otvh' + r.row + '" value="' + (d ? d.hours : r.claimed) + '" ' +
+            'id="otvh' + r.row + '" value="' + (d ? d.hours : (r.suggested != null ? r.suggested : r.claimed)) + '" ' +
             (d && d.decision==='reject' ? 'disabled' : '') +
             ' onchange="app.otvHours(' + r.row + ')"></td>' +
           '<td><input class="form-control form-control-sm" id="otvn' + r.row + '" ' +
@@ -294,11 +317,11 @@
       }).join('');
 
       wrap.innerHTML =
-        '<table class="table table-sm align-middle" style="min-width:1150px">' +
+        '<table class="table table-sm align-middle" style="min-width:1320px">' +
           '<thead><tr>' +
             '<th>Employee</th><th>Date</th><th>Location</th>' +
             '<th>Claimed</th><th>Punches say</th><th>Presence</th><th>In / Out</th>' +
-            '<th>Flag</th><th>Decision</th><th>Pay</th><th>Note</th>' +
+            '<th>Flag</th><th>Supervisor says</th><th>Decision</th><th>Pay</th><th>Note</th>' +
           '</tr></thead><tbody>' + body + '</tbody>' +
         '</table>';
       app.renderOtVerifyBar();
@@ -306,10 +329,17 @@
 
     app.otvDecide = function (row, decision) {
       const r = VROWS.find(x => x.row === row);
+      const base = (r.suggested != null ? r.suggested : r.claimed);
       if (VDEC[row] && VDEC[row].decision === decision) delete VDEC[row];
-      else VDEC[row] = { row: row, decision: decision,
-                         hours: decision === 'reject' ? 0 : (VDEC[row] ? VDEC[row].hours : r.claimed),
-                         note: VDEC[row] ? VDEC[row].note : '' };
+      else {
+        const hours = decision === 'reject' ? 0 : (VDEC[row] ? VDEC[row].hours : base);
+        // Paying anything other than what was claimed is an adjustment, even
+        // when the figure came from the supervisor.
+        const dec = (decision === 'approve' && Math.abs(hours - r.claimed) > 0.001)
+                      ? 'adjust' : decision;
+        VDEC[row] = { row: row, decision: dec, hours: hours,
+                      note: VDEC[row] ? VDEC[row].note : '' };
+      }
       app.renderOtVerify();
     };
     app.otvHours = function (row) {
@@ -327,12 +357,15 @@
     };
 
     app.otvBulk = function (decision) {
-      const list = VFILTER ? VROWS.filter(r => r.flag === VFILTER) : VROWS;
+      const list = app.otvList();
       if (!list.length) return;
       if (!confirm(decision + ' all ' + list.length + ' claim(s) currently shown?')) return;
       list.forEach(r => {
-        VDEC[r.row] = { row: r.row, decision: decision,
-                        hours: decision === 'reject' ? 0 : r.claimed, note: '' };
+        const base = (r.suggested != null ? r.suggested : r.claimed);
+        const hours = decision === 'reject' ? 0 : base;
+        const dec = (decision === 'approve' && Math.abs(hours - r.claimed) > 0.001)
+                      ? 'adjust' : decision;
+        VDEC[r.row] = { row: r.row, decision: dec, hours: hours, note: '' };
       });
       app.renderOtVerify();
     };
