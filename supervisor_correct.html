@@ -57,9 +57,11 @@
     <h6 class="mb-1"><i class="bi bi-calendar-x"></i> Attendance days to confirm
       <span class="badge bg-secondary" id="attCount">0</span></h6>
     <p class="text-muted small mb-2">
-      These days could not be resolved from the punches. Days that were clear,
-      and days you have already fixed or answered, are not listed — there is
-      nothing to ask about them.
+      Every day of yours that is not settled is listed here, including anyone
+      who is not on the attendance sheet at all that day (marked
+      <span class="badge bg-danger">Missing</span>). You do not have to work out
+      who is missing — this list names them. Days that were clear, and days you
+      have already fixed or answered, are not listed.
     </p>
     <div id="attWrap" class="table-responsive">
       <div class="text-muted small">Pick your name and Load.</div>
@@ -130,8 +132,14 @@ async function loadVerify(){
 function renderProgress(){
   const p=document.getElementById('progress');
   const a=(VDATA.otAnswered||0)+(VDATA.attAnswered||0);
-  p.innerHTML = a ? '<span class="answered"><i class="bi bi-check2-all"></i> '+a+
-    ' already answered or fixed — those are gone from the lists below.</span>' : '';
+  let h='';
+  if(VDATA.staffCount) h+='<span class="text-muted">Checked '+VDATA.staffCount+
+    ' staff across '+VDATA.daysCovered+' day(s), '+VDATA.from+' → '+VDATA.to+'.</span> ';
+  if(VDATA.missingCount) h+='<span class="badge bg-danger">'+VDATA.missingCount+
+    ' not on the sheet at all</span> ';
+  if(a) h+='<span class="answered"><i class="bi bi-check2-all"></i> '+a+
+    ' already answered or fixed — gone from the lists below.</span>';
+  p.innerHTML=h;
 }
 function renderOt(){
   const w=document.getElementById('otWrap');
@@ -174,14 +182,14 @@ function renderAtt(){
     // belongs to, we will not invent times — he adds the session below.
     const workBtn = r.knowsShift
       ? '<button class="btn '+(v&&v.verdict==='present'?'btn-success':'btn-outline-success')+'" onclick="setAtt('+i+',\'present\')">Worked</button>'
-      : '<button class="btn btn-outline-secondary" disabled title="This location has more than one shift and nothing says which — add the session below instead.">Worked</button>';
+      : '<button class="btn btn-outline-success" onclick="handOff('+i+')" title="This location runs more than one shift and nothing says which one this day was. Enter his real times below.">Worked…</button>';
     const hint = v&&v.verdict==='present'&&r.willWrite
       ? '<div class="willwrite">will record '+esc(r.willWrite)+'</div>'
-      : (!r.knowsShift ? '<div class="nowrite">shift unknown — add the session below</div>' : '');
-    return '<tr'+(v?' style="opacity:.45"':'')+'>'+
+      : (!r.knowsShift ? '<div class="nowrite">which shift? enter his times below</div>' : '');
+    return '<tr'+(v?' style="opacity:.45"':(r.missing?' class="table-danger"':''))+'>'+
       '<td><b>'+esc(r.name)+'</b><br><span class="text-muted" style="font-size:11px">'+esc(r.empId)+'</span></td>'+
       '<td>'+esc(r.date)+'<br><span class="text-muted" style="font-size:11px">'+esc(r.shift||'')+'</span></td>'+
-      '<td><span class="badge bg-secondary">'+esc(r.status)+'</span></td>'+
+      '<td><span class="badge '+(r.missing?'bg-danger':'bg-secondary')+'">'+esc(r.status)+'</span></td>'+
       '<td class="text-muted" style="font-size:11.5px;max-width:320px">'+esc(r.context)+'</td>'+
       '<td><div class="btn-group btn-group-sm">'+workBtn+
         '<button class="btn '+(v&&v.verdict==='dayoff'?'btn-primary':'btn-outline-primary')+'" onclick="setAtt('+i+',\'dayoff\')">Day Off</button>'+
@@ -202,7 +210,8 @@ function setOtH(i){ const v=parseFloat(document.getElementById('oth'+i).value), 
   renderOt(); vBar(); }
 function setAtt(i,verdict){ const r=VDATA.attendance[i];
   if(V['ATT|'+i]&&V['ATT|'+i].verdict===verdict) delete V['ATT|'+i];
-  else V['ATT|'+i]={type:'ATT',empId:r.empId,name:r.name,date:r.date,status:r.status,verdict:verdict,note:''};
+  else V['ATT|'+i]={type:'ATT',empId:r.empId,name:r.name,date:r.date,status:r.status,
+    shift:r.shift,verdict:verdict,note:''};
   renderAtt(); vBar(); }
 function vBar(){ const n=Object.keys(V).length, t=VDATA?VDATA.otCount+VDATA.attCount:0;
   document.getElementById('vBar').innerHTML=n?'<b>'+n+'</b> answered · '+(t-n)+' left':'Nothing answered yet.';
@@ -222,6 +231,24 @@ async function submitVerdicts(){
   }
   catch(e){ alert(e.message); b.disabled=false; }
   b.innerHTML='<i class="bi bi-check2-circle"></i> Submit my answers';
+}
+
+// A day we cannot match to a shift is not a guess we should make. Hand the
+// row to the Add form with the man and the date already filled in, so he only
+// types the times he actually remembers.
+function handOff(i){
+  const r=VDATA.attendance[i];
+  const sel=document.getElementById('addEmp');
+  if(sel) sel.value=r.empId;
+  const dt=document.getElementById('addDate');
+  if(dt){ const p=r.date.split('-'); dt.value=p[2]+'-'+p[1]+'-'+p[0]; }
+  const sh=document.getElementById('addShift');
+  if(sh && r.shift) sh.value=r.shift;
+  document.getElementById('addMsg').innerHTML=
+    '<span class="text-primary">Enter the real in and out times for <b>'+esc(r.name)+
+    '</b> on '+esc(r.date)+', then press Add.</span>';
+  document.getElementById('addIn').focus();
+  document.getElementById('addMsg').scrollIntoView({behavior:'smooth',block:'center'});
 }
 
 async function loadSessions(){
