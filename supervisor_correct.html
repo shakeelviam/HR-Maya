@@ -19,6 +19,9 @@
   .answered{font-size:12px;color:#0f5132;background:#d1e7dd;border-radius:6px;padding:4px 9px;display:inline-block;}
   .willwrite{font-size:11px;color:#0d6efd;}
   .nowrite{font-size:11px;color:#b02a37;}
+  .overclaim{color:#b02a37;font-weight:600;}
+  .usepunch{font-size:10.5px;padding:1px 6px;margin-top:3px;}
+  tr.over td{background:#fff5f5;}
 </style>
 </head>
 <body>
@@ -47,6 +50,7 @@
       work that overtime? Your answer is attached to the claim — nothing is
       paid until HR processes it. Once you answer, it drops off this list.
     </p>
+    <div id="otRoundNote"></div>
     <div id="otWrap" class="table-responsive">
       <div class="text-muted small">Pick your name and Load.</div>
     </div>
@@ -144,6 +148,19 @@ function renderProgress(){
 function renderOt(){
   const w=document.getElementById('otWrap');
   document.getElementById('otCount').innerText=VDATA.otCount;
+  const note=document.getElementById('otRoundNote');
+  if(note){
+    note.innerHTML = VDATA.overCount
+      ? '<div class="alert alert-danger py-2 px-3 mb-2" style="font-size:12.5px">'+
+        '<b>▲ '+VDATA.overCount+' claim(s) ask for more than the punches show — '+
+        esc(VDATA.overHoursHm)+' in total.</b><br>'+
+        'Overtime is paid on the <b>actual time worked</b>. If the punches say '+
+        '6h 7m, the claim cannot be 7h. Where the punch times are right, tap '+
+        '<b>Use the punch figure</b> and the correct number is filled in for you. '+
+        'If the punch times themselves are wrong, fix them in the correction table below first.'+
+        '</div>'
+      : '';
+  }
   if(!VDATA.ot.length){ w.innerHTML='<div class="alert alert-success mb-0 py-2 small">'+
     '<i class="bi bi-check-circle"></i> No overtime claims left to confirm.</div>'; return; }
   let noted=false,b='';
@@ -154,13 +171,21 @@ function renderOt(){
          '<b>22–31 August:</b> no punch times exist for this period — you marked '+
          'Present/Absent only. Answer from what you remember.</div></td></tr>'; }
     const v=V['OT|'+i];
-    b+='<tr'+(v?' style="opacity:.45"':'')+'>'+
+    b+='<tr class="'+(r.overclaim&&!v?'over':'')+'"'+(v?' style="opacity:.45"':'')+'>'+
       '<td><b>'+esc(r.name)+'</b><br><span class="text-muted" style="font-size:11px">'+esc(r.empId)+'</span></td>'+
       '<td>'+esc(r.date)+
         (r.spillover?'<br><span class="badge bg-info text-dark" style="font-size:10px">night shift from '+esc(r.belongsTo)+'</span>':'')+
         '<br><span class="text-muted" style="font-size:11px">'+esc(r.shiftTimes||r.shift||'')+'</span></td>'+
       '<td><span class="fs-5 fw-bold">'+esc(r.claimedHm)+'</span></td>'+
-      '<td class="text-muted" style="font-size:11.5px;max-width:300px">'+esc(r.context)+'</td>'+
+      '<td style="font-size:11.5px;max-width:320px">'+
+        '<span class="text-muted">'+esc(r.context)+'</span>'+
+        (r.overclaim
+          ? '<div class="overclaim mt-1">▲ '+esc(r.overByHm)+' more than the punches show'+
+            (r.roundedUp?' — rounded up to a whole hour':'')+'</div>'+
+            '<button class="btn btn-outline-danger btn-sm usepunch" onclick="usePunch('+i+')">'+
+            'Use the punch figure: '+esc(r.computedOtHm)+'</button>'
+          : '')+
+      '</td>'+
       '<td><div class="btn-group btn-group-sm">'+
         '<button class="btn '+(v&&v.verdict==='yes'?'btn-success':'btn-outline-success')+'" onclick="setOt('+i+',\'yes\')">Yes</button>'+
         '<button class="btn '+(v&&v.verdict==='partly'?'btn-warning':'btn-outline-warning')+'" onclick="setOt('+i+',\'partly\')">Partly</button>'+
@@ -210,6 +235,15 @@ function setOtH(i){ const v=parseFloat(document.getElementById('oth'+i).value), 
   if(!V['OT|'+i]) V['OT|'+i]={type:'OT',row:r.row,empId:r.empId,name:r.name,date:r.date,claimed:r.claimed,verdict:'partly',hours:v,note:''};
   else { V['OT|'+i].hours=v; if(V['OT|'+i].verdict==='yes'&&Math.abs(v-r.claimed)>0.001) V['OT|'+i].verdict='partly'; }
   renderOt(); vBar(); }
+// One tap to accept exactly what the punches show. Marks it Partly,
+// because paying less than was claimed IS a partial confirmation.
+function usePunch(i){
+  const r=VDATA.ot[i];
+  V['OT|'+i]={type:'OT',row:r.row,empId:r.empId,name:r.name,date:r.date,claimed:r.claimed,
+    verdict:'partly',hours:r.computed,note:'Paid on punched time'};
+  renderOt(); vBar();
+}
+
 function setAtt(i,verdict){ const r=VDATA.attendance[i];
   if(V['ATT|'+i]&&V['ATT|'+i].verdict===verdict) delete V['ATT|'+i];
   else V['ATT|'+i]={type:'ATT',empId:r.empId,name:r.name,date:r.date,status:r.status,
