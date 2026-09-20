@@ -156,7 +156,9 @@ function renderOt(){
     const v=V['OT|'+i];
     b+='<tr'+(v?' style="opacity:.45"':'')+'>'+
       '<td><b>'+esc(r.name)+'</b><br><span class="text-muted" style="font-size:11px">'+esc(r.empId)+'</span></td>'+
-      '<td>'+esc(r.date)+'<br><span class="text-muted" style="font-size:11px">'+esc(r.shift||'')+'</span></td>'+
+      '<td>'+esc(r.date)+
+        (r.spillover?'<br><span class="badge bg-info text-dark" style="font-size:10px">night shift from '+esc(r.belongsTo)+'</span>':'')+
+        '<br><span class="text-muted" style="font-size:11px">'+esc(r.shiftTimes||r.shift||'')+'</span></td>'+
       '<td><span class="fs-5 fw-bold">'+esc(r.claimedHm)+'</span></td>'+
       '<td class="text-muted" style="font-size:11.5px;max-width:300px">'+esc(r.context)+'</td>'+
       '<td><div class="btn-group btn-group-sm">'+
