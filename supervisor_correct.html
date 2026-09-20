@@ -205,14 +205,18 @@ function renderAtt(){
     '<i class="bi bi-check-circle"></i> No attendance days left to confirm.</div>'; return; }
   const b=VDATA.attendance.map((r,i)=>{
     const v=V['ATT|'+i];
-    // "Worked" writes real punches. If we cannot tell which shift the day
-    // belongs to, we will not invent times — he adds the session below.
-    const workBtn = r.knowsShift
+    // The shift only matters when a punch already exists, because then
+    // "Worked" has to complete that session at the right shift end. On a
+    // day with no punch at all nothing is completed and no times are
+    // invented — the day is simply recorded as worked — so there is no
+    // shift question to ask and no reason to send him to the table below.
+    const needsShift = !!r.checkIn;
+    const workBtn = (r.knowsShift || !needsShift)
       ? '<button class="btn '+(v&&v.verdict==='present'?'btn-success':'btn-outline-success')+'" onclick="setAtt('+i+',\'present\')">Worked</button>'
-      : '<button class="btn btn-outline-success" onclick="handOff('+i+')" title="This location runs more than one shift and nothing says which one this day was. Enter his real times below.">Worked…</button>';
+      : '<button class="btn btn-outline-success" onclick="handOff('+i+')" title="He has a punch on this date and this location runs more than one shift, so nothing says which shift to close it at. Enter his real times below.">Worked…</button>';
     const hint = v&&v.verdict==='present'&&r.willWrite
       ? '<div class="willwrite">will record '+esc(r.willWrite)+'</div>'
-      : (!r.knowsShift ? '<div class="nowrite">which shift? enter his times below</div>' : '');
+      : ((needsShift && !r.knowsShift) ? '<div class="nowrite">which shift? enter his times below</div>' : '');
     return '<tr'+(v?' style="opacity:.45"':(r.missing?' class="table-danger"':''))+'>'+
       '<td><b>'+esc(r.name)+'</b><br><span class="text-muted" style="font-size:11px">'+esc(r.empId)+'</span></td>'+
       '<td>'+esc(r.date)+'<br><span class="text-muted" style="font-size:11px">'+esc(r.shift||'')+'</span></td>'+
