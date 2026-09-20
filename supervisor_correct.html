@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Maya HR — Attendance Correction (01–03 Sep)</title>
+<title>Maya HR — Attendance &amp; Overtime Verification</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
 <style>
   body{background:#f2f4f7;font-family:'Segoe UI',sans-serif;padding:16px;}
-  .wrap{max-width:860px;margin:0 auto;}
+  .wrap{max-width:920px;margin:0 auto;}
   .brand{text-align:center;margin-bottom:14px;} .brand i{font-size:2rem;color:#0d6efd;}
   .card{border:none;box-shadow:0 4px 14px rgba(0,0,0,0.06);border-radius:14px;margin-bottom:16px;}
   .needs{background:#fff3cd;}
@@ -16,11 +16,14 @@
   th,td{font-size:0.88rem;vertical-align:middle;}
   .tm{width:130px;min-width:130px;}
   .sc-in-lbl,.sc-out-lbl{font-weight:600;color:#0d6efd;font-size:0.9rem;margin-top:2px;}
+  .answered{font-size:12px;color:#0f5132;background:#d1e7dd;border-radius:6px;padding:4px 9px;display:inline-block;}
+  .willwrite{font-size:11px;color:#0d6efd;}
+  .nowrite{font-size:11px;color:#b02a37;}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="brand"><i class="bi bi-pencil-square"></i><h4 class="mb-0">Attendance Correction</h4>
+  <div class="brand"><i class="bi bi-clipboard-check"></i><h4 class="mb-0">Attendance &amp; Overtime Verification</h4>
     <div class="text-muted small">22 August 2026 — today</div></div>
 
   <div class="card"><div class="card-body">
@@ -32,6 +35,7 @@
       <div class="col-sm-2"><button class="btn btn-primary btn-sm w-100" onclick="loadSessions()"><i class="bi bi-search"></i> Load</button></div>
     </div>
     <div id="msg" class="small mt-2"></div>
+    <div id="progress" class="small mt-2"></div>
   </div></div>
 
   <!-- ════════ OT CLAIMS TO CONFIRM ════════ -->
@@ -40,7 +44,8 @@
       <span class="badge bg-secondary" id="otCount">0</span></h6>
     <p class="text-muted small mb-2">
       Your staff submitted these on the kiosk. For each one: did he actually
-      work that overtime? Nothing is paid until HR processes your answers.
+      work that overtime? Your answer is attached to the claim — nothing is
+      paid until HR processes it. Once you answer, it drops off this list.
     </p>
     <div id="otWrap" class="table-responsive">
       <div class="text-muted small">Pick your name and Load.</div>
@@ -52,8 +57,9 @@
     <h6 class="mb-1"><i class="bi bi-calendar-x"></i> Attendance days to confirm
       <span class="badge bg-secondary" id="attCount">0</span></h6>
     <p class="text-muted small mb-2">
-      These days could not be resolved from the punches. Days that were clear
-      are not listed — there is nothing to ask about them.
+      These days could not be resolved from the punches. Days that were clear,
+      and days you have already fixed or answered, are not listed — there is
+      nothing to ask about them.
     </p>
     <div id="attWrap" class="table-responsive">
       <div class="text-muted small">Pick your name and Load.</div>
@@ -71,17 +77,16 @@
     </div>
   </div>
 
-
   <div class="card"><div class="card-body">
     <h6><i class="bi bi-list-check"></i> Punches still needing correction</h6>
     <div id="sessWrap" class="table-responsive"><div class="text-muted small">Pick your name and Load.</div></div>
   </div></div>
 
   <div class="card"><div class="card-body">
-    <h6><i class="bi bi-plus-circle"></i> Add missing attendance (from WhatsApp list)</h6>
+    <h6><i class="bi bi-plus-circle"></i> Add missing attendance</h6>
     <div class="row g-2 align-items-end">
       <div class="col-sm-3"><label class="form-label small mb-1">Employee</label><select id="addEmp" class="form-select form-select-sm"></select></div>
-      <div class="col-sm-2"><label class="form-label small mb-1">Date</label><input type="date" id="addDate" class="form-control form-control-sm" value="2026-09-02"></div>
+      <div class="col-sm-2"><label class="form-label small mb-1">Date</label><input type="date" id="addDate" class="form-control form-control-sm"></div>
       <div class="col-sm-2"><label class="form-label small mb-1">Shift</label><select id="addShift" class="form-select form-select-sm"></select></div>
       <div class="col-sm-2"><label class="form-label small mb-1">In</label><input type="time" id="addIn" class="form-control form-control-sm"></div>
       <div class="col-sm-2"><label class="form-label small mb-1">Out</label><input type="time" id="addOut" class="form-control form-control-sm"></div>
@@ -96,6 +101,7 @@
 <script>
 const EXEC_URL = 'https://script.google.com/macros/s/AKfycbyG5XLC79FnyLtSGGWunhJwU83SV0b0kz3y1FKdal-JBcTUM-X0ax134konYyTaKxYiiQ/exec';
 let SUP_MAP = {}, DATA = null, VDATA = null, V = {};
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function toDd(iso){ if(!iso) return ''; const [y,m,d]=iso.split('-'); return d+'-'+m+'-'+y; }
 async function api(qs){ const r=await fetch(EXEC_URL+'?'+qs+'&_='+Date.now(),{cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status); const d=await r.json(); if(!d.success) throw new Error(d.error||'err'); return d; }
 async function post(m,b){ for(let a=0;a<2;a++){ try{ const r=await fetch(EXEC_URL+'?method='+m,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(b)}); if(!r.ok) throw new Error('HTTP '+r.status); const d=await r.json(); if(!d.success) throw new Error(d.error||'err'); return d; }catch(e){ if(a===1) throw e; await new Promise(res=>setTimeout(res,800)); } } }
@@ -104,8 +110,8 @@ async function load(){
   try{ const d=await api('method=getLocationSupervisors');
     (d.data||[]).forEach(loc=>(loc.supervisors||[]).forEach(s=>{ SUP_MAP[s.id]={name:s.name,location:loc.location}; }));
     document.getElementById('supPick').innerHTML='<option value="">— select your name —</option>'+
-      Object.keys(SUP_MAP).map(id=>'<option value="'+id+'">'+SUP_MAP[id].name+' — '+SUP_MAP[id].location+'</option>').join('');
-  }catch(e){ document.getElementById('msg').innerHTML='<span class="text-danger">Load error: '+e.message+'</span>'; }
+      Object.keys(SUP_MAP).map(id=>'<option value="'+id+'">'+esc(SUP_MAP[id].name)+' — '+esc(SUP_MAP[id].location)+'</option>').join('');
+  }catch(e){ document.getElementById('msg').innerHTML='<span class="text-danger">Load error: '+esc(e.message)+'</span>'; }
 }
 function onSup(){ const id=document.getElementById('supPick').value; document.getElementById('locBox').value=SUP_MAP[id]?SUP_MAP[id].location:''; }
 
@@ -116,15 +122,22 @@ async function loadVerify(){
   document.getElementById('otWrap').innerHTML='<div class="text-muted small">Loading…</div>';
   try{
     VDATA=await api('method=getSupervisorVerifyList&location='+encodeURIComponent(loc));
-    V={}; renderOt(); renderAtt(); vBar();
+    V={}; renderOt(); renderAtt(); vBar(); renderProgress();
   }catch(e){
-    document.getElementById('otWrap').innerHTML='<div class="alert alert-danger mb-0">'+e.message+'</div>';
+    document.getElementById('otWrap').innerHTML='<div class="alert alert-danger mb-0">'+esc(e.message)+'</div>';
   }
+}
+function renderProgress(){
+  const p=document.getElementById('progress');
+  const a=(VDATA.otAnswered||0)+(VDATA.attAnswered||0);
+  p.innerHTML = a ? '<span class="answered"><i class="bi bi-check2-all"></i> '+a+
+    ' already answered or fixed — those are gone from the lists below.</span>' : '';
 }
 function renderOt(){
   const w=document.getElementById('otWrap');
   document.getElementById('otCount').innerText=VDATA.otCount;
-  if(!VDATA.ot.length){ w.innerHTML='<div class="text-muted small">No OT claims to confirm.</div>'; return; }
+  if(!VDATA.ot.length){ w.innerHTML='<div class="alert alert-success mb-0 py-2 small">'+
+    '<i class="bi bi-check-circle"></i> No overtime claims left to confirm.</div>'; return; }
   let noted=false,b='';
   VDATA.ot.forEach((r,i)=>{
     if(r.manualPeriod && !noted){ noted=true;
@@ -134,16 +147,17 @@ function renderOt(){
          'Present/Absent only. Answer from what you remember.</div></td></tr>'; }
     const v=V['OT|'+i];
     b+='<tr'+(v?' style="opacity:.45"':'')+'>'+
-      '<td><b>'+r.name+'</b><br><span class="text-muted" style="font-size:11px">'+r.empId+'</span></td>'+
-      '<td>'+r.date+'<br><span class="text-muted" style="font-size:11px">'+(r.shift||'')+'</span></td>'+
-      '<td><span class="fs-5 fw-bold">'+r.claimedHm+'</span></td>'+
-      '<td class="text-muted" style="font-size:11.5px;max-width:300px">'+r.context+'</td>'+
+      '<td><b>'+esc(r.name)+'</b><br><span class="text-muted" style="font-size:11px">'+esc(r.empId)+'</span></td>'+
+      '<td>'+esc(r.date)+'<br><span class="text-muted" style="font-size:11px">'+esc(r.shift||'')+'</span></td>'+
+      '<td><span class="fs-5 fw-bold">'+esc(r.claimedHm)+'</span></td>'+
+      '<td class="text-muted" style="font-size:11.5px;max-width:300px">'+esc(r.context)+'</td>'+
       '<td><div class="btn-group btn-group-sm">'+
         '<button class="btn '+(v&&v.verdict==='yes'?'btn-success':'btn-outline-success')+'" onclick="setOt('+i+',\'yes\')">Yes</button>'+
         '<button class="btn '+(v&&v.verdict==='partly'?'btn-warning':'btn-outline-warning')+'" onclick="setOt('+i+',\'partly\')">Partly</button>'+
         '<button class="btn '+(v&&v.verdict==='no'?'btn-danger':'btn-outline-danger')+'" onclick="setOt('+i+',\'no\')">No</button>'+
       '</div></td>'+
       '<td><input class="form-control form-control-sm" style="width:68px;text-align:center" id="oth'+i+'" '+
+        'type="number" step="0.25" min="0" max="'+r.claimed+'" '+
         'value="'+(v?v.hours:r.claimed)+'" '+(v&&v.verdict==='no'?'disabled':'')+' onchange="setOtH('+i+')"></td></tr>';
   });
   w.innerHTML='<table class="table table-sm align-middle"><thead><tr><th>Employee</th><th>Date</th>'+
@@ -152,30 +166,38 @@ function renderOt(){
 function renderAtt(){
   const w=document.getElementById('attWrap');
   document.getElementById('attCount').innerText=VDATA.attCount;
-  if(!VDATA.attendance.length){ w.innerHTML='<div class="text-muted small">No attendance days to confirm.</div>'; return; }
+  if(!VDATA.attendance.length){ w.innerHTML='<div class="alert alert-success mb-0 py-2 small">'+
+    '<i class="bi bi-check-circle"></i> No attendance days left to confirm.</div>'; return; }
   const b=VDATA.attendance.map((r,i)=>{
     const v=V['ATT|'+i];
+    // "Worked" writes real punches. If we cannot tell which shift the day
+    // belongs to, we will not invent times — he adds the session below.
+    const workBtn = r.knowsShift
+      ? '<button class="btn '+(v&&v.verdict==='present'?'btn-success':'btn-outline-success')+'" onclick="setAtt('+i+',\'present\')">Worked</button>'
+      : '<button class="btn btn-outline-secondary" disabled title="This location has more than one shift and nothing says which — add the session below instead.">Worked</button>';
+    const hint = v&&v.verdict==='present'&&r.willWrite
+      ? '<div class="willwrite">will record '+esc(r.willWrite)+'</div>'
+      : (!r.knowsShift ? '<div class="nowrite">shift unknown — add the session below</div>' : '');
     return '<tr'+(v?' style="opacity:.45"':'')+'>'+
-      '<td><b>'+r.name+'</b><br><span class="text-muted" style="font-size:11px">'+r.empId+'</span></td>'+
-      '<td>'+r.date+'<br><span class="text-muted" style="font-size:11px">'+(r.shift||'')+'</span></td>'+
-      '<td><span class="badge bg-secondary">'+r.status+'</span></td>'+
-      '<td class="text-muted" style="font-size:11.5px;max-width:320px">'+r.context+'</td>'+
-      '<td><div class="btn-group btn-group-sm">'+
-        '<button class="btn '+(v&&v.verdict==='present'?'btn-success':'btn-outline-success')+'" onclick="setAtt('+i+',\'present\')">Worked</button>'+
+      '<td><b>'+esc(r.name)+'</b><br><span class="text-muted" style="font-size:11px">'+esc(r.empId)+'</span></td>'+
+      '<td>'+esc(r.date)+'<br><span class="text-muted" style="font-size:11px">'+esc(r.shift||'')+'</span></td>'+
+      '<td><span class="badge bg-secondary">'+esc(r.status)+'</span></td>'+
+      '<td class="text-muted" style="font-size:11.5px;max-width:320px">'+esc(r.context)+'</td>'+
+      '<td><div class="btn-group btn-group-sm">'+workBtn+
         '<button class="btn '+(v&&v.verdict==='dayoff'?'btn-primary':'btn-outline-primary')+'" onclick="setAtt('+i+',\'dayoff\')">Day Off</button>'+
         '<button class="btn '+(v&&v.verdict==='absent'?'btn-danger':'btn-outline-danger')+'" onclick="setAtt('+i+',\'absent\')">Absent</button>'+
-      '</div></td></tr>';
+      '</div>'+hint+'</td></tr>';
   }).join('');
   w.innerHTML='<table class="table table-sm align-middle"><thead><tr><th>Employee</th><th>Date</th>'+
     '<th>System says</th><th>Why you are being asked</th><th>What actually happened</th></tr></thead><tbody>'+b+'</tbody></table>';
 }
 function setOt(i,verdict){ const r=VDATA.ot[i];
   if(V['OT|'+i]&&V['OT|'+i].verdict===verdict) delete V['OT|'+i];
-  else V['OT|'+i]={type:'OT',empId:r.empId,name:r.name,date:r.date,claimed:r.claimed,
-    verdict:verdict,hours:verdict==='no'?0:(V['OT|'+i]?V['OT|'+i].hours:r.claimed),note:''};
+  else V['OT|'+i]={type:'OT',row:r.row,empId:r.empId,name:r.name,date:r.date,claimed:r.claimed,
+    verdict:verdict,hours:verdict==='no'?0:(verdict==='yes'?r.claimed:(V['OT|'+i]?V['OT|'+i].hours:r.claimed)),note:''};
   renderOt(); vBar(); }
 function setOtH(i){ const v=parseFloat(document.getElementById('oth'+i).value), r=VDATA.ot[i];
-  if(!V['OT|'+i]) V['OT|'+i]={type:'OT',empId:r.empId,name:r.name,date:r.date,claimed:r.claimed,verdict:'partly',hours:v,note:''};
+  if(!V['OT|'+i]) V['OT|'+i]={type:'OT',row:r.row,empId:r.empId,name:r.name,date:r.date,claimed:r.claimed,verdict:'partly',hours:v,note:''};
   else { V['OT|'+i].hours=v; if(V['OT|'+i].verdict==='yes'&&Math.abs(v-r.claimed)>0.001) V['OT|'+i].verdict='partly'; }
   renderOt(); vBar(); }
 function setAtt(i,verdict){ const r=VDATA.attendance[i];
@@ -187,11 +209,17 @@ function vBar(){ const n=Object.keys(V).length, t=VDATA?VDATA.otCount+VDATA.attC
   document.getElementById('vSubmit').disabled=!n; }
 async function submitVerdicts(){
   const list=Object.keys(V).map(k=>V[k]); if(!list.length) return;
-  if(!confirm('Submit '+list.length+' answer(s)?')) return;
+  if(!confirm('Submit '+list.length+' answer(s)?\n\nAnswers about attendance are written straight into the attendance record.')) return;
   const b=document.getElementById('vSubmit'); b.disabled=true; b.innerText='Submitting…';
-  try{ const d=await post('saveSupervisorVerdicts',{verdicts:list,by:supName(),
+  try{
+    const d=await post('saveSupervisorVerdicts',{verdicts:list,by:supName(),
         location:document.getElementById('locBox').value.trim()});
-    alert(d.message); loadVerify(); }
+    let m=d.message||'Saved.';
+    if(d.notes&&d.notes.length) m+='\n\n'+d.notes.join('\n');
+    if(d.skipped&&d.skipped.length) m+='\n\nSkipped:\n'+d.skipped.join('\n');
+    alert(m);
+    V={}; await loadSessions();          // punches changed — reload both lists
+  }
   catch(e){ alert(e.message); b.disabled=false; }
   b.innerHTML='<i class="bi bi-check2-circle"></i> Submit my answers';
 }
@@ -202,11 +230,11 @@ async function loadSessions(){
   const wrap=document.getElementById('sessWrap'); wrap.innerHTML='<div class="text-muted small">Loading…</div>';
   try{
     DATA=await api('method=getSupervisorSessions&location='+encodeURIComponent(loc));
-    document.getElementById('addEmp').innerHTML=(DATA.employees||[]).map(e=>'<option value="'+e.id+'">'+e.name+' ('+e.id+')</option>').join('');
-    document.getElementById('addShift').innerHTML='<option value="">—</option>'+(DATA.shifts||[]).map(s=>'<option>'+s+'</option>').join('');
+    document.getElementById('addEmp').innerHTML=(DATA.employees||[]).map(e=>'<option value="'+esc(e.id)+'">'+esc(e.name)+' ('+esc(e.id)+')</option>').join('');
+    document.getElementById('addShift').innerHTML='<option value="">—</option>'+(DATA.shifts||[]).map(s=>'<option>'+esc(s)+'</option>').join('');
     renderSessions();
-    loadVerify();
-  }catch(e){ wrap.innerHTML='<div class="alert alert-danger mb-0">'+e.message+'</div>'; }
+    await loadVerify();
+  }catch(e){ wrap.innerHTML='<div class="alert alert-danger mb-0">'+esc(e.message)+'</div>'; }
 }
 function renderSessions(){
   const wrap=document.getElementById('sessWrap');
@@ -218,12 +246,12 @@ function renderSessions(){
   const body=DATA.sessions.map((s,i)=>{
     const rowCls = s.duplicate ? 'table-danger' : (s.broken ? 'needs' : '');
     const dupBadge = s.duplicate ? ' <span class="badge bg-danger">Duplicate</span>' : '';
-    const brokenBadge = s.broken ? ' <span class="badge bg-warning text-dark">'+s.reason+'</span>' : '';
+    const brokenBadge = s.broken ? ' <span class="badge bg-warning text-dark">'+esc(s.reason)+'</span>' : '';
     // auto-tick +1d if the out time is earlier than the in time (crossed midnight)
     const autoNext = (s.checkIn && s.checkOut && s.checkOut < s.checkIn);
-    return '<tr class="'+rowCls+'" data-i="'+i+'"><td>'+s.name+dupBadge+'</td><td>'+s.date+'</td>'+
-    '<td><input type="time" class="form-control form-control-sm tm sc-in" value="'+s.checkIn+'" onchange="app_autoNext('+i+')"><div class="small text-muted sc-in-lbl">'+(s.checkIn||'—')+'</div></td>'+
-    '<td><input type="time" class="form-control form-control-sm tm sc-out" value="'+s.checkOut+'" onchange="app_autoNext('+i+')"><div class="small text-muted sc-out-lbl">'+(s.checkOut||'—')+'</div></td>'+
+    return '<tr class="'+rowCls+'" data-i="'+i+'"><td>'+esc(s.name)+dupBadge+'</td><td>'+esc(s.date)+'</td>'+
+    '<td><input type="time" class="form-control form-control-sm tm sc-in" value="'+esc(s.checkIn)+'" onchange="app_autoNext('+i+')"><div class="small text-muted sc-in-lbl">'+esc(s.checkIn||'—')+'</div></td>'+
+    '<td><input type="time" class="form-control form-control-sm tm sc-out" value="'+esc(s.checkOut)+'" onchange="app_autoNext('+i+')"><div class="small text-muted sc-out-lbl">'+esc(s.checkOut||'—')+'</div></td>'+
     '<td><input type="checkbox" class="form-check-input sc-next"'+(autoNext?' checked':'')+'></td>'+
     '<td>'+(s.presence==null?'—':s.presence+'h')+brokenBadge+'</td>'+
     '<td class="text-end"><button class="btn btn-primary btn-sm me-1" onclick="saveCorrect('+i+',this)">Save</button>'+
@@ -255,7 +283,7 @@ async function saveCorrect(i,btn){
     checkIn:tr.querySelector('.sc-in').value, checkOut:tr.querySelector('.sc-out').value,
     coNextDay:tr.querySelector('.sc-next').checked, by:supName() };
   btn.disabled=true; btn.innerText='…';
-  try{ const d=await post('correctSession',payload); tr.className='done'; btn.innerText='Saved ✓'; }
+  try{ await post('correctSession',payload); tr.className='done'; btn.innerText='Saved ✓'; }
   catch(e){ alert(e.message); btn.disabled=false; btn.innerText='Save'; }
 }
 async function addSession(){
@@ -264,9 +292,9 @@ async function addSession(){
     shift:document.getElementById('addShift').value, checkIn:document.getElementById('addIn').value,
     checkOut:document.getElementById('addOut').value, coNextDay:document.getElementById('addNext').checked,
     location:document.getElementById('locBox').value.trim(), by:supName() };
-  if(!payload.empId||!payload.checkIn||!payload.checkOut){ m.innerHTML='<span class="text-danger">Employee, in and out required.</span>'; return; }
-  try{ const d=await post('addSession',payload); m.innerHTML='<span class="text-success">'+d.message+'</span>'; loadSessions(); }
-  catch(e){ m.innerHTML='<span class="text-danger">'+e.message+'</span>'; }
+  if(!payload.empId||!payload.date||!payload.checkIn||!payload.checkOut){ m.innerHTML='<span class="text-danger">Employee, date, in and out required.</span>'; return; }
+  try{ const d=await post('addSession',payload); m.innerHTML='<span class="text-success">'+esc(d.message)+'</span>'; loadSessions(); }
+  catch(e){ m.innerHTML='<span class="text-danger">'+esc(e.message)+'</span>'; }
 }
 function supName(){ const id=document.getElementById('supPick').value; return SUP_MAP[id]?SUP_MAP[id].name+' ('+id+')':'Supervisor'; }
 load();
