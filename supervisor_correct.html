@@ -27,14 +27,17 @@
 <body>
 <div class="wrap">
   <div class="brand"><i class="bi bi-clipboard-check"></i><h4 class="mb-0">Attendance &amp; Overtime Verification</h4>
-    <div class="text-muted small">22 August 2026 — today</div></div>
+    <div class="text-muted small">22 August 2026 — yesterday. Today is answered tomorrow, once every shift is over.</div></div>
 
   <div class="card"><div class="card-body">
     <div class="row g-2 align-items-end">
-      <div class="col-sm-5"><label class="form-label small mb-1">Supervisor</label>
+      <div class="col-sm-4"><label class="form-label small mb-1">Supervisor</label>
         <select id="supPick" class="form-select form-select-sm" onchange="onSup()"><option value="">— select your name —</option></select></div>
-      <div class="col-sm-5"><label class="form-label small mb-1">Location</label>
-        <input id="locBox" class="form-control form-control-sm" readonly></div>
+      <div class="col-sm-2"><label class="form-label small mb-1">Your kiosk PIN</label>
+        <input id="supPin" type="password" inputmode="numeric" autocomplete="off" maxlength="8" class="form-control form-control-sm" placeholder="PIN"></div>
+      <div class="col-sm-4"><label class="form-label small mb-1">Location</label>
+        <input id="locBox" class="form-control form-control-sm" list="locList" readonly>
+        <datalist id="locList"></datalist></div>
       <div class="col-sm-2"><button class="btn btn-primary btn-sm w-100" onclick="loadSessions()"><i class="bi bi-search"></i> Load</button></div>
     </div>
     <div id="msg" class="small mt-2"></div>
@@ -115,11 +118,19 @@ async function post(m,b){ for(let a=0;a<2;a++){ try{ const r=await fetch(EXEC_UR
 async function load(){
   try{ const d=await api('method=getLocationSupervisors');
     (d.data||[]).forEach(loc=>(loc.supervisors||[]).forEach(s=>{ SUP_MAP[s.id]={name:s.name,location:loc.location}; }));
+    // HR answers at any location — including a supervisor's own days.
+    document.getElementById('locList').innerHTML=(d.data||[]).map(l=>'<option value="'+esc(l.location)+'">').join('');
+    try{ const r=await api('method=svRoles'); (r.hr||[]).forEach(h=>{ SUP_MAP[h.id]={name:h.name+' — HR',location:'',hr:true}; }); }catch(e){}
     document.getElementById('supPick').innerHTML='<option value="">— select your name —</option>'+
       Object.keys(SUP_MAP).map(id=>'<option value="'+id+'">'+esc(SUP_MAP[id].name)+' — '+esc(SUP_MAP[id].location)+'</option>').join('');
   }catch(e){ document.getElementById('msg').innerHTML='<span class="text-danger">Load error: '+esc(e.message)+'</span>'; }
 }
-function onSup(){ const id=document.getElementById('supPick').value; document.getElementById('locBox').value=SUP_MAP[id]?SUP_MAP[id].location:''; }
+function onSup(){ const id=document.getElementById('supPick').value, box=document.getElementById('locBox');
+  const m=SUP_MAP[id]; box.value=m?m.location:''; box.readOnly=!(m&&m.hr);
+  if(m&&m.hr){ box.placeholder='type the location'; box.focus(); } }
+// Who is answering. The server checks the PIN and writes the name itself;
+// nothing typed on this page decides who gets credited.
+function who(){ return { supId:document.getElementById('supPick').value, supPin:document.getElementById('supPin').value.trim() }; }
 
 // ══════════ VERIFICATION ══════════
 async function loadVerify(){
@@ -127,7 +138,7 @@ async function loadVerify(){
   if(!loc) return;
   document.getElementById('otWrap').innerHTML='<div class="text-muted small">Loading…</div>';
   try{
-    VDATA=await api('method=getSupervisorVerifyList&location='+encodeURIComponent(loc));
+    VDATA=await post('getSupervisorVerifyList',Object.assign({location:loc},who()));
     V={}; renderOt(); renderAtt(); vBar(); renderProgress();
   }catch(e){
     document.getElementById('otWrap').innerHTML='<div class="alert alert-danger mb-0">'+esc(e.message)+'</div>';
@@ -142,7 +153,10 @@ function renderProgress(){
   if(VDATA.missingCount) h+='<span class="badge bg-danger">'+VDATA.missingCount+
     ' not on the sheet at all</span> ';
   if(a) h+='<span class="answered"><i class="bi bi-check2-all"></i> '+a+
-    ' already answered or fixed — gone from the lists below.</span>';
+    ' already answered or fixed — gone from the lists below.</span> ';
+  if(VDATA.stillRunning) h+='<span class="badge bg-secondary">'+VDATA.stillRunning+
+    ' day(s) held back — the shift has not finished yet</span> ';
+  if(VDATA.ownHidden) h+='<span class="text-muted">Your own days are not shown — the other supervisor or HR answers them.</span>';
   p.innerHTML=h;
 }
 function renderOt(){
@@ -261,8 +275,8 @@ async function submitVerdicts(){
   if(!confirm('Submit '+list.length+' answer(s)?\n\nAnswers about attendance are written straight into the attendance record.')) return;
   const b=document.getElementById('vSubmit'); b.disabled=true; b.innerText='Submitting…';
   try{
-    const d=await post('saveSupervisorVerdicts',{verdicts:list,by:supName(),
-        location:document.getElementById('locBox').value.trim()});
+    const d=await post('saveSupervisorVerdicts',Object.assign({verdicts:list,
+        location:document.getElementById('locBox').value.trim()},who()));
     let m=d.message||'Saved.';
     if(d.notes&&d.notes.length) m+='\n\n'+d.notes.join('\n');
     if(d.skipped&&d.skipped.length) m+='\n\nSkipped:\n'+d.skipped.join('\n');
@@ -294,6 +308,8 @@ function handOff(i){
 async function loadSessions(){
   const loc=document.getElementById('locBox').value.trim();
   if(!loc){ document.getElementById('msg').innerHTML='<span class="text-danger">Select your name.</span>'; return; }
+  if(!who().supPin){ document.getElementById('msg').innerHTML='<span class="text-danger">Enter your kiosk PIN.</span>'; return; }
+  document.getElementById('msg').innerHTML='';
   const wrap=document.getElementById('sessWrap'); wrap.innerHTML='<div class="text-muted small">Loading…</div>';
   try{
     DATA=await api('method=getSupervisorSessions&location='+encodeURIComponent(loc));
@@ -341,14 +357,14 @@ async function deleteSess(i,btn){
   const s=DATA.sessions[i];
   if(!confirm('Delete '+s.name+' session on '+s.date+'? (removes the punches)')) return;
   btn.disabled=true; btn.innerText='…';
-  try{ await post('deleteSession',{ ciRow:s.ciRow, coRow:s.coRow, empId:s.empId, date:s.date, by:supName() }); loadSessions(); }
+  try{ await post('deleteSession',Object.assign({ ciRow:s.ciRow, coRow:s.coRow, empId:s.empId, date:s.date, by:supName() },who())); loadSessions(); }
   catch(e){ alert(e.message); btn.disabled=false; btn.innerHTML='<i class="bi bi-trash"></i>'; }
 }
 async function saveCorrect(i,btn){
   const s=DATA.sessions[i]; const tr=document.querySelector('tr[data-i="'+i+'"]');
   const payload={ empId:s.empId, date:s.date, ciRow:s.ciRow, coRow:s.coRow,
     checkIn:tr.querySelector('.sc-in').value, checkOut:tr.querySelector('.sc-out').value,
-    coNextDay:tr.querySelector('.sc-next').checked, by:supName() };
+    coNextDay:tr.querySelector('.sc-next').checked, by:supName(), supId:who().supId, supPin:who().supPin };
   btn.disabled=true; btn.innerText='…';
   try{ await post('correctSession',payload); tr.className='done'; btn.innerText='Saved ✓'; }
   catch(e){ alert(e.message); btn.disabled=false; btn.innerText='Save'; }
@@ -358,7 +374,7 @@ async function addSession(){
   const payload={ empId:document.getElementById('addEmp').value, date:toDd(document.getElementById('addDate').value),
     shift:document.getElementById('addShift').value, checkIn:document.getElementById('addIn').value,
     checkOut:document.getElementById('addOut').value, coNextDay:document.getElementById('addNext').checked,
-    location:document.getElementById('locBox').value.trim(), by:supName() };
+    location:document.getElementById('locBox').value.trim(), by:supName(), supId:who().supId, supPin:who().supPin };
   if(!payload.empId||!payload.date||!payload.checkIn||!payload.checkOut){ m.innerHTML='<span class="text-danger">Employee, date, in and out required.</span>'; return; }
   try{ const d=await post('addSession',payload); m.innerHTML='<span class="text-success">'+esc(d.message)+'</span>'; loadSessions(); }
   catch(e){ m.innerHTML='<span class="text-danger">'+esc(e.message)+'</span>'; }
