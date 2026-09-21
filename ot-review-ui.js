@@ -201,6 +201,7 @@
       'no-punch-data'       : 'No punch data (manual/auto day)',
       'rounded-up'          : 'Rounded up to a whole hour',
       'ambiguous-session'   : 'Which session? (two ended that morning)',
+      'already-posted'      : 'Already in OT_Entries — his entry stands',
     };
     let VROWS = [], VDEC = {}, VFILTER = null, VVERIFIED = 0, VUNVERIFIED = 0;
 
@@ -246,6 +247,7 @@
                   : f === 'worked-day-off' ? 'bg-dark'
                   : f === 'no-punch-data' ? 'bg-light text-dark border'
                   : f === 'rounded-up' ? 'bg-warning text-dark'
+                  : f === 'already-posted' ? 'bg-primary'
                   : 'bg-secondary';
         h += '<span class="badge ' + cls + ' me-1" style="cursor:pointer" ' +
              'onclick="app.otvFilter(\'' + f + '\')">' +
@@ -280,6 +282,7 @@
                       : r.flag === 'worked-day-off' ? 'bg-dark'
                       : r.flag === 'no-punch-data' ? 'bg-light text-dark border'
                       : r.flag === 'rounded-up' ? 'bg-warning text-dark'
+                      : r.flag === 'already-posted' ? 'bg-primary'
                       : 'bg-secondary';
         return '<tr' + (d ? ' class="table-light"' : '') + '>' +
           '<td><b>' + r.name + '</b><br><span class="small text-muted" style="font-family:monospace">' + r.empId + '</span></td>' +
@@ -403,7 +406,9 @@
       bar.innerHTML = '<div class="alert alert-info mb-0 py-2"><span class="spinner-border spinner-border-sm"></span> Submitting…</div>';
       try {
         const d = await callPost('postApprovedOt', { decisions: ds, by: adminEmail() });
-        alert(d.message + (d.errors && d.errors.length ? '\n\n' + d.errors.join('\n') : ''));
+        alert(d.message +
+              (d.settledList && d.settledList.length ? '\n\n' + d.settledList.join('\n') : '') +
+              (d.errors && d.errors.length ? '\n\n' + d.errors.join('\n') : ''));
         app.loadOtVerify();
       } catch (err) {
         bar.innerHTML = '<div class="alert alert-danger mb-0 py-2">' + err.message + '</div>';
