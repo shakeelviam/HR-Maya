@@ -5,6 +5,8 @@
 // employee with base pay + OT (whole OT_Entries tab) + encashment +
 // auto Unpaid-leave deduction, edit Bonus/Loan/Advance/Disciplinary
 // inline (itemised), see live Net + grand total, and Run from the page.
+// Scheduled Extras (bonus etc. logged on the Scheduled Deductions & Extras
+// page) for the run's month are shown in their own column and added to Net.
 // Running archives OT_Entries and starts a fresh tab.
 //
 // index.html (after payroll-ui.js):  <script src="payroll-review-ui.js"></script>
@@ -101,6 +103,7 @@
           '<td class="text-end">' + e.otHours + '<br><span class="text-muted" style="font-size:11px">' + fmt(e.otAmount) + '</span></td>' +
           '<td class="text-end">' + fmt(e.encAmt) + '</td>' +
           '<td><input type="number" step="0.001" class="form-control form-control-sm pr-bonus text-end" value="0" style="width:90px"></td>' +
+          '<td class="text-end pr-extra" data-v="' + KD(e.extra || 0) + '">' + (e.extra ? '<span class="text-success" title="' + (e.extraItems||[]).map(it=>it.type+' '+fmt(it.amount)+(it.remark?' ('+it.remark+')':'')).join(', ') + '">+' + fmt(e.extra) + '</span>' : '0.000') + '</td>' +
           '<td class="text-end pr-unpaid" data-v="' + KD(e.unpaidAmt) + '">' + unp + '</td>' +
           '<td class="text-end pr-sched" data-v="' + KD(e.scheduled || 0) + '">' + (e.scheduled ? '<span title="' + (e.scheduledItems||[]).map(it=>it.type+' '+fmt(it.amount)).join(', ') + '">' + fmt(e.scheduled) + '</span>' : '0.000') + '</td>' +
           '<td><input type="number" step="0.001" class="form-control form-control-sm pr-loan text-end" value="0" style="width:90px"></td>' +
@@ -111,7 +114,7 @@
       }).join('');
       wrap.innerHTML = '<table class="table table-sm table-striped align-middle" style="min-width:1050px"><thead><tr>' +
         '<th>ID</th><th>Name</th><th class="text-end">Gross</th><th class="text-end">OT (hrs/KD)</th><th class="text-end">Encash</th>' +
-        '<th class="text-end">Bonus/Add</th><th class="text-end">Unpaid</th><th class="text-end">Scheduled</th><th class="text-end">Loan</th><th class="text-end">Advance</th><th class="text-end">Discipline</th>' +
+        '<th class="text-end">Bonus/Add</th><th class="text-end" title="From Scheduled Extras for this month">Sched. extras</th><th class="text-end">Unpaid</th><th class="text-end">Scheduled</th><th class="text-end">Loan</th><th class="text-end">Advance</th><th class="text-end">Discipline</th>' +
         '<th class="text-end">Net</th></tr></thead><tbody>' + body + '</tbody></table>';
 
       wrap.querySelectorAll('tr[data-i]').forEach(tr => {
@@ -127,7 +130,8 @@
       const bonus = num('.pr-bonus'), loan = num('.pr-loan'), adv = num('.pr-adv'), disc = num('.pr-disc');
       const unpaid = Number(tr.querySelector('.pr-unpaid').getAttribute('data-v')) || 0;
       const sched = Number((tr.querySelector('.pr-sched') || {}).getAttribute ? tr.querySelector('.pr-sched').getAttribute('data-v') : 0) || 0;
-      const net = KD(e.gross + e.otAmount + e.encAmt + bonus - (unpaid + sched + loan + adv + disc));
+      const extra = Number(tr.querySelector('.pr-extra').getAttribute('data-v')) || 0;
+      const net = KD(e.gross + e.otAmount + e.encAmt + bonus + extra - (unpaid + sched + loan + adv + disc));
       tr.querySelector('.pr-net').innerText = fmt(net);
       app.renderRunBar();
     };
