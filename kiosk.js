@@ -206,6 +206,26 @@ async function doTodayDayOff() {
     }
 }
 
+// ── Update my documents ──────────────────────────────────────────────
+// The staff document form. The name goes on the link so the man does not
+// have to find himself in a list of 68 — the form opens on his own
+// confirmation screen. Employee ID rides along for the form to use when
+// it is wired into HR Maya directly.
+const DOCS_UPDATE_URL = 'https://shakeelviam.github.io/maya-tex-docs/';
+function openDocsUpdate() {
+    const nameEl = document.getElementById('kioskEmpName');
+    const name = nameEl ? String(nameEl.innerText || '').trim() : '';
+    let url = DOCS_UPDATE_URL;
+    const q = [];
+    if (name && name.toLowerCase() !== 'welcome') q.push('name=' + encodeURIComponent(name));
+    if (currentEmpId) q.push('id=' + encodeURIComponent(currentEmpId));
+    if (q.length) url += '?' + q.join('&');
+    // New tab so the kiosk session stays open behind it; if the tablet
+    // blocks pop-ups, go there in this tab instead.
+    const w = window.open(url, '_blank', 'noopener');
+    if (!w) window.location.href = url;
+}
+
 // Tap "No — Check In" on the Day Off screen
 function doCheckIn() {
     const host = document.getElementById('stageHost');
