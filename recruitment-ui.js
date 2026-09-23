@@ -1,0 +1,277 @@
+// ============================================================
+// recruitment-ui.js — Recruitment page (drop-in, like the other UIs)
+// ------------------------------------------------------------
+// index.html (after employee-ui.js):
+//   <script src="recruitment-ui.js"></script>
+// Backend: getRecruitment, saveCandidate, setCandidateStage,
+//          convertCandidateToEmployee, saveAgency  (Recruitment.gs)
+//
+// A candidate is not an employee: no Employee ID, no attendance, no pay,
+// until Convert on their first working day. The page is the five stages
+// as columns of counts, one table, and the buttons that move a person
+// along — each stamping its own date in the sheet.
+// ============================================================
+
+(function () {
+  const EXEC_URL = 'https://script.google.com/macros/s/AKfycbyG5XLC79FnyLtSGGWunhJwU83SV0b0kz3y1FKdal-JBcTUM-X0ax134konYyTaKxYiiQ/exec';
+  const STAGES = ['Selected', 'Visa Issued', 'Travelling', 'Arrived', 'Employee'];
+  const OTHER  = ['On Hold', 'Cancelled'];
+  const STAGE_COLOR = {
+    'Selected': 'secondary', 'Visa Issued': 'info', 'Travelling': 'primary',
+    'Arrived': 'warning', 'Employee': 'success', 'On Hold': 'dark', 'Cancelled': 'danger'
+  };
+  let CAND = [], AGENCIES = [], FILTER = '';
+
+  async function callApi(qs) {
+    const r = await fetch(EXEC_URL + '?' + qs + '&_=' + Date.now(), { cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json(); if (!d.success) throw new Error(d.error || 'error'); return d;
+  }
+  async function callPost(method, body) {
+    const r = await fetch(EXEC_URL + '?method=' + method, {
+      method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json(); if (!d.success) throw new Error(d.error || 'error'); return d;
+  }
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const todayIso = () => { const d = new Date(); const p = n => String(n).padStart(2, '0'); return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); };
+  const isoToDd = (s) => { const m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})$/); return m ? (m[3] + '-' + m[2] + '-' + m[1]) : String(s || ''); };
+  const say = (id, html, bad) => { const el = document.getElementById(id); if (el) el.innerHTML = html ? '<div class="alert alert-' + (bad ? 'danger' : 'success') + ' py-1 mb-0">' + html + '</div>' : ''; };
+
+  function pageHtml() {
+    return (
+      '<div class="table-container mb-3">' +
+        '<div class="d-flex justify-content-between align-items-center mb-2">' +
+          '<h5 class="mb-0"><i class="bi bi-airplane"></i> Add candidate</h5>' +
+          '<button class="btn btn-outline-secondary btn-sm" onclick="app.loadRecruitment()"><i class="bi bi-arrow-repeat"></i> Refresh</button>' +
+        '</div>' +
+        '<div class="row g-2 align-items-end">' +
+          '<div class="col-md-3"><label class="form-label small mb-1">Name (as in passport)</label><input id="rcName" class="form-control form-control-sm"></div>' +
+          '<div class="col-md-2"><label class="form-label small mb-1">Passport No</label><input id="rcPassport" class="form-control form-control-sm"></div>' +
+          '<div class="col-md-2"><label class="form-label small mb-1">Nationality</label><input id="rcNat" class="form-control form-control-sm" value="Nepalese"></div>' +
+          '<div class="col-md-2"><label class="form-label small mb-1">Agency</label><select id="rcAgency" class="form-select form-select-sm"></select></div>' +
+          '<div class="col-md-3"><label class="form-label small mb-1">Mobile / WhatsApp</label><input id="rcMobile" class="form-control form-control-sm"></div>' +
+          '<div class="col-md-2"><label class="form-label small mb-1">Position</label><input id="rcPosition" class="form-control form-control-sm" placeholder="Helper"></div>' +
+          '<div class="col-md-2"><label class="form-label small mb-1">Location</label><select id="rcLocation" class="form-select form-select-sm"></select></div>' +
+          '<div class="col-md-1"><label class="form-label small mb-1">Basic</label><input id="rcBasic" type="number" step="0.001" class="form-control form-control-sm" value="120"></div>' +
+          '<div class="col-md-1"><label class="form-label small mb-1">Food</label><input id="rcFood" type="number" step="0.001" class="form-control form-control-sm" value="0"></div>' +
+          '<div class="col-md-1"><label class="form-label small mb-1">Accom.</label><input id="rcAccom" type="number" step="0.001" class="form-control form-control-sm" value="0"></div>' +
+          '<div class="col-md-1"><label class="form-label small mb-1">Conv.</label><input id="rcConv" type="number" step="0.001" class="form-control form-control-sm" value="0"></div>' +
+          '<div class="col-md-1"><label class="form-label small mb-1">Contract</label><input id="rcYears" class="form-control form-control-sm" value="2"></div>' +
+          '<div class="col-md-3"><label class="form-label small mb-1">Remark</label><input id="rcRemark" class="form-control form-control-sm" placeholder="e.g. Ticket sent for 01-10-2026"></div>' +
+          '<div class="col-md-2"><button class="btn btn-primary btn-sm w-100" onclick="app.addCandidate()"><i class="bi bi-plus-lg"></i> Add as Selected</button></div>' +
+        '</div>' +
+        '<div id="rcAddStatus" class="mt-2"></div>' +
+        '<div class="text-muted small mt-1">They stay here — out of attendance and payroll — until you convert them on their first working day.</div>' +
+      '</div>' +
+
+      '<div class="table-container mb-3">' +
+        '<div id="rcCounts" class="d-flex flex-wrap gap-2 mb-2"></div>' +
+        '<div id="rcStatus" class="mb-2"></div>' +
+        '<div id="rcTableWrap" class="table-responsive"><div class="text-muted small">Loading…</div></div>' +
+      '</div>' +
+
+      '<div class="table-container">' +
+        '<h6 class="mb-2"><i class="bi bi-building"></i> Agencies</h6>' +
+        '<div class="row g-2 align-items-end">' +
+          '<div class="col-md-3"><label class="form-label small mb-1">Agency name</label><input id="agName" class="form-control form-control-sm"></div>' +
+          '<div class="col-md-2"><label class="form-label small mb-1">License No</label><input id="agLicense" class="form-control form-control-sm"></div>' +
+          '<div class="col-md-2"><label class="form-label small mb-1">Country</label><input id="agCountry" class="form-control form-control-sm" value="Nepal"></div>' +
+          '<div class="col-md-2"><label class="form-label small mb-1">Contact person</label><input id="agContact" class="form-control form-control-sm"></div>' +
+          '<div class="col-md-2"><label class="form-label small mb-1">WhatsApp</label><input id="agWhatsapp" class="form-control form-control-sm"></div>' +
+          '<div class="col-md-1"><button class="btn btn-success btn-sm w-100" onclick="app.addAgency()">Add</button></div>' +
+        '</div>' +
+        '<div id="agStatus" class="mt-2"></div>' +
+        '<div id="agListWrap" class="mt-2"></div>' +
+      '</div>'
+    );
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    const navList = document.querySelector('#sidebar ul.nav');
+    if (navList && !document.querySelector('[data-page="recruitment"]')) {
+      const li = document.createElement('li'); li.className = 'nav-item';
+      li.innerHTML = '<a class="nav-link" data-page="recruitment"><i class="bi bi-airplane"></i> Recruitment</a>';
+      const emp = document.querySelector('[data-page="employees"]');
+      if (emp && emp.closest('li')) emp.closest('li').insertAdjacentElement('afterend', li);
+      else navList.appendChild(li);
+      li.querySelector('.nav-link').addEventListener('click', function (e) {
+        e.preventDefault();
+        document.querySelectorAll('#sidebar .nav-link').forEach(l => l.classList.remove('active'));
+        this.classList.add('active');
+        document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+        const pg = document.getElementById('page-recruitment'); if (pg) pg.classList.add('active');
+        document.getElementById('pageTitle').innerText = 'Recruitment';
+        if (app.loadRecruitment) app.loadRecruitment();
+      });
+    }
+    const anchor = document.getElementById('page-dashboard');
+    if (anchor && anchor.parentElement && !document.getElementById('page-recruitment')) {
+      const s = document.createElement('div');
+      s.className = 'page-section'; s.id = 'page-recruitment';
+      s.innerHTML = pageHtml();
+      anchor.parentElement.appendChild(s);
+    }
+  });
+
+  (function attach() {
+    if (typeof app === 'undefined') return setTimeout(attach, 50);
+
+    app.loadRecruitment = async function () {
+      try {
+        const d = await callApi('method=getRecruitment');
+        CAND = d.data || []; AGENCIES = d.agencies || [];
+        fillAgencySelect(); fillLocationSelect(); renderCounts(d.counts || {}); renderTable(); renderAgencies();
+      } catch (err) {
+        document.getElementById('rcTableWrap').innerHTML = '<div class="alert alert-danger py-1">' + esc(err.message) + '</div>';
+      }
+    };
+
+    function fillAgencySelect() {
+      const sel = document.getElementById('rcAgency'); if (!sel) return;
+      const keep = sel.value;
+      sel.innerHTML = '<option value="">— none —</option>' +
+        AGENCIES.filter(a => a.status !== 'Inactive')
+                .map(a => '<option value="' + esc(a.id) + '">' + esc(a.name || a.id) + '</option>').join('');
+      if (keep) sel.value = keep;
+    }
+    function fillLocationSelect() {
+      const sel = document.getElementById('rcLocation'); if (!sel) return;
+      const locs = (typeof app.LOCATION_NAMES !== 'undefined' && app.LOCATION_NAMES.length) ? app.LOCATION_NAMES : [];
+      sel.innerHTML = '<option value="">— not decided —</option>' + locs.map(l => '<option>' + esc(l) + '</option>').join('');
+    }
+    function renderCounts(counts) {
+      const el = document.getElementById('rcCounts'); if (!el) return;
+      const chip = (label, n) => '<button class="btn btn-sm btn-' + (FILTER === label ? '' : 'outline-') +
+        (STAGE_COLOR[label] || 'secondary') + '" onclick="app.filterRecruitment(\'' + label + '\')">' +
+        esc(label) + ' <span class="badge bg-light text-dark">' + (n || 0) + '</span></button>';
+      el.innerHTML = '<button class="btn btn-sm btn-' + (FILTER ? 'outline-' : '') + 'secondary" onclick="app.filterRecruitment(\'\')">All ' +
+        '<span class="badge bg-light text-dark">' + CAND.length + '</span></button>' +
+        STAGES.concat(OTHER).map(s => chip(s, counts[s])).join('');
+    }
+    app.filterRecruitment = function (stage) {
+      FILTER = (FILTER === stage) ? '' : stage;
+      renderCounts(countsOf()); renderTable();
+    };
+    function countsOf() {
+      const c = {}; STAGES.concat(OTHER).forEach(s => c[s] = 0);
+      CAND.forEach(r => { const s = String(r['Status'] || '').trim(); if (s in c) c[s]++; });
+      return c;
+    }
+
+    function renderTable() {
+      const wrap = document.getElementById('rcTableWrap'); if (!wrap) return;
+      const rows = FILTER ? CAND.filter(r => String(r['Status']).trim() === FILTER) : CAND;
+      if (!rows.length) { wrap.innerHTML = '<div class="text-muted small">No candidates' + (FILTER ? ' at ' + esc(FILTER) : '') + '.</div>'; return; }
+      const nextOf = (st) => { const i = STAGES.indexOf(st); return (i > -1 && i < STAGES.length - 2) ? STAGES[i + 1] : ''; };
+      wrap.innerHTML =
+        '<table class="table table-sm align-middle"><thead><tr>' +
+          '<th>ID</th><th>Name</th><th>Passport</th><th>Position</th><th>Agency</th>' +
+          '<th>Stage</th><th>Dates</th><th>Remark</th><th class="text-end">Action</th>' +
+        '</tr></thead><tbody>' +
+        rows.map(r => {
+          const st = String(r['Status'] || '').trim();
+          const nxt = nextOf(st);
+          const dates = [['Sel', r['Selected On']], ['Visa', r['Visa Issued On']], ['Travel', r['Travel Date']],
+                         ['Arr', r['Arrived On']], ['Join', r['Joined On']]]
+            .filter(x => x[1]).map(x => x[0] + ' ' + esc(x[1])).join(' · ');
+          let action = '';
+          if (st === 'Employee') action = '<span class="badge bg-success">' + esc(r['Employee ID'] || 'Employee') + '</span>';
+          else if (st === 'Arrived') action = '<button class="btn btn-success btn-sm" onclick="app.convertCandidate(\'' + r['Candidate ID'] + '\')"><i class="bi bi-person-check"></i> Convert</button>';
+          else if (nxt) action = '<button class="btn btn-outline-primary btn-sm" onclick="app.moveCandidate(\'' + r['Candidate ID'] + '\',\'' + nxt + '\')">→ ' + esc(nxt) + '</button>';
+          const more = (st !== 'Employee')
+            ? ' <button class="btn btn-outline-secondary btn-sm" onclick="app.holdCandidate(\'' + r['Candidate ID'] + '\')" title="On hold / cancel"><i class="bi bi-three-dots"></i></button>' : '';
+          return '<tr>' +
+            '<td class="small">' + esc(r['Candidate ID']) + '</td>' +
+            '<td><b>' + esc(r['Name (English)']) + '</b><div class="text-muted small">' + esc(r['Nationality'] || '') + (r['Mobile / WhatsApp'] ? ' · ' + esc(r['Mobile / WhatsApp']) : '') + '</div></td>' +
+            '<td class="small">' + esc(r['Passport No'] || '—') + '</td>' +
+            '<td class="small">' + esc(r['Position'] || '—') + '<div class="text-muted small">' + esc(r['Location'] || '') + '</div></td>' +
+            '<td class="small">' + esc(r['Agency'] || r['Agency ID'] || '—') + '</td>' +
+            '<td><span class="badge bg-' + (STAGE_COLOR[st] || 'secondary') + '">' + esc(st) + '</span></td>' +
+            '<td class="small text-muted">' + (dates || '—') + '</td>' +
+            '<td class="small">' + esc(r['Remark'] || '') + '</td>' +
+            '<td class="text-end text-nowrap">' + action + more + '</td>' +
+          '</tr>';
+        }).join('') + '</tbody></table>';
+    }
+
+    app.addCandidate = async function () {
+      const v = (id) => { const el = document.getElementById(id); return el ? String(el.value || '').trim() : ''; };
+      if (!v('rcName')) { say('rcAddStatus', 'Name is required.', true); return; }
+      try {
+        const d = await callPost('saveCandidate', {
+          name: v('rcName'), passportNo: v('rcPassport'), nationality: v('rcNat'),
+          agencyId: v('rcAgency'), mobile: v('rcMobile'), position: v('rcPosition'),
+          location: v('rcLocation'), basic: v('rcBasic'), food: v('rcFood'),
+          accom: v('rcAccom'), conv: v('rcConv'), contractYears: v('rcYears'),
+          remark: v('rcRemark'), status: 'Selected'
+        });
+        say('rcAddStatus', esc(d.message));
+        ['rcName', 'rcPassport', 'rcMobile', 'rcRemark'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+        app.loadRecruitment();
+      } catch (err) { say('rcAddStatus', esc(err.message), true); }
+    };
+
+    app.moveCandidate = async function (id, stage) {
+      const when = prompt(stage + ' on which date? (dd-mm-yyyy)', isoToDd(todayIso()));
+      if (when === null) return;
+      try {
+        const d = await callPost('setCandidateStage', { candidateId: id, status: stage, date: String(when).trim() });
+        say('rcStatus', esc(d.message)); app.loadRecruitment();
+      } catch (err) { say('rcStatus', esc(err.message), true); }
+    };
+
+    app.holdCandidate = async function (id) {
+      const what = prompt('Type "hold" to put on hold, or "cancel" to cancel. Add a reason after a space.\ne.g. cancel family emergency', 'hold');
+      if (!what) return;
+      const parts = String(what).trim().split(/\s+/);
+      const word = parts.shift().toLowerCase();
+      const note = parts.join(' ');
+      const status = word === 'cancel' ? 'Cancelled' : word === 'hold' ? 'On Hold' : '';
+      if (!status) { say('rcStatus', 'Type hold or cancel.', true); return; }
+      try {
+        const d = await callPost('setCandidateStage', { candidateId: id, status: status, note: note });
+        say('rcStatus', esc(d.message)); app.loadRecruitment();
+      } catch (err) { say('rcStatus', esc(err.message), true); }
+    };
+
+    app.convertCandidate = async function (id) {
+      const c = CAND.find(x => x['Candidate ID'] === id) || {};
+      const when = prompt('First working day for ' + (c['Name (English)'] || id) + '? (dd-mm-yyyy)\n' +
+                          'This creates the Employee ID and PIN, and attendance starts from this date.', isoToDd(todayIso()));
+      if (when === null) return;
+      if (!confirm('Convert ' + (c['Name (English)'] || id) + ' to an employee, joining ' + when + '?')) return;
+      try {
+        const d = await callPost('convertCandidateToEmployee', { candidateId: id, joinDate: String(when).trim() });
+        say('rcStatus', esc(d.message));
+        alert(d.message);          // the PIN matters — make sure it is seen
+        app.loadRecruitment();
+        if (app.loadAllData) app.loadAllData();
+      } catch (err) { say('rcStatus', esc(err.message), true); }
+    };
+
+    app.addAgency = async function () {
+      const v = (id) => { const el = document.getElementById(id); return el ? String(el.value || '').trim() : ''; };
+      if (!v('agName')) { say('agStatus', 'Agency name is required.', true); return; }
+      try {
+        const d = await callPost('saveAgency', {
+          name: v('agName'), license: v('agLicense'), country: v('agCountry'),
+          contact: v('agContact'), whatsapp: v('agWhatsapp')
+        });
+        say('agStatus', esc(d.message));
+        ['agName', 'agLicense', 'agContact', 'agWhatsapp'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+        app.loadRecruitment();
+      } catch (err) { say('agStatus', esc(err.message), true); }
+    };
+
+    function renderAgencies() {
+      const el = document.getElementById('agListWrap'); if (!el) return;
+      if (!AGENCIES.length) { el.innerHTML = '<div class="text-muted small">No agencies yet.</div>'; return; }
+      el.innerHTML = '<table class="table table-sm mb-0"><tbody>' + AGENCIES.map(a =>
+        '<tr><td class="small">' + esc(a.id) + '</td><td><b>' + esc(a.name) + '</b></td>' +
+        '<td class="small">' + esc(a.country || '') + '</td>' +
+        '<td class="small">' + esc(a.contact || '') + (a.whatsapp ? ' · ' + esc(a.whatsapp) : '') + '</td></tr>').join('') +
+        '</tbody></table>';
+    }
+  })();
+})();
