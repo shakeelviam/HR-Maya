@@ -44,6 +44,41 @@ const app = {
         }
     },
 
+    // ---- DATES -----------------------------------------------------
+    // The sheet returns real date cells, so JSON gives us an ISO stamp
+    // ("2026-12-19T21:00:00.000Z"), which is the day before in UTC for a
+    // Kuwait date. Everything the user sees is dd-mm-yyyy; date inputs
+    // need yyyy-mm-dd. Both readers below accept either shape plus what
+    // the sheet sends, so no screen shows a raw stamp again.
+    parseAnyDate(v) {
+        if (v == null || v === '') return null;
+        if (v instanceof Date) return isNaN(v.getTime()) ? null : v;
+        const s = String(v).trim();
+        let m = s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);            // dd-mm-yyyy
+        if (m) return new Date(+m[3], +m[2] - 1, +m[1]);
+        m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);               // dd/mm/yyyy
+        if (m) return new Date(+m[3], +m[2] - 1, +m[1]);
+        m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);                // yyyy-mm-dd
+        if (m) return new Date(+m[1], +m[2] - 1, +m[3]);
+        if (/^\d{4}-\d{2}-\d{2}T/.test(s)) {                        // ISO stamp
+            const d = new Date(s);
+            return isNaN(d.getTime()) ? null : d;                     // local time = Kuwait day
+        }
+        return null;
+    },
+    fmtDate(v) {
+        const d = this.parseAnyDate(v);
+        if (!d) return (v == null ? '' : String(v));                  // leave anything else alone
+        const p = (n) => String(n).padStart(2, '0');
+        return p(d.getDate()) + '-' + p(d.getMonth() + 1) + '-' + d.getFullYear();
+    },
+    toInputDate(v) {
+        const d = this.parseAnyDate(v);
+        if (!d) return '';
+        const p = (n) => String(n).padStart(2, '0');
+        return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+    },
+
     renderEmployees() {
         const tbody = document.getElementById('employeesTableBody');
         tbody.innerHTML = '';
@@ -170,7 +205,7 @@ const app = {
         const g = (k) => (r[k] != null && r[k] !== '' ? r[k] : '');
         const editing = mode === 'edit';
         const id = g('Employee ID');
-        const toInputDate = (s) => { s = String(s || '').trim(); const m = s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/); return m ? (m[3] + '-' + m[2].padStart(2,'0') + '-' + m[1].padStart(2,'0')) : ''; };
+        const toInputDate = (s) => this.toInputDate(s);
 
         // field renderer: read-only span or input depending on mode
         const F = (label, key, opts) => {
@@ -182,7 +217,8 @@ const app = {
                 else if (opts.type === 'select') control = '<select id="ep_' + opts.id + '" class="form-select form-select-sm">' + opts.options.map(o => '<option' + (String(val)===o ? ' selected' : '') + '>' + o + '</option>').join('') + '</select>';
                 else control = '<input type="' + (opts.type || 'text') + '" id="ep_' + opts.id + '" class="form-control form-control-sm" value="' + String(val).replace(/"/g,'&quot;') + '">';
             } else {
-                control = '<span class="profile-info-value' + (opts.strong ? ' fw-bold' : '') + '">' + (val || '<span class="text-muted">—</span>') + '</span>';
+                const shown = (opts.type === 'date') ? app.fmtDate(val) : val;
+                control = '<span class="profile-info-value' + (opts.strong ? ' fw-bold' : '') + '">' + (shown || '<span class="text-muted">—</span>') + '</span>';
             }
             return '<div class="profile-info-item"><span class="profile-info-label">' + label + '</span>' + control + '</div>';
         };
@@ -195,7 +231,7 @@ const app = {
         const statusVal = g('Status') || 'Active';
         const grantsHtml = (this.currentEmpGrants && this.currentEmpGrants.length)
             ? '<table class="table table-sm table-striped mb-0"><thead><tr><th>Type</th><th>Start</th><th>End</th><th class="text-end">Days</th><th>Status</th></tr></thead><tbody>' +
-              this.currentEmpGrants.map(x => '<tr><td>' + x.type + '</td><td>' + x.start + '</td><td>' + x.end + '</td><td class="text-end">' + x.days + '</td><td>' + x.status + '</td></tr>').join('') + '</tbody></table>'
+              this.currentEmpGrants.map(x => '<tr><td>' + x.type + '</td><td>' + this.fmtDate(x.start) + '</td><td>' + this.fmtDate(x.end) + '</td><td class="text-end">' + x.days + '</td><td>' + x.status + '</td></tr>').join('') + '</tbody></table>'
             : '<div class="text-muted small">No leave grants recorded.</div>';
 
         const buttons = editing
@@ -334,7 +370,7 @@ const app = {
             const st = document.getElementById('empStatus'); if (st) st.value = g('Status') || 'Active';
             // Document fields (from Staff Submission sync). Dates: dd-mm-yyyy -> yyyy-mm-dd for date inputs.
             const setV = (id, v) => { const el = document.getElementById(id); if (el) el.value = (v == null ? '' : v); };
-            const toInputDate = (s) => { s = String(s || '').trim(); const m = s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/); return m ? (m[3] + '-' + m[2].padStart(2,'0') + '-' + m[1].padStart(2,'0')) : ''; };
+            const toInputDate = (s) => app.toInputDate(s);
             setV('empEmail', g('Email'));
             setV('empMobile', g('Mobile'));
             setV('empWhatsapp', g('WhatsApp'));
