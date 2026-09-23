@@ -15,10 +15,11 @@
 
 (function () {
   const EXEC_URL = 'https://script.google.com/macros/s/AKfycbyG5XLC79FnyLtSGGWunhJwU83SV0b0kz3y1FKdal-JBcTUM-X0ax134konYyTaKxYiiQ/exec';
+  const SUBMITTED = 'Submitted';          // an agent's own submission, waiting for HR
   const STAGES = ['Selected', 'Visa Issued', 'Travelling', 'Arrived', 'Employee'];
   const OTHER  = ['On Hold', 'Cancelled'];
   const STAGE_COLOR = {
-    'Selected': 'secondary', 'Visa Issued': 'info', 'Travelling': 'primary',
+    'Submitted': 'warning', 'Selected': 'secondary', 'Visa Issued': 'info', 'Travelling': 'primary',
     'Arrived': 'warning', 'Employee': 'success', 'On Hold': 'dark', 'Cancelled': 'danger'
   };
   let CAND = [], AGENCIES = [], FILTER = '';
@@ -148,14 +149,14 @@
         esc(label) + ' <span class="badge bg-light text-dark">' + (n || 0) + '</span></button>';
       el.innerHTML = '<button class="btn btn-sm btn-' + (FILTER ? 'outline-' : '') + 'secondary" onclick="app.filterRecruitment(\'\')">All ' +
         '<span class="badge bg-light text-dark">' + CAND.length + '</span></button>' +
-        STAGES.concat(OTHER).map(s => chip(s, counts[s])).join('');
+        [SUBMITTED].concat(STAGES).concat(OTHER).map(s => chip(s, counts[s])).join('');
     }
     app.filterRecruitment = function (stage) {
       FILTER = (FILTER === stage) ? '' : stage;
       renderCounts(countsOf()); renderTable();
     };
     function countsOf() {
-      const c = {}; STAGES.concat(OTHER).forEach(s => c[s] = 0);
+      const c = {}; [SUBMITTED].concat(STAGES).concat(OTHER).forEach(s => c[s] = 0);
       CAND.forEach(r => { const s = String(r['Status'] || '').trim(); if (s in c) c[s]++; });
       return c;
     }
@@ -164,7 +165,12 @@
       const wrap = document.getElementById('rcTableWrap'); if (!wrap) return;
       const rows = FILTER ? CAND.filter(r => String(r['Status']).trim() === FILTER) : CAND;
       if (!rows.length) { wrap.innerHTML = '<div class="text-muted small">No candidates' + (FILTER ? ' at ' + esc(FILTER) : '') + '.</div>'; return; }
-      const nextOf = (st) => { const i = STAGES.indexOf(st); return (i > -1 && i < STAGES.length - 2) ? STAGES[i + 1] : ''; };
+      // A submission's next step is Selected — that is HR accepting them.
+      const nextOf = (st) => {
+        if (st === SUBMITTED) return STAGES[0];
+        const i = STAGES.indexOf(st);
+        return (i > -1 && i < STAGES.length - 2) ? STAGES[i + 1] : '';
+      };
       wrap.innerHTML =
         '<table class="table table-sm align-middle"><thead><tr>' +
           '<th>ID</th><th>Name</th><th>Passport</th><th>Position</th><th>Agency</th>' +
