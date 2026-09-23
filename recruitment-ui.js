@@ -4,7 +4,8 @@
 // index.html (after employee-ui.js):
 //   <script src="recruitment-ui.js"></script>
 // Backend: getRecruitment, saveCandidate, setCandidateStage,
-//          convertCandidateToEmployee, saveAgency  (Recruitment.gs)
+//          convertCandidateToEmployee, saveAgency, issueAgencyPin,
+//          revokeAgencyPin  (Recruitment.gs)
 //
 // A candidate is not an employee: no Employee ID, no attendance, no pay,
 // until Convert on their first working day. The page is the five stages
@@ -267,11 +268,56 @@
     function renderAgencies() {
       const el = document.getElementById('agListWrap'); if (!el) return;
       if (!AGENCIES.length) { el.innerHTML = '<div class="text-muted small">No agencies yet.</div>'; return; }
-      el.innerHTML = '<table class="table table-sm mb-0"><tbody>' + AGENCIES.map(a =>
-        '<tr><td class="small">' + esc(a.id) + '</td><td><b>' + esc(a.name) + '</b></td>' +
-        '<td class="small">' + esc(a.country || '') + '</td>' +
-        '<td class="small">' + esc(a.contact || '') + (a.whatsapp ? ' · ' + esc(a.whatsapp) : '') + '</td></tr>').join('') +
-        '</tbody></table>';
+      // Portal column: whether this agency can sign in, and the buttons that
+      // issue or cut off that access. The PIN itself is never listed — it is
+      // shown once, when issued, so it can be sent to the agent.
+      el.innerHTML = '<table class="table table-sm align-middle mb-0"><thead><tr>' +
+          '<th>ID</th><th>Agency</th><th>Country</th><th>Contact</th><th>Portal</th><th class="text-end">Access</th>' +
+        '</tr></thead><tbody>' + AGENCIES.map(a => {
+        const p = a.portal || 'None';
+        const badge = p === 'Active' ? 'success' : (p === 'Revoked' ? 'danger' : 'secondary');
+        const btn = (p === 'Active')
+          ? '<button class="btn btn-outline-primary btn-sm" onclick="app.issueAgencyPin(\'' + a.id + '\')">New PIN</button> ' +
+            '<button class="btn btn-outline-danger btn-sm" onclick="app.revokeAgencyPin(\'' + a.id + '\')">Revoke</button>'
+          : '<button class="btn btn-outline-primary btn-sm" onclick="app.issueAgencyPin(\'' + a.id + '\')">Issue PIN</button>';
+        return '<tr><td class="small">' + esc(a.id) + '</td><td><b>' + esc(a.name) + '</b>' +
+          (a.license ? '<div class="text-muted small">Lic. ' + esc(a.license) + '</div>' : '') + '</td>' +
+          '<td class="small">' + esc(a.country || '') + '</td>' +
+          '<td class="small">' + esc(a.contact || '') + (a.whatsapp ? ' · ' + esc(a.whatsapp) : '') + '</td>' +
+          '<td><span class="badge bg-' + badge + '">' + esc(p === 'None' ? 'No access' : p) + '</span></td>' +
+          '<td class="text-end text-nowrap">' + btn + '</td></tr>';
+      }).join('') + '</tbody></table>' +
+      '<div id="agPinBox" class="mt-2"></div>';
     }
+
+    app.issueAgencyPin = async function (id) {
+      const a = AGENCIES.find(x => x.id === id) || {};
+      if (a.portal === 'Active' && !confirm('Issue a NEW PIN for ' + (a.name || id) + '?\nThe PIN they have now stops working immediately.')) return;
+      try {
+        const d = await callPost('issueAgencyPin', { agencyId: id });
+        const msg = 'Maya Tex agent portal\nAgency ID: ' + d.agencyId + '\nPIN: ' + d.pin +
+                    '\nKeep this private — it is for ' + (d.name || id) + ' only.';
+        const box = document.getElementById('agPinBox');
+        if (box) box.innerHTML =
+          '<div class="alert alert-success py-2 mb-0"><div class="fw-bold mb-1">' + esc(d.name || id) + ' — PIN ' + esc(d.pin) + '</div>' +
+          '<div class="small mb-2">Shown once. Send it to the agent with the Agency ID; it is not listed again.</div>' +
+          '<textarea class="form-control form-control-sm" rows="4" id="agPinMsg">' + esc(msg) + '</textarea>' +
+          '<button class="btn btn-sm btn-outline-secondary mt-2" onclick="app.copyAgencyPin()">Copy message</button>' +
+          (a.whatsapp ? ' <a class="btn btn-sm btn-success mt-2" target="_blank" rel="noopener" href="https://wa.me/' +
+             encodeURIComponent(String(a.whatsapp).replace(/[^0-9]/g, '')) + '?text=' + encodeURIComponent(msg) + '">Send on WhatsApp</a>' : '') +
+          '</div>';
+        app.loadRecruitment();
+      } catch (err) { say('agStatus', esc(err.message), true); }
+    };
+    app.copyAgencyPin = function () {
+      const t = document.getElementById('agPinMsg'); if (!t) return;
+      t.select(); try { document.execCommand('copy'); say('agStatus', 'Copied.'); } catch (e) { say('agStatus', 'Select and copy manually.', true); }
+    };
+    app.revokeAgencyPin = async function (id) {
+      const a = AGENCIES.find(x => x.id === id) || {};
+      if (!confirm('Revoke portal access for ' + (a.name || id) + '?')) return;
+      try { const d = await callPost('revokeAgencyPin', { agencyId: id }); say('agStatus', esc(d.message)); app.loadRecruitment(); }
+      catch (err) { say('agStatus', esc(err.message), true); }
+    };
   })();
 })();
