@@ -191,12 +191,22 @@
           return '<tr>' +
             '<td class="small">' + esc(r['Candidate ID']) + '</td>' +
             '<td><b>' + esc(r['Name (English)']) + '</b><div class="text-muted small">' + esc(r['Nationality'] || '') + (r['Mobile / WhatsApp'] ? ' · ' + esc(r['Mobile / WhatsApp']) : '') + '</div></td>' +
-            '<td class="small">' + esc(r['Passport No'] || '—') + '</td>' +
-            '<td class="small">' + esc(r['Position'] || '—') + '<div class="text-muted small">' + esc(r['Location'] || '') + '</div></td>' +
+            '<td class="small">' + esc(r['Passport No'] || '—') +
+              (r['Passport Expiry'] ? '<div class="text-muted small">exp ' + esc(r['Passport Expiry']) + '</div>' : '') + '</td>' +
+            '<td class="small">' + esc(r['Position'] || '—') +
+              '<div class="text-muted small">' + esc([r['Location'], r['Visa Status'],
+                (r['Experience (years)'] ? r['Experience (years)'] + ' yrs' : ''),
+                r['Languages']].filter(Boolean).join(' · ')) + '</div></td>' +
             '<td class="small">' + esc(r['Agency'] || r['Agency ID'] || '—') + '</td>' +
             '<td><span class="badge bg-' + (STAGE_COLOR[st] || 'secondary') + '">' + esc(st) + '</span></td>' +
             '<td class="small text-muted">' + (dates || '—') + '</td>' +
-            '<td class="small">' + esc(r['Remark'] || '') + '</td>' +
+            '<td class="small">' + esc(r['Remark'] || '') +
+              // What the agent attached, if anything.
+              (r['Photo'] || r['CV']
+                ? '<div class="small">' +
+                  (r['Photo'] ? '<a href="' + esc(r['Photo']) + '" target="_blank" rel="noopener">Photo</a> ' : '') +
+                  (r['CV'] ? '<a href="' + esc(r['CV']) + '" target="_blank" rel="noopener">CV</a>' : '') + '</div>'
+                : '') + '</td>' +
             '<td class="text-end text-nowrap">' + action + more + '</td>' +
           '</tr>';
         }).join('') + '</tbody></table>';
