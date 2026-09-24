@@ -55,7 +55,7 @@ button:disabled{opacity:.5;}
 
 <!-- ── SIGN IN — once ─────────────────────────────────────────── -->
 <div class="screen on" id="scrLogin">
-  <div class="head"><h1>Maya Staff</h1><p>Sign in once. Your phone stays signed in.</p></div>
+  <div class="head"><h1>Maya Staff</h1><p>Sign in once. Then your phone is your badge.</p></div>
   <div class="mid">
     <div><label for="lId">Employee ID</label><input id="lId" placeholder="MT-00060" autocapitalize="characters" autocomplete="off"></div>
     <div><label for="lPin">PIN</label><input id="lPin" type="password" inputmode="numeric" placeholder="Your kiosk PIN" autocomplete="off"></div>
@@ -68,9 +68,9 @@ button:disabled{opacity:.5;}
 <div class="screen" id="scrHome">
   <div class="head"><div class="me"><b id="hName">—</b><span id="hId">—</span></div></div>
   <div class="mid">
-    <button onclick="startScan()">Scan the terminal</button>
-    <div class="tip">Or just open your phone's camera and point it at the tablet —
-      it opens this app and punches you in straight away.</div>
+    <div id="badgeBox" style="background:#fff;padding:16px;border-radius:20px;line-height:0;margin:0 auto;width:100%;max-width:340px"></div>
+    <div class="ticker" id="bTicker" style="display:flex;gap:5px;justify-content:center;margin-top:16px"></div>
+    <div class="tip">Hold this up to the terminal at your location.</div>
     <div class="msg" id="hMsg"></div>
   </div>
   <button class="ghost" onclick="signOut()">Sign out</button>
@@ -99,7 +99,7 @@ button:disabled{opacity:.5;}
 
 <div class="foot">Maya Tex Restaurants Company</div>
 
-<script src="jsqr.min.js"></script>
+<script src="qrcode.min.js"></script>
 <script src="config.js"></script>
 <script>
 // ============================================================
@@ -148,11 +148,12 @@ async function doLogin() {
   if (!empId || !pin) { say('lMsg', 'Enter your ID and PIN.', true); return; }
   const btn = $('lBtn'); btn.disabled = true; btn.textContent = 'Checking…';
   try {
-    const d = await call('loginStaffKiosk', { empId: empId, pin: pin });
-    ME = { empId: d.id, pin: pin, name: d.name };
+    const d = await call('issueBadge', { empId: empId, pin: pin });
+    ME = { empId: d.empId, name: d.name, secret: d.secret,
+           windowSec: d.windowSec, offsetMs: d.serverNow - Date.now() };
     localStorage.setItem('mayaStaff', JSON.stringify(ME));
     say('lMsg', '');
-    if (!consumePending()) home();
+    home();
   } catch (err) { say('lMsg', err.message, true); }
   finally { btn.disabled = false; btn.textContent = 'Sign in'; }
 }
@@ -161,119 +162,66 @@ function home() {
   $('hId').textContent = ME.empId;
   say('hMsg', '');
   show('scrHome');
+  startBadge();
 }
 function signOut() {
+  clearInterval(TICK);
   localStorage.removeItem('mayaStaff'); ME = null;
   $('lPin').value = ''; show('scrLogin');
 }
 
-// ── scanning ─────────────────────────────────────────────────
-async function startScan() {
-  show('scrScan'); say('sMsg', '');
-  try {
-    stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: 'environment' } }, audio: false
-    });
-  } catch (e) {
-    say('sMsg', 'The camera is blocked. If you opened this from WhatsApp, open it in Chrome or Safari instead.', true);
-    return;
+// ── the badge ────────────────────────────────────────────────
+// The phone draws its own code, every 30 seconds, from a secret it was
+// given when it signed in. No network is needed to show it — a man with
+// no signal in the kitchen still has a working badge. The tablet is the
+// thing that has to be online.
+let TICK = null;
+
+async function hmacHex(secret, message) {
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(message));
+  return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// The server's clock, not this phone's — the offset was measured at sign-in.
+function serverNow() { return Date.now() + (ME && ME.offsetMs ? ME.offsetMs : 0); }
+function currentWindow() { return Math.floor(serverNow() / 1000 / (ME && ME.windowSec ? ME.windowSec : 30)); }
+
+let badgeWin = null;
+async function paintBadge() {
+  if (!ME || !ME.secret) return;
+  const win = currentWindow();
+  if (win !== badgeWin) {
+    badgeWin = win;
+    const full = await hmacHex(ME.secret, ME.empId + ':' + win);
+    const payload = 'MAYA2|' + ME.empId + '|' + win + '|' + full.slice(0, 8).toUpperCase();
+    const qr = qrcode(0, 'M');
+    qr.addData(payload);
+    qr.make();
+    $('badgeBox').innerHTML = qr.createSvgTag({ cellSize: 8, margin: 0, scalable: true });
   }
-  const v = $('scanVid');
-  v.srcObject = stream;
-  await v.play().catch(() => {});
-  scanning = true;
-  tick();
+  const per = (ME.windowSec || 30);
+  const secs = per - Math.floor((serverNow() / 1000) % per);
+  const lit = Math.ceil(secs / (per / 5));
+  $('bTicker').innerHTML = [0,1,2,3,4].map(i =>
+    '<i style="width:26px;height:5px;border-radius:3px;display:block;background:' +
+    (i < lit ? 'var(--teal)' : 'var(--line)') + '"></i>').join('');
 }
 
-function stopScan() {
-  scanning = false;
-  if (rafId) cancelAnimationFrame(rafId);
-  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
-}
-
-// One frame at a time, looking for a Maya code. BarcodeDetector where the
-// phone has it (most Android), jsQR everywhere else (iPhone).
-let detector = null;
-if ('BarcodeDetector' in window) {
-  try { detector = new BarcodeDetector({ formats: ['qr_code'] }); } catch (e) { detector = null; }
-}
-const canvas = document.createElement('canvas');
-
-async function tick() {
-  if (!scanning) return;
-  const v = $('scanVid');
-  if (v.readyState === v.HAVE_ENOUGH_DATA) {
-    let text = null;
-    try {
-      if (detector) {
-        const found = await detector.detect(v);
-        if (found && found.length) text = found[0].rawValue;
-      } else {
-        canvas.width = v.videoWidth; canvas.height = v.videoHeight;
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
-        ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
-        const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const res = window.jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
-        if (res) text = res.data;
-      }
-    } catch (e) { /* keep looking */ }
-
-    if (text && text.indexOf('MAYA|') === 0) { stopScan(); sendScan(text); return; }
-  }
-  rafId = requestAnimationFrame(tick);
-}
-
-async function sendScan(payload) {
-  say('sMsg', 'Checking…');
-  try {
-    const d = await call('qrScan', { empId: ME.empId, pin: ME.pin, payload: payload });
-    $('dTick').textContent = '✓'; $('dTick').className = 'tick';
-    $('dTitle').textContent = 'Go to the terminal';
-    $('dText').textContent = d.message || 'Your stage is ready on the tablet.';
-  } catch (err) {
-    $('dTick').textContent = '!'; $('dTick').className = 'tick bad';
-    $('dTitle').textContent = 'Not accepted';
-    $('dText').textContent = err.message;
-    // A wrong PIN here means the credentials on this phone are stale.
-    if (/Employee ID or PIN/i.test(err.message)) { localStorage.removeItem('mayaStaff'); ME = null; }
-  }
-  show('scrDone');
-}
-
-// ── arriving from a scan ─────────────────────────────────────
-// The terminal's QR is a link to this page carrying the code in ?s=.
-// Whoever is already signed in never types anything: the code is sent
-// the moment the page opens. Somebody new signs in once, and the code
-// they just scanned is sent straight after.
-let PENDING = null;
-(function readScan() {
-  try {
-    const s = new URLSearchParams(location.search).get('s');
-    if (s && s.indexOf('MAYA|') === 0) {
-      PENDING = s;
-      // Clear it from the address bar so a refresh cannot replay an old code.
-      history.replaceState(null, '', location.pathname);
-    }
-  } catch (e) { PENDING = null; }
-})();
-
-function consumePending() {
-  if (!PENDING) return false;
-  const code = PENDING; PENDING = null;
-  $('dTick').textContent = '…'; $('dTick').className = 'tick';
-  $('dTitle').textContent = 'Checking…'; $('dText').textContent = '';
-  show('scrDone');
-  sendScan(code);
-  return true;
+function startBadge() {
+  clearInterval(TICK);
+  badgeWin = null;
+  paintBadge();
+  TICK = setInterval(paintBadge, 1000);
+  // The screen must stay awake while he walks to the terminal.
+  try { if ('wakeLock' in navigator) navigator.wakeLock.request('screen').catch(() => {}); } catch (e) {}
 }
 
 // ── start ────────────────────────────────────────────────────
-if (ME && ME.empId) {
-  if (!consumePending()) home();
-} else {
-  show('scrLogin');
-  if (PENDING) say('lMsg', 'Sign in once. After this your phone is recognised and scanning is instant.');
-}
+if (ME && ME.empId && ME.secret) home();
+else { show('scrLogin'); say('lMsg', 'Sign in once. Your phone then shows your badge, with no signal needed.'); }
+document.addEventListener('visibilitychange', () => { if (!document.hidden && ME && ME.secret) { badgeWin = null; paintBadge(); } });
 $('lPin').addEventListener('keypress', e => { if (e.key === 'Enter') doLogin(); });
 document.addEventListener('visibilitychange', () => { if (document.hidden) stopScan(); });
 </script>
