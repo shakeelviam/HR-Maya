@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="robots" content="noindex, nofollow">
+<title>Maya Terminal</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   The terminal. A tablet standing at the branch.
+   Paired once to a location, then it shows a QR that changes
+   every 30 seconds and waits. When somebody scans it with their
+   phone, it greets them and shows the same stage buttons the
+   kiosk shows after login. They tap. Punch recorded.
+   Built big: this is read from arm's length, not held.
+   ============================================================ */
+:root{
+  --dark:#0b1a1f; --dark-2:#12262d; --teal:#17a2a2; --line:#1e3a42;
+  --muted:#8aa5ad; --ok:#2f9e6b; --warn:#c8892a; --bad:#bd4630;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{
+  background:var(--dark); color:#eaf3f5;
+  font-family:'Space Grotesk',system-ui,sans-serif;
+  display:flex; align-items:center; justify-content:center;
+  overflow:hidden; -webkit-user-select:none; user-select:none;
+}
+.screen{display:none; width:100%; height:100%; padding:24px;
+        flex-direction:column; align-items:center; justify-content:center; text-align:center;}
+.screen.on{display:flex;}
+
+/* pairing */
+.pair{max-width:420px; width:100%;}
+.pair h1{font-size:26px; margin-bottom:6px;}
+.pair p{color:var(--muted); font-size:15px; margin-bottom:22px;}
+label{display:block; text-align:left; font-size:13px; color:var(--muted); margin:14px 0 6px;}
+input,select{
+  width:100%; padding:14px 16px; font-size:18px; font-family:inherit;
+  background:var(--dark-2); color:#fff; border:2px solid var(--line); border-radius:12px;
+}
+input:focus,select:focus{outline:none; border-color:var(--teal);}
+button{
+  font-family:inherit; font-weight:700; cursor:pointer; border:none; border-radius:14px;
+  background:var(--teal); color:#04181a; font-size:19px; padding:16px 26px;
+}
+button.ghost{background:transparent; color:var(--muted); border:2px solid var(--line); font-weight:600;}
+button:disabled{opacity:.5;}
+.msg{min-height:22px; margin-top:14px; font-size:15px; font-weight:600;}
+.msg.bad{color:#ff8e7a;} .msg.good{color:#7fe0b0;}
+
+/* idle: the QR */
+#qrBox{background:#fff; padding:18px; border-radius:20px; line-height:0;}
+#qrBox svg{display:block; width:min(52vh,52vw); height:auto;}
+.loc{margin-top:22px; font-size:30px; font-weight:700; letter-spacing:.01em;}
+.hint{margin-top:8px; color:var(--muted); font-size:17px;}
+.ticker{margin-top:18px; display:flex; gap:5px;}
+.ticker i{width:26px; height:5px; border-radius:3px; background:var(--line); display:block;}
+.ticker i.on{background:var(--teal);}
+
+/* greeting + stages */
+.hello{font-size:26px; color:var(--muted); margin-bottom:6px;}
+.who{font-size:44px; font-weight:700; line-height:1.15;}
+.eid{font-family:'JetBrains Mono',monospace; font-size:22px; color:var(--teal); margin-top:6px; letter-spacing:.06em;}
+.stages{margin-top:34px; display:flex; flex-direction:column; gap:14px; width:min(560px,86vw);}
+.stage-btn{
+  padding:26px; font-size:30px; font-weight:700; border-radius:20px;
+  display:flex; align-items:center; justify-content:center; gap:14px;
+}
+.b-in{background:#2f9e6b; color:#04180f;}
+.b-out{background:#c8892a; color:#1d1203;}
+.b-end{background:#bd4630; color:#fff;}
+.b-second{background:transparent; color:#cfe3e7; border:2px solid var(--line); font-size:21px; padding:16px;}
+.two{display:flex; gap:14px;} .two > *{flex:1;}
+.countdown{margin-top:20px; color:var(--muted); font-size:15px;}
+
+/* done */
+.tick{
+  width:130px; height:130px; border-radius:50%; background:var(--ok); color:#04180f;
+  display:grid; place-items:center; font-size:72px; font-weight:700; margin-bottom:22px;
+}
+.tick.bad{background:var(--bad); color:#fff; font-size:60px;}
+.done-stage{font-size:40px; font-weight:700;}
+.done-who{font-size:22px; color:var(--muted); margin-top:8px;}
+
+/* chrome */
+.corner{position:fixed; top:14px; right:18px; display:flex; align-items:center; gap:9px;
+        font-size:13px; color:var(--muted);}
+.dot{width:10px; height:10px; border-radius:50%; background:var(--ok);}
+.dot.off{background:var(--bad);} .dot.warn{background:var(--warn);}
+.brand{position:fixed; top:14px; left:18px; font-size:13px; color:var(--muted); letter-spacing:.12em;}
+#cam{position:fixed; width:2px; height:2px; opacity:0; pointer-events:none; top:0; left:0;}
+</style>
+</head>
+<body>
+
+<div class="brand">MAYA TEX</div>
+<div class="corner"><span id="camDot" class="dot warn"></span><span id="camTxt">camera</span>
+  <span id="netDot" class="dot"></span><span id="netTxt">online</span></div>
+
+<!-- The tablet's front camera. Kept running so a frame can be grabbed
+     the instant somebody taps, with no delay at the punch. -->
+<video id="cam" autoplay playsinline muted></video>
+
+<!-- ── PAIRING — once per tablet ──────────────────────────────── -->
+<div class="screen on" id="scrPair">
+  <div class="pair">
+    <h1>Pair this tablet</h1>
+    <p>Choose the location it will stand at, and enter the pairing PIN from HR.</p>
+    <label for="pLoc">Location</label>
+    <select id="pLoc"><option value="">Loading…</option></select>
+    <label for="pPin">Pairing PIN</label>
+    <input id="pPin" inputmode="numeric" maxlength="6" placeholder="6 digits">
+    <div style="height:20px"></div>
+    <button id="pBtn" style="width:100%" onclick="doPair()">Pair</button>
+    <div class="msg" id="pMsg"></div>
+  </div>
+</div>
+
+<!-- ── IDLE — the rotating code ───────────────────────────────── -->
+<div class="screen" id="scrIdle">
+  <div id="qrBox"></div>
+  <div class="loc" id="idleLoc">—</div>
+  <div class="hint">Scan with your phone to punch</div>
+  <div class="ticker" id="ticker"></div>
+</div>
+
+<!-- ── GREETING + STAGES ──────────────────────────────────────── -->
+<div class="screen" id="scrStage">
+  <div class="hello" id="gHello">Good morning</div>
+  <div class="who" id="gName">—</div>
+  <div class="eid" id="gId">—</div>
+  <div class="stages" id="stageHost"></div>
+  <div class="countdown" id="gCount"></div>
+</div>
+
+<!-- ── DONE ───────────────────────────────────────────────────── -->
+<div class="screen" id="scrDone">
+  <div class="tick" id="dTick">✓</div>
+  <div class="done-stage" id="dStage">Check In</div>
+  <div class="done-who" id="dWho">—</div>
+</div>
+
+<script src="qrcode.min.js"></script>
+<script src="config.js"></script>
+<script>
+// ============================================================
+// Everything the terminal does. Three loops:
+//   · the QR, redrawn as each 30-second window turns over
+//   · the poll, asking "has anybody scanned?" every 2 seconds
+//   · the camera, held open so a frame is ready the moment
+//     somebody taps a stage
+// ============================================================
+const EXEC = (typeof API_URL !== 'undefined' && API_URL) ? API_URL :
+  'https://script.google.com/macros/s/AKfycbyG5XLC79FnyLtSGGWunhJwU83SV0b0kz3y1FKdal-JBcTUM-X0ax134konYyTaKxYiiQ/exec';
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+let TERM = null;          // { terminalId, token, location }
+let BATCH = null;         // { codes, windowSec, offsetMs }
+let SESSION = null;       // whoever has just scanned
+let pollTimer = null, tickTimer = null, stageTimer = null;
+
+try { TERM = JSON.parse(localStorage.getItem('mayaTerminal') || 'null'); } catch (e) { TERM = null; }
+
+async function call(method, body) {
+  const r = await fetch(EXEC + '?method=' + method, {
+    method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(body || {})
+  });
+  if (!r.ok) throw new Error('Connection problem (' + r.status + ')');
+  const d = await r.json();
+  if (!d.success) throw new Error(d.error || 'Something went wrong');
+  return d;
+}
+
+function show(which) {
+  ['scrPair','scrIdle','scrStage','scrDone'].forEach(id => $(id).classList.toggle('on', id === which));
+}
+function net(state) {
+  $('netDot').className = 'dot' + (state === 'ok' ? '' : state === 'warn' ? ' warn' : ' off');
+  $('netTxt').textContent = state === 'ok' ? 'online' : state === 'warn' ? 'saved codes' : 'offline';
+}
+
+// ── pairing ──────────────────────────────────────────────────
+async function loadLocations() {
+  try {
+    const r = await fetch(EXEC + '?method=getLocations');
+    const d = await r.json();
+    const names = (d.data || []).map(x => (typeof x === 'string') ? x : (x.Location || x.name || x.Branch)).filter(Boolean);
+    $('pLoc').innerHTML = '<option value="">— choose —</option>' +
+      names.map(n => '<option>' + esc(n) + '</option>').join('');
+  } catch (e) {
+    // The list is a convenience; typing the name must still be possible.
+    $('pLoc').outerHTML = '<input id="pLoc" placeholder="Location name">';
+  }
+}
+
+async function doPair() {
+  const location = $('pLoc').value.trim(), setupPin = $('pPin').value.trim();
+  if (!location || !setupPin) { say('pMsg', 'Choose a location and enter the PIN.', true); return; }
+  const btn = $('pBtn'); btn.disabled = true; btn.textContent = 'Pairing…';
+  try {
+    const d = await call('pairTerminal', { location: location, setupPin: setupPin });
+    TERM = { terminalId: d.terminalId, token: d.token, location: d.location };
+    localStorage.setItem('mayaTerminal', JSON.stringify(TERM));
+    say('pMsg', '');
+    startTerminal();
+  } catch (err) { say('pMsg', err.message, true); }
+  finally { btn.disabled = false; btn.textContent = 'Pair'; }
+}
+function say(id, text, bad) {
+  const el = $(id); el.className = 'msg' + (text ? (bad ? ' bad' : ' good') : ''); el.textContent = text || '';
+}
+
+// ── the codes ────────────────────────────────────────────────
+// One call brings the next half hour. serverNow sets the offset, so the
+// terminal shows the code for the window the SERVER is in — the tablet's
+// own clock is never trusted.
+async function fetchCodes() {
+  const d = await call('terminalCodes', { terminalId: TERM.terminalId, token: TERM.token, count: 60 });
+  BATCH = { codes: d.codes, windowSec: d.windowSec, offsetMs: d.serverNow - Date.now() };
+  net('ok');
+}
+
+function serverNow() { return Date.now() + (BATCH ? BATCH.offsetMs : 0); }
+function currentWindow() { return Math.floor(serverNow() / 1000 / (BATCH ? BATCH.windowSec : 30)); }
+
+let drawnWin = null;
+function paintQr() {
+  if (!BATCH) return;
+  const win = currentWindow();
+  const hit = BATCH.codes.filter(c => c.win === win)[0];
+
+  if (!hit) {                        // batch ran out — try to refill
+    net('warn');
+    fetchCodes().then(paintQr).catch(() => net('off'));
+    return;
+  }
+  // Refill quietly while there is still plenty left.
+  const left = BATCH.codes[BATCH.codes.length - 1].win - win;
+  if (left < 10) fetchCodes().catch(() => net('warn'));
+
+  if (win !== drawnWin) {
+    drawnWin = win;
+    const payload = 'MAYA|' + TERM.terminalId + '|' + win + '|' + hit.code;
+    const qr = qrcode(0, 'M');
+    qr.addData(payload);
+    qr.make();
+    $('qrBox').innerHTML = qr.createSvgTag({ cellSize: 8, margin: 0, scalable: true });
+  }
+  // Seconds left in this window, as five blocks.
+  const secs = BATCH.windowSec - Math.floor((serverNow() / 1000) % BATCH.windowSec);
+  const lit = Math.ceil(secs / (BATCH.windowSec / 5));
+  $('ticker').innerHTML = [0,1,2,3,4].map(i => '<i class="' + (i < lit ? 'on' : '') + '"></i>').join('');
+}
+
+// ── the poll ─────────────────────────────────────────────────
+async function poll() {
+  if (SESSION) return;                        // somebody is at the screen
+  try {
+    const d = await call('terminalPoll', { terminalId: TERM.terminalId, token: TERM.token });
+    net('ok');
+    if (d.waiting) greet(d);
+  } catch (err) {
+    net(BATCH ? 'warn' : 'off');
+    if (/revoked|not paired/i.test(err.message)) unpair(err.message);
+  }
+}
+
+function unpair(reason) {
+  clearInterval(pollTimer); clearInterval(tickTimer);
+  localStorage.removeItem('mayaTerminal'); TERM = null;
+  show('scrPair'); loadLocations(); say('pMsg', reason || 'This tablet needs pairing again.', true);
+}
+
+// ── the greeting and the stage buttons ───────────────────────
+// Same mapping as the phone kiosk, minus day off and OT: this terminal
+// only ever records the four stages.
+function greet(d) {
+  SESSION = d;
+  $('gHello').textContent = d.greeting || 'Hello';
+  $('gName').textContent = d.name || d.empId;
+  $('gId').textContent = d.empId;
+
+  const st = String(d.stage || 'none');
+  let html = '';
+  if (st === 'on_break') {
+    html = btn('Break In', 'b-in');
+  } else if (st === 'checked_in') {
+    html = btn('Break Out', 'b-out') + btn('Check Out (no break)', 'b-second');
+  } else if (st === 'break_done' || st === 'checked_in_after_break') {
+    html = '<div class="two">' + btn('Break Out', 'b-out') + btn('Check Out', 'b-end') + '</div>';
+  } else if (st === 'done' || st === 'day_off') {
+    html = '<div class="hint" style="font-size:22px">' +
+           (st === 'day_off' ? 'Today is your day off.' : 'All done for today.') + '</div>';
+  } else {
+    html = btn('Check In', 'b-in');
+  }
+  $('stageHost').innerHTML = html;
+  show('scrStage');
+  startStageCountdown();
+}
+function btn(stage, cls) {
+  const label = stage === 'Check Out (no break)' ? 'Check Out (no break)' : stage;
+  const send = stage === 'Check Out (no break)' ? 'Check Out' : stage;
+  return '<button class="stage-btn ' + cls + '" onclick="punch(\'' + send + '\')">' + esc(label) + '</button>';
+}
+
+// Nobody stands there forever. Back to the QR after 30 seconds.
+function startStageCountdown() {
+  let left = 30;
+  clearInterval(stageTimer);
+  $('gCount').textContent = '';
+  stageTimer = setInterval(() => {
+    left--;
+    $('gCount').textContent = left <= 10 ? ('Returning in ' + left + '…') : '';
+    if (left <= 0) backToIdle();
+  }, 1000);
+}
+function backToIdle() {
+  clearInterval(stageTimer); SESSION = null; drawnWin = null;
+  show('scrIdle'); paintQr();
+}
+
+// ── the punch ────────────────────────────────────────────────
+async function punch(stage) {
+  if (!SESSION) return;
+  clearInterval(stageTimer);
+  document.querySelectorAll('.stage-btn').forEach(b => b.disabled = true);
+  const photo = grabFrame();                   // may be null; never blocks
+  try {
+    const d = await call('terminalPunch', {
+      terminalId: TERM.terminalId, token: TERM.token,
+      sessionId: SESSION.sessionId, stage: stage, photo: photo
+    });
+    $('dTick').textContent = '✓'; $('dTick').className = 'tick';
+    $('dStage').textContent = stage;
+    $('dWho').textContent = d.name || '';
+  } catch (err) {
+    $('dTick').textContent = '!'; $('dTick').className = 'tick bad';
+    $('dStage').textContent = 'Not recorded';
+    $('dWho').textContent = err.message;
+  }
+  show('scrDone');
+  setTimeout(backToIdle, 4000);
+}
+
+// ── the camera ───────────────────────────────────────────────
+// Held open so the frame is instant. If it is refused or missing, the
+// punch goes through anyway and the row reads NO PHOTO.
+let camReady = false;
+async function startCamera() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false
+    });
+    $('cam').srcObject = stream;
+    camReady = true;
+    $('camDot').className = 'dot'; $('camTxt').textContent = 'camera';
+  } catch (e) {
+    camReady = false;
+    $('camDot').className = 'dot off'; $('camTxt').textContent = 'no camera';
+  }
+}
+function grabFrame() {
+  if (!camReady) return null;
+  try {
+    const v = $('cam');
+    if (!v.videoWidth) return null;
+    const w = 480, h = Math.round(v.videoHeight * (w / v.videoWidth));
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    c.getContext('2d').drawImage(v, 0, 0, w, h);
+    const url = c.toDataURL('image/jpeg', 0.6);
+    return { mimeType: 'image/jpeg', data: url.split(',')[1] };
+  } catch (e) { return null; }
+}
+
+// ── start ────────────────────────────────────────────────────
+async function startTerminal() {
+  $('idleLoc').textContent = TERM.location;
+  show('scrIdle');
+  startCamera();
+  try { await fetchCodes(); } catch (err) {
+    if (/revoked|not paired/i.test(err.message)) { unpair(err.message); return; }
+    net('off');
+  }
+  paintQr();
+  clearInterval(tickTimer); tickTimer = setInterval(paintQr, 1000);
+  clearInterval(pollTimer); pollTimer = setInterval(poll, 2000);
+  // Keep the screen awake if the tablet allows it.
+  try { if ('wakeLock' in navigator) navigator.wakeLock.request('screen').catch(() => {}); } catch (e) {}
+}
+
+if (TERM && TERM.terminalId) startTerminal();
+else { show('scrPair'); loadLocations(); }
+
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && TERM) { paintQr(); }
+});
+</script>
+</body>
+</html>
