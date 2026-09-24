@@ -122,7 +122,7 @@ button:disabled{opacity:.5;}
 <div class="screen" id="scrIdle">
   <div id="qrBox"></div>
   <div class="loc" id="idleLoc">—</div>
-  <div class="hint">Scan with your phone to punch</div>
+  <div class="hint">Open your camera and scan to punch</div>
   <div class="ticker" id="ticker"></div>
 </div>
 
@@ -245,11 +245,15 @@ function paintQr() {
 
   if (win !== drawnWin) {
     drawnWin = win;
-    const payload = 'MAYA|' + TERM.terminalId + '|' + win + '|' + hit.code;
+    // A link, not a bare code. Scanned with the phone's own camera it opens
+    // the staff app straight away — and a camera can no longer mistake the
+    // digits for a phone number and offer to dial them.
+    const code = 'MAYA|' + TERM.terminalId + '|' + win + '|' + hit.code;
+    const payload = new URL('badge.html', location.href).href + '?s=' + encodeURIComponent(code);
     const qr = qrcode(0, 'M');
     qr.addData(payload);
     qr.make();
-    $('qrBox').innerHTML = qr.createSvgTag({ cellSize: 8, margin: 0, scalable: true });
+    $('qrBox').innerHTML = qr.createSvgTag({ cellSize: 6, margin: 0, scalable: true });
   }
   // Seconds left in this window, as five blocks.
   const secs = BATCH.windowSec - Math.floor((serverNow() / 1000) % BATCH.windowSec);
