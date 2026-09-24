@@ -90,18 +90,41 @@ button:disabled{opacity:.5;}
 .dot{width:10px; height:10px; border-radius:50%; background:var(--ok);}
 .dot.off{background:var(--bad);} .dot.warn{background:var(--warn);}
 .brand{position:fixed; top:14px; left:18px; font-size:13px; color:var(--muted); letter-spacing:.12em;}
-#cam{position:fixed; width:2px; height:2px; opacity:0; pointer-events:none; top:0; left:0;}
+#look{position:fixed; width:2px; height:2px; opacity:0; pointer-events:none; top:0; left:0;}
+
+/* The target window shown instead of the camera feed. */
+.target{
+  position:relative; width:min(46vh,78vw); aspect-ratio:1/1;
+  border-radius:28px; background:var(--dark-2);
+  border:2px solid var(--line); display:grid; place-items:center; overflow:hidden;
+}
+.target-in{display:flex; flex-direction:column; align-items:center; gap:14px; color:var(--teal);}
+.target-in b{font-size:22px; color:#cfe3e7; font-weight:600;}
+.target .c{position:absolute; width:46px; height:46px; border:5px solid var(--teal); border-radius:6px;}
+.target .tl{top:18px; left:18px; border-right:0; border-bottom:0; border-top-left-radius:16px;}
+.target .tr{top:18px; right:18px; border-left:0; border-bottom:0; border-top-right-radius:16px;}
+.target .bl{bottom:18px; left:18px; border-right:0; border-top:0; border-bottom-left-radius:16px;}
+.target .br{bottom:18px; right:18px; border-left:0; border-top:0; border-bottom-right-radius:16px;}
+.target .sweep{
+  position:absolute; left:8%; right:8%; height:3px; border-radius:2px;
+  background:linear-gradient(90deg,transparent,var(--teal),transparent);
+  animation:sweep 2.6s ease-in-out infinite; opacity:.75;
+}
+@keyframes sweep{ 0%{top:14%} 50%{top:84%} 100%{top:14%} }
+@media (prefers-reduced-motion: reduce){ .target .sweep{animation:none; top:50%} }
 </style>
 </head>
 <body>
 
 <div class="brand">MAYA TEX</div>
+<video id="look" autoplay playsinline muted></video>
 <div class="corner"><span id="camDot" class="dot warn"></span><span id="camTxt">camera</span>
   <span id="netDot" class="dot"></span><span id="netTxt">online</span></div>
 
-<!-- The tablet's front camera. Kept running so a frame can be grabbed
-     the instant somebody taps, with no delay at the punch. -->
-<video id="cam" autoplay playsinline muted></video>
+<!-- The tablet's front camera. It runs continuously because it is what
+     reads the badge, but it is never put on screen, and no image is kept
+     unless somebody actually punches. -->
+
 
 <!-- ── PAIRING — once per tablet ──────────────────────────────── -->
 <div class="screen on" id="scrPair">
@@ -120,10 +143,23 @@ button:disabled{opacity:.5;}
 
 <!-- ── IDLE — the rotating code ───────────────────────────────── -->
 <div class="screen" id="scrIdle">
-  <div id="qrBox"></div>
+  <!-- The target window. The camera is running behind this to read the
+       badge, but nothing it sees is shown: staff should not spend the day
+       watching themselves. A photograph is taken only at the punch. -->
+  <div class="target">
+    <i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
+    <div class="sweep"></div>
+    <div class="target-in">
+      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+        <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+        <rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM19 14h2v2h-2zM14 19h2v2h-2zM18 18h3v3h-3z"/>
+      </svg>
+      <b>Hold your badge here</b>
+    </div>
+  </div>
   <div class="loc" id="idleLoc">—</div>
-  <div class="hint">Open your camera and scan to punch</div>
-  <div class="ticker" id="ticker"></div>
+  <div class="hint">Open Maya Staff on your phone and hold it up</div>
+  <div class="msg" id="idleMsg"></div>
 </div>
 
 <!-- ── GREETING + STAGES ──────────────────────────────────────── -->
@@ -142,7 +178,7 @@ button:disabled{opacity:.5;}
   <div class="done-who" id="dWho">—</div>
 </div>
 
-<script src="qrcode.min.js"></script>
+<script src="jsqr.min.js"></script>
 <script src="config.js"></script>
 <script>
 // ============================================================
@@ -166,9 +202,8 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 let TERM = null;          // { terminalId, token, location }
-let BATCH = null;         // { codes, windowSec, offsetMs }
-let SESSION = null;       // whoever has just scanned
-let pollTimer = null, tickTimer = null, stageTimer = null;
+let SESSION = null;       // whoever has just shown a badge
+let stageTimer = null;
 
 try { TERM = JSON.parse(localStorage.getItem('mayaTerminal') || 'null'); } catch (e) { TERM = null; }
 
@@ -193,7 +228,7 @@ function show(which) {
 }
 function net(state) {
   $('netDot').className = 'dot' + (state === 'ok' ? '' : state === 'warn' ? ' warn' : ' off');
-  $('netTxt').textContent = state === 'ok' ? 'online' : state === 'warn' ? 'saved codes' : 'offline';
+  $('netTxt').textContent = state === 'ok' ? 'online' : 'offline';
 }
 
 // ── pairing ──────────────────────────────────────────────────
@@ -227,67 +262,80 @@ function say(id, text, bad) {
   const el = $(id); el.className = 'msg' + (text ? (bad ? ' bad' : ' good') : ''); el.textContent = text || '';
 }
 
-// ── the codes ────────────────────────────────────────────────
-// One call brings the next half hour. serverNow sets the offset, so the
-// terminal shows the code for the window the SERVER is in — the tablet's
-// own clock is never trusted.
-async function fetchCodes() {
-  const d = await call('terminalCodes', { terminalId: TERM.terminalId, token: TERM.token, count: 60 });
-  BATCH = { codes: d.codes, windowSec: d.windowSec, offsetMs: d.serverNow - Date.now() };
-  net('ok');
+// ── reading badges ───────────────────────────────────────────
+// The camera runs continuously and the decoding happens here on the tablet.
+// NOTHING is sent to the backend until a badge is actually read, so an idle
+// terminal costs the script nothing. That is the whole point: a terminal
+// that polls is a terminal that can starve the kiosk.
+let camReady = false, looking = false, rafId = null, busy = false;
+let detector = null;
+if ('BarcodeDetector' in window) {
+  try { detector = new BarcodeDetector({ formats: ['qr_code'] }); } catch (e) { detector = null; }
 }
+const workCanvas = document.createElement('canvas');
 
-function serverNow() { return Date.now() + (BATCH ? BATCH.offsetMs : 0); }
-function currentWindow() { return Math.floor(serverNow() / 1000 / (BATCH ? BATCH.windowSec : 30)); }
-
-let drawnWin = null;
-function paintQr() {
-  if (!BATCH) return;
-  const win = currentWindow();
-  const hit = BATCH.codes.filter(c => c.win === win)[0];
-
-  if (!hit) {                        // batch ran out — try to refill
-    net('warn');
-    fetchCodes().then(paintQr).catch(() => net('off'));
-    return;
-  }
-  // Refill quietly while there is still plenty left.
-  const left = BATCH.codes[BATCH.codes.length - 1].win - win;
-  if (left < 10) fetchCodes().catch(() => net('warn'));
-
-  if (win !== drawnWin) {
-    drawnWin = win;
-    // A link, not a bare code. Scanned with the phone's own camera it opens
-    // the staff app straight away — and a camera can no longer mistake the
-    // digits for a phone number and offer to dial them.
-    const code = 'MAYA|' + TERM.terminalId + '|' + win + '|' + hit.code;
-    const payload = new URL('badge.html', location.href).href + '?s=' + encodeURIComponent(code);
-    const qr = qrcode(0, 'M');
-    qr.addData(payload);
-    qr.make();
-    $('qrBox').innerHTML = qr.createSvgTag({ cellSize: 6, margin: 0, scalable: true });
-  }
-  // Seconds left in this window, as five blocks.
-  const secs = BATCH.windowSec - Math.floor((serverNow() / 1000) % BATCH.windowSec);
-  const lit = Math.ceil(secs / (BATCH.windowSec / 5));
-  $('ticker').innerHTML = [0,1,2,3,4].map(i => '<i class="' + (i < lit ? 'on' : '') + '"></i>').join('');
-}
-
-// ── the poll ─────────────────────────────────────────────────
-async function poll() {
-  if (SESSION) return;                        // somebody is at the screen
+async function startCamera() {
   try {
-    const d = await call('terminalPoll', { terminalId: TERM.terminalId, token: TERM.token });
-    net('ok');
-    if (d.waiting) greet(d);
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 960 } }, audio: false
+    });
+    $('look').srcObject = stream;
+    await $('look').play().catch(() => {});
+    camReady = true;
+    $('camDot').className = 'dot'; $('camTxt').textContent = 'camera';
+  } catch (e) {
+    camReady = false;
+    $('camDot').className = 'dot off'; $('camTxt').textContent = 'no camera';
+    say('idleMsg', 'The camera is blocked. Allow it in the browser and reload.', true);
+  }
+}
+
+function startLooking() { if (!looking) { looking = true; loop(); } }
+function stopLooking() { looking = false; if (rafId) cancelAnimationFrame(rafId); }
+
+async function loop() {
+  if (!looking) return;
+  const v = $('look');
+  if (camReady && !busy && v.readyState === v.HAVE_ENOUGH_DATA) {
+    let text = null;
+    try {
+      if (detector) {
+        const found = await detector.detect(v);
+        if (found && found.length) text = found[0].rawValue;
+      } else {
+        workCanvas.width = v.videoWidth; workCanvas.height = v.videoHeight;
+        const ctx = workCanvas.getContext('2d', { willReadFrequently: true });
+        ctx.drawImage(v, 0, 0, workCanvas.width, workCanvas.height);
+        const img = ctx.getImageData(0, 0, workCanvas.width, workCanvas.height);
+        const res = window.jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
+        if (res) text = res.data;
+      }
+    } catch (e) { /* keep looking */ }
+    if (text && text.indexOf('MAYA2|') === 0) readBadge(text);
+  }
+  rafId = requestAnimationFrame(loop);
+}
+
+// One call: who is he, and which stage is he at.
+async function readBadge(payload) {
+  busy = true;
+  say('idleMsg', 'Reading…');
+  try {
+    const d = await call('badgeIdentify', { terminalId: TERM.terminalId, token: TERM.token, payload: payload });
+    net('ok'); say('idleMsg', '');
+    greet(d);
+    return;
   } catch (err) {
-    net(BATCH ? 'warn' : 'off');
-    if (/revoked|not paired/i.test(err.message)) unpair(err.message);
+    net('ok');
+    if (/revoked|not paired/i.test(err.message)) { unpair(err.message); return; }
+    say('idleMsg', err.message, true);
+    // Never hammer on a bad badge: pause before looking again.
+    setTimeout(() => { say('idleMsg', ''); busy = false; }, 2500);
   }
 }
 
 function unpair(reason) {
-  clearInterval(pollTimer); clearInterval(tickTimer);
+  stopLooking();
   localStorage.removeItem('mayaTerminal'); TERM = null;
   show('scrPair'); loadLocations(); say('pMsg', reason || 'This tablet needs pairing again.', true);
 }
@@ -296,6 +344,7 @@ function unpair(reason) {
 // Same mapping as the phone kiosk, minus day off and OT: this terminal
 // only ever records the four stages.
 function greet(d) {
+  stopLooking();
   SESSION = d;
   $('gHello').textContent = d.greeting || 'Hello';
   $('gName').textContent = d.name || d.empId;
@@ -337,8 +386,8 @@ function startStageCountdown() {
   }, 1000);
 }
 function backToIdle() {
-  clearInterval(stageTimer); SESSION = null; drawnWin = null;
-  show('scrIdle'); paintQr();
+  clearInterval(stageTimer); SESSION = null; busy = false;
+  say('idleMsg', ''); show('scrIdle'); startLooking();
 }
 
 // ── the punch ────────────────────────────────────────────────
@@ -350,7 +399,7 @@ async function punch(stage) {
   try {
     const d = await call('terminalPunch', {
       terminalId: TERM.terminalId, token: TERM.token,
-      sessionId: SESSION.sessionId, stage: stage, photo: photo
+      punchToken: SESSION.punchToken, stage: stage, photo: photo
     });
     $('dTick').textContent = '✓'; $('dTick').className = 'tick';
     $('dStage').textContent = stage;
@@ -364,27 +413,10 @@ async function punch(stage) {
   setTimeout(backToIdle, 4000);
 }
 
-// ── the camera ───────────────────────────────────────────────
-// Held open so the frame is instant. If it is refused or missing, the
-// punch goes through anyway and the row reads NO PHOTO.
-let camReady = false;
-async function startCamera() {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false
-    });
-    $('cam').srcObject = stream;
-    camReady = true;
-    $('camDot').className = 'dot'; $('camTxt').textContent = 'camera';
-  } catch (e) {
-    camReady = false;
-    $('camDot').className = 'dot off'; $('camTxt').textContent = 'no camera';
-  }
-}
 function grabFrame() {
   if (!camReady) return null;
   try {
-    const v = $('cam');
+    const v = $('look');
     if (!v.videoWidth) return null;
     const w = 480, h = Math.round(v.videoHeight * (w / v.videoWidth));
     const c = document.createElement('canvas'); c.width = w; c.height = h;
@@ -398,14 +430,8 @@ function grabFrame() {
 async function startTerminal() {
   $('idleLoc').textContent = TERM.location;
   show('scrIdle');
-  startCamera();
-  try { await fetchCodes(); } catch (err) {
-    if (/revoked|not paired/i.test(err.message)) { unpair(err.message); return; }
-    net('off');
-  }
-  paintQr();
-  clearInterval(tickTimer); tickTimer = setInterval(paintQr, 1000);
-  clearInterval(pollTimer); pollTimer = setInterval(poll, 2000);
+  await startCamera();
+  startLooking();
   // Keep the screen awake if the tablet allows it.
   try { if ('wakeLock' in navigator) navigator.wakeLock.request('screen').catch(() => {}); } catch (e) {}
 }
@@ -414,7 +440,8 @@ if (TERM && TERM.terminalId) startTerminal();
 else { show('scrPair'); loadLocations(); }
 
 document.addEventListener('visibilitychange', () => {
-  if (!document.hidden && TERM) { paintQr(); }
+  if (document.hidden) stopLooking();
+  else if (TERM && !SESSION) startLooking();
 });
 </script>
 </body>
