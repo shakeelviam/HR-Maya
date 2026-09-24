@@ -69,7 +69,8 @@ button:disabled{opacity:.5;}
   <div class="head"><div class="me"><b id="hName">—</b><span id="hId">—</span></div></div>
   <div class="mid">
     <button onclick="startScan()">Scan the terminal</button>
-    <div class="tip">Point your camera at the code on the tablet at your location.</div>
+    <div class="tip">Or just open your phone's camera and point it at the tablet —
+      it opens this app and punches you in straight away.</div>
     <div class="msg" id="hMsg"></div>
   </div>
   <button class="ghost" onclick="signOut()">Sign out</button>
@@ -140,7 +141,8 @@ async function doLogin() {
     const d = await call('loginStaffKiosk', { empId: empId, pin: pin });
     ME = { empId: d.id, pin: pin, name: d.name };
     localStorage.setItem('mayaStaff', JSON.stringify(ME));
-    say('lMsg', ''); home();
+    say('lMsg', '');
+    if (!consumePending()) home();
   } catch (err) { say('lMsg', err.message, true); }
   finally { btn.disabled = false; btn.textContent = 'Sign in'; }
 }
@@ -228,8 +230,40 @@ async function sendScan(payload) {
   show('scrDone');
 }
 
+// ── arriving from a scan ─────────────────────────────────────
+// The terminal's QR is a link to this page carrying the code in ?s=.
+// Whoever is already signed in never types anything: the code is sent
+// the moment the page opens. Somebody new signs in once, and the code
+// they just scanned is sent straight after.
+let PENDING = null;
+(function readScan() {
+  try {
+    const s = new URLSearchParams(location.search).get('s');
+    if (s && s.indexOf('MAYA|') === 0) {
+      PENDING = s;
+      // Clear it from the address bar so a refresh cannot replay an old code.
+      history.replaceState(null, '', location.pathname);
+    }
+  } catch (e) { PENDING = null; }
+})();
+
+function consumePending() {
+  if (!PENDING) return false;
+  const code = PENDING; PENDING = null;
+  $('dTick').textContent = '…'; $('dTick').className = 'tick';
+  $('dTitle').textContent = 'Checking…'; $('dText').textContent = '';
+  show('scrDone');
+  sendScan(code);
+  return true;
+}
+
 // ── start ────────────────────────────────────────────────────
-if (ME && ME.empId) home(); else show('scrLogin');
+if (ME && ME.empId) {
+  if (!consumePending()) home();
+} else {
+  show('scrLogin');
+  if (PENDING) say('lMsg', 'Sign in once. After this your phone is recognised and scanning is instant.');
+}
 $('lPin').addEventListener('keypress', e => { if (e.key === 'Enter') doLogin(); });
 document.addEventListener('visibilitychange', () => { if (document.hidden) stopScan(); });
 </script>
