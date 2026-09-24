@@ -108,8 +108,15 @@ button:disabled{opacity:.5;}
 // to the backend, which checks it is genuine and current, then
 // hands the man over to the terminal. Nothing is punched here.
 // ============================================================
-const EXEC = (typeof API_URL !== 'undefined' && API_URL) ? API_URL :
-  'https://script.google.com/macros/s/AKfycbyG5XLC79FnyLtSGGWunhJwU83SV0b0kz3y1FKdal-JBcTUM-X0ax134konYyTaKxYiiQ/exec';
+// The one place the endpoint is defined for the whole project: config.js.
+// Never written into this page — when the deployment URL changes, config.js
+// changes and every page follows, this one included.
+const EXEC = (function () {
+  if (typeof CONFIG !== 'undefined' && CONFIG && CONFIG.API_URL) return String(CONFIG.API_URL).replace('/dev', '/exec');
+  if (typeof API_URL !== 'undefined' && API_URL) return String(API_URL).replace('/dev', '/exec');
+  alert('config.js did not load — this page cannot reach the backend.');
+  return '';
+})();
 
 const $ = id => document.getElementById(id);
 let ME = null, stream = null, scanning = false, rafId = null;
@@ -126,7 +133,10 @@ async function call(method, body) {
   const r = await fetch(EXEC + '?method=' + method, {
     method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body || {})
   });
-  if (!r.ok) throw new Error('No connection. Try again in a moment.');
+  if (!r.ok) {
+    if (r.status === 404) throw new Error('The backend URL is not answering (404). Ask HR.');
+    throw new Error('No connection (' + r.status + '). Try again in a moment.');
+  }
   const d = await r.json();
   if (!d.success) throw new Error(d.error || 'Something went wrong');
   return d;
