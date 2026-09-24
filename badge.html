@@ -68,9 +68,10 @@ button:disabled{opacity:.5;}
 <div class="screen" id="scrHome">
   <div class="head"><div class="me"><b id="hName">—</b><span id="hId">—</span></div></div>
   <div class="mid">
-    <div id="badgeBox" style="background:#fff;padding:16px;border-radius:20px;line-height:0;margin:0 auto;width:100%;max-width:340px"></div>
+    <div id="badgeBox" style="background:#fff;padding:14px;border-radius:20px;line-height:0;margin:0 auto;width:100%;max-width:min(92vw,420px)"></div>
     <div class="ticker" id="bTicker" style="display:flex;gap:5px;justify-content:center;margin-top:16px"></div>
-    <div class="tip">Hold this up to the terminal at your location.</div>
+    <div class="tip">Hold this up to the terminal, about a hand's length from its camera.
+      Turn your screen brightness up if it does not read.</div>
     <div class="msg" id="hMsg"></div>
   </div>
   <button class="ghost" onclick="signOut()">Sign out</button>
@@ -199,7 +200,7 @@ async function paintBadge() {
     const qr = qrcode(0, 'M');
     qr.addData(payload);
     qr.make();
-    $('badgeBox').innerHTML = qr.createSvgTag({ cellSize: 8, margin: 0, scalable: true });
+    $('badgeBox').innerHTML = qr.createSvgTag({ cellSize: 12, margin: 0, scalable: true });
   }
   const per = (ME.windowSec || 30);
   const secs = per - Math.floor((serverNow() / 1000) % per);
