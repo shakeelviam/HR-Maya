@@ -152,8 +152,15 @@ button:disabled{opacity:.5;}
 //   · the camera, held open so a frame is ready the moment
 //     somebody taps a stage
 // ============================================================
-const EXEC = (typeof API_URL !== 'undefined' && API_URL) ? API_URL :
-  'https://script.google.com/macros/s/AKfycbyG5XLC79FnyLtSGGWunhJwU83SV0b0kz3y1FKdal-JBcTUM-X0ax134konYyTaKxYiiQ/exec';
+// The one place the endpoint is defined for the whole project: config.js.
+// Never written into this page — when the deployment URL changes, config.js
+// changes and every page follows, this one included.
+const EXEC = (function () {
+  if (typeof CONFIG !== 'undefined' && CONFIG && CONFIG.API_URL) return String(CONFIG.API_URL).replace('/dev', '/exec');
+  if (typeof API_URL !== 'undefined' && API_URL) return String(API_URL).replace('/dev', '/exec');
+  alert('config.js did not load — this page cannot reach the backend.');
+  return '';
+})();
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -170,7 +177,12 @@ async function call(method, body) {
     method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify(body || {})
   });
-  if (!r.ok) throw new Error('Connection problem (' + r.status + ')');
+  if (!r.ok) {
+    // A 404 from Apps Script is not a network fault: the /exec URL is not
+    // serving. Say so, rather than leaving somebody staring at a number.
+    if (r.status === 404) throw new Error('The backend URL is not answering (404). Deploy a new version, or check config.js.');
+    throw new Error('Connection problem (' + r.status + ') on ' + method);
+  }
   const d = await r.json();
   if (!d.success) throw new Error(d.error || 'Something went wrong');
   return d;
