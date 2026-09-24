@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0b1a1f">
+<title>Maya Staff</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   The phone. It does one thing: prove who you are, by scanning
+   the code on the terminal. The punch itself happens on the
+   terminal — this screen just sends you to it.
+   ============================================================ */
+:root{ --dark:#0b1a1f; --dark-2:#12262d; --teal:#17a2a2; --line:#1e3a42;
+       --muted:#8aa5ad; --ok:#2f9e6b; --bad:#bd4630; }
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{background:var(--dark); color:#eaf3f5; font-family:'Space Grotesk',system-ui,sans-serif;
+     display:flex; flex-direction:column; -webkit-user-select:none; user-select:none;}
+.screen{display:none; flex:1; flex-direction:column; padding:24px; }
+.screen.on{display:flex;}
+.head{padding-top:6vh; text-align:center;}
+.head h1{font-size:24px; margin-bottom:4px;}
+.head p{color:var(--muted); font-size:15px;}
+.mid{flex:1; display:flex; flex-direction:column; justify-content:center; gap:14px;}
+label{font-size:13px; color:var(--muted); margin-bottom:6px; display:block;}
+input{width:100%; padding:16px; font-size:19px; font-family:inherit; background:var(--dark-2);
+      color:#fff; border:2px solid var(--line); border-radius:14px;}
+input:focus{outline:none; border-color:var(--teal);}
+button{font-family:inherit; font-weight:700; cursor:pointer; border:none; border-radius:16px;
+       background:var(--teal); color:#04181a; font-size:19px; padding:18px; width:100%;}
+button.ghost{background:transparent; color:var(--muted); border:2px solid var(--line); font-weight:600; font-size:16px; padding:14px;}
+button:disabled{opacity:.5;}
+.msg{min-height:22px; text-align:center; font-size:15px; font-weight:600; margin-top:12px;}
+.msg.bad{color:#ff8e7a;} .msg.good{color:#7fe0b0;}
+.me{text-align:center; margin-bottom:8px;}
+.me b{display:block; font-size:22px;}
+.me span{font-family:'JetBrains Mono',monospace; font-size:14px; color:var(--teal); letter-spacing:.06em;}
+.scanwrap{position:relative; border-radius:20px; overflow:hidden; background:#000; aspect-ratio:1/1;}
+#scanVid{width:100%; height:100%; object-fit:cover;}
+.frame{position:absolute; inset:14%; border:3px solid rgba(255,255,255,.85); border-radius:16px;}
+.tip{text-align:center; color:var(--muted); font-size:14px; margin-top:12px;}
+.big{text-align:center; padding:6vh 0;}
+.big .tick{width:110px; height:110px; border-radius:50%; background:var(--ok); color:#04180f;
+           display:grid; place-items:center; font-size:60px; font-weight:700; margin:0 auto 20px;}
+.big .tick.bad{background:var(--bad); color:#fff; font-size:52px;}
+.big h2{font-size:26px; margin-bottom:8px;}
+.big p{color:var(--muted); font-size:16px;}
+.foot{text-align:center; color:#55707a; font-size:11px; padding:10px 0;}
+</style>
+</head>
+<body>
+
+<!-- ── SIGN IN — once ─────────────────────────────────────────── -->
+<div class="screen on" id="scrLogin">
+  <div class="head"><h1>Maya Staff</h1><p>Sign in once. Your phone stays signed in.</p></div>
+  <div class="mid">
+    <div><label for="lId">Employee ID</label><input id="lId" placeholder="MT-00060" autocapitalize="characters" autocomplete="off"></div>
+    <div><label for="lPin">PIN</label><input id="lPin" type="password" inputmode="numeric" placeholder="Your kiosk PIN" autocomplete="off"></div>
+    <button id="lBtn" onclick="doLogin()">Sign in</button>
+    <div class="msg" id="lMsg"></div>
+  </div>
+</div>
+
+<!-- ── HOME — one button ──────────────────────────────────────── -->
+<div class="screen" id="scrHome">
+  <div class="head"><div class="me"><b id="hName">—</b><span id="hId">—</span></div></div>
+  <div class="mid">
+    <button onclick="startScan()">Scan the terminal</button>
+    <div class="tip">Point your camera at the code on the tablet at your location.</div>
+    <div class="msg" id="hMsg"></div>
+  </div>
+  <button class="ghost" onclick="signOut()">Sign out</button>
+</div>
+
+<!-- ── SCANNING ───────────────────────────────────────────────── -->
+<div class="screen" id="scrScan">
+  <div class="head"><h1>Scan the code</h1><p>Hold your phone up to the tablet</p></div>
+  <div class="mid">
+    <div class="scanwrap"><video id="scanVid" autoplay playsinline muted></video><div class="frame"></div></div>
+    <div class="msg" id="sMsg"></div>
+  </div>
+  <button class="ghost" onclick="stopScan(); show('scrHome')">Cancel</button>
+</div>
+
+<!-- ── RESULT ─────────────────────────────────────────────────── -->
+<div class="screen" id="scrDone">
+  <div class="big">
+    <div class="tick" id="dTick">✓</div>
+    <h2 id="dTitle">Go to the terminal</h2>
+    <p id="dText">Your stage is ready on the tablet.</p>
+  </div>
+  <div class="mid"></div>
+  <button onclick="show('scrHome')">Done</button>
+</div>
+
+<div class="foot">Maya Tex Restaurants Company</div>
+
+<script src="jsqr.min.js"></script>
+<script src="config.js"></script>
+<script>
+// ============================================================
+// Sign in with the same ID and PIN as the kiosk; the phone keeps
+// them so this is a one-tap job every day. Scanning sends the code
+// to the backend, which checks it is genuine and current, then
+// hands the man over to the terminal. Nothing is punched here.
+// ============================================================
+const EXEC = (typeof API_URL !== 'undefined' && API_URL) ? API_URL :
+  'https://script.google.com/macros/s/AKfycbyG5XLC79FnyLtSGGWunhJwU83SV0b0kz3y1FKdal-JBcTUM-X0ax134konYyTaKxYiiQ/exec';
+
+const $ = id => document.getElementById(id);
+let ME = null, stream = null, scanning = false, rafId = null;
+
+try { ME = JSON.parse(localStorage.getItem('mayaStaff') || 'null'); } catch (e) { ME = null; }
+
+function show(which) {
+  ['scrLogin','scrHome','scrScan','scrDone'].forEach(id => $(id).classList.toggle('on', id === which));
+}
+function say(id, text, bad) {
+  const el = $(id); el.className = 'msg' + (text ? (bad ? ' bad' : ' good') : ''); el.textContent = text || '';
+}
+async function call(method, body) {
+  const r = await fetch(EXEC + '?method=' + method, {
+    method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body || {})
+  });
+  if (!r.ok) throw new Error('No connection. Try again in a moment.');
+  const d = await r.json();
+  if (!d.success) throw new Error(d.error || 'Something went wrong');
+  return d;
+}
+
+// ── sign in ──────────────────────────────────────────────────
+async function doLogin() {
+  const empId = $('lId').value.trim().toUpperCase(), pin = $('lPin').value.trim();
+  if (!empId || !pin) { say('lMsg', 'Enter your ID and PIN.', true); return; }
+  const btn = $('lBtn'); btn.disabled = true; btn.textContent = 'Checking…';
+  try {
+    const d = await call('loginStaffKiosk', { empId: empId, pin: pin });
+    ME = { empId: d.id, pin: pin, name: d.name };
+    localStorage.setItem('mayaStaff', JSON.stringify(ME));
+    say('lMsg', ''); home();
+  } catch (err) { say('lMsg', err.message, true); }
+  finally { btn.disabled = false; btn.textContent = 'Sign in'; }
+}
+function home() {
+  $('hName').textContent = ME.name || ME.empId;
+  $('hId').textContent = ME.empId;
+  say('hMsg', '');
+  show('scrHome');
+}
+function signOut() {
+  localStorage.removeItem('mayaStaff'); ME = null;
+  $('lPin').value = ''; show('scrLogin');
+}
+
+// ── scanning ─────────────────────────────────────────────────
+async function startScan() {
+  show('scrScan'); say('sMsg', '');
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' } }, audio: false
+    });
+  } catch (e) {
+    say('sMsg', 'The camera is blocked. If you opened this from WhatsApp, open it in Chrome or Safari instead.', true);
+    return;
+  }
+  const v = $('scanVid');
+  v.srcObject = stream;
+  await v.play().catch(() => {});
+  scanning = true;
+  tick();
+}
+
+function stopScan() {
+  scanning = false;
+  if (rafId) cancelAnimationFrame(rafId);
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+}
+
+// One frame at a time, looking for a Maya code. BarcodeDetector where the
+// phone has it (most Android), jsQR everywhere else (iPhone).
+let detector = null;
+if ('BarcodeDetector' in window) {
+  try { detector = new BarcodeDetector({ formats: ['qr_code'] }); } catch (e) { detector = null; }
+}
+const canvas = document.createElement('canvas');
+
+async function tick() {
+  if (!scanning) return;
+  const v = $('scanVid');
+  if (v.readyState === v.HAVE_ENOUGH_DATA) {
+    let text = null;
+    try {
+      if (detector) {
+        const found = await detector.detect(v);
+        if (found && found.length) text = found[0].rawValue;
+      } else {
+        canvas.width = v.videoWidth; canvas.height = v.videoHeight;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+        const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const res = window.jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
+        if (res) text = res.data;
+      }
+    } catch (e) { /* keep looking */ }
+
+    if (text && text.indexOf('MAYA|') === 0) { stopScan(); sendScan(text); return; }
+  }
+  rafId = requestAnimationFrame(tick);
+}
+
+async function sendScan(payload) {
+  say('sMsg', 'Checking…');
+  try {
+    const d = await call('qrScan', { empId: ME.empId, pin: ME.pin, payload: payload });
+    $('dTick').textContent = '✓'; $('dTick').className = 'tick';
+    $('dTitle').textContent = 'Go to the terminal';
+    $('dText').textContent = d.message || 'Your stage is ready on the tablet.';
+  } catch (err) {
+    $('dTick').textContent = '!'; $('dTick').className = 'tick bad';
+    $('dTitle').textContent = 'Not accepted';
+    $('dText').textContent = err.message;
+    // A wrong PIN here means the credentials on this phone are stale.
+    if (/Employee ID or PIN/i.test(err.message)) { localStorage.removeItem('mayaStaff'); ME = null; }
+  }
+  show('scrDone');
+}
+
+// ── start ────────────────────────────────────────────────────
+if (ME && ME.empId) home(); else show('scrLogin');
+$('lPin').addEventListener('keypress', e => { if (e.key === 'Enter') doLogin(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) stopScan(); });
+</script>
+</body>
+</html>
