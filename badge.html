@@ -56,6 +56,9 @@ button:disabled{opacity:.5;}
 <!-- ── SIGN IN — once ─────────────────────────────────────────── -->
 <div class="screen on" id="scrLogin">
   <div class="head"><h1>Maya Staff</h1><p>Sign in once. Then your phone is your badge.</p></div>
+  <!-- Add to Home Screen makes this an icon on his phone, and the personal
+       link in the address means it can register itself again if the browser
+       ever forgets him. -->
   <div class="mid">
     <div><label for="lId">Employee ID</label><input id="lId" placeholder="MT-00060" autocapitalize="characters" autocomplete="off"></div>
     <div><label for="lPin">PIN</label><input id="lPin" type="password" inputmode="numeric" placeholder="Your kiosk PIN" autocomplete="off"></div>
@@ -75,27 +78,6 @@ button:disabled{opacity:.5;}
     <div class="msg" id="hMsg"></div>
   </div>
   <button class="ghost" onclick="signOut()">Sign out</button>
-</div>
-
-<!-- ── SCANNING ───────────────────────────────────────────────── -->
-<div class="screen" id="scrScan">
-  <div class="head"><h1>Scan the code</h1><p>Hold your phone up to the tablet</p></div>
-  <div class="mid">
-    <div class="scanwrap"><video id="scanVid" autoplay playsinline muted></video><div class="frame"></div></div>
-    <div class="msg" id="sMsg"></div>
-  </div>
-  <button class="ghost" onclick="stopScan(); show('scrHome')">Cancel</button>
-</div>
-
-<!-- ── RESULT ─────────────────────────────────────────────────── -->
-<div class="screen" id="scrDone">
-  <div class="big">
-    <div class="tick" id="dTick">✓</div>
-    <h2 id="dTitle">Go to the terminal</h2>
-    <p id="dText">Your stage is ready on the tablet.</p>
-  </div>
-  <div class="mid"></div>
-  <button onclick="show('scrHome')">Done</button>
 </div>
 
 <div class="foot">Maya Tex Restaurants Company</div>
@@ -125,7 +107,7 @@ let ME = null, stream = null, scanning = false, rafId = null;
 try { ME = JSON.parse(localStorage.getItem('mayaStaff') || 'null'); } catch (e) { ME = null; }
 
 function show(which) {
-  ['scrLogin','scrHome','scrScan','scrDone'].forEach(id => $(id).classList.toggle('on', id === which));
+  ['scrLogin','scrHome'].forEach(id => $(id).classList.toggle('on', id === which));
 }
 function say(id, text, bad) {
   const el = $(id); el.className = 'msg' + (text ? (bad ? ' bad' : ' good') : ''); el.textContent = text || '';
@@ -152,18 +134,38 @@ async function doLogin() {
     const d = await call('issueBadge', { empId: empId, pin: pin });
     ME = { empId: d.empId, name: d.name, secret: d.secret,
            windowSec: d.windowSec, offsetMs: d.serverNow - Date.now() };
-    localStorage.setItem('mayaStaff', JSON.stringify(ME));
+    saveMe();
     say('lMsg', '');
     home();
   } catch (err) { say('lMsg', err.message, true); }
   finally { btn.disabled = false; btn.textContent = 'Sign in'; }
 }
+// Private browsing throws here, and a man would otherwise be asked to sign
+// in every single day without ever being told why.
+function saveMe() {
+  try {
+    localStorage.setItem('mayaStaff', JSON.stringify(ME));
+    return true;
+  } catch (e) {
+    say('hMsg', 'This browser is not keeping you signed in — private mode? Open the page in a normal tab.', true);
+    return false;
+  }
+}
+
 function home() {
   $('hName').textContent = ME.name || ME.empId;
   $('hId').textContent = ME.empId;
-  say('hMsg', '');
   show('scrHome');
   startBadge();
+  // If storage did not take, the badge still works now but will not survive
+  // a restart — say so rather than let it fail silently tomorrow morning.
+  try {
+    localStorage.setItem('mayaStaffCheck', '1');
+    localStorage.removeItem('mayaStaffCheck');
+    say('hMsg', '');
+  } catch (e) {
+    say('hMsg', 'This browser will forget you when it closes — use a normal tab, not private browsing.', true);
+  }
 }
 function signOut() {
   clearInterval(TICK);
@@ -220,11 +222,35 @@ function startBadge() {
 }
 
 // ── start ────────────────────────────────────────────────────
-if (ME && ME.empId && ME.secret) home();
-else { show('scrLogin'); say('lMsg', 'Sign in once. Your phone then shows your badge, with no signal needed.'); }
+// Three ways in, in order of how little the man has to do:
+//   1. his phone already knows him — nothing at all
+//   2. he opened his personal link — registers itself, nothing typed
+//   3. neither — sign in once with ID and PIN
+async function begin() {
+  if (ME && ME.empId && ME.secret) { home(); return; }
+
+  let k = null;
+  try { k = new URLSearchParams(location.search).get('k'); } catch (e) { k = null; }
+  if (k) {
+    show('scrLogin');
+    say('lMsg', 'Setting up your badge…');
+    try {
+      const d = await call('badgeByLink', { k: k });
+      ME = { empId: d.empId, name: d.name, secret: d.secret,
+             windowSec: d.windowSec, offsetMs: d.serverNow - Date.now() };
+      saveMe();
+      say('lMsg', '');
+      home();
+      return;
+    } catch (err) { say('lMsg', err.message, true); }
+  }
+  show('scrLogin');
+  if (!k) say('lMsg', 'Sign in once. Your phone then shows your badge, with no signal needed.');
+}
+begin();
 document.addEventListener('visibilitychange', () => { if (!document.hidden && ME && ME.secret) { badgeWin = null; paintBadge(); } });
 $('lPin').addEventListener('keypress', e => { if (e.key === 'Enter') doLogin(); });
-document.addEventListener('visibilitychange', () => { if (document.hidden) stopScan(); });
+
 </script>
 </body>
 </html>
