@@ -90,7 +90,12 @@ button:disabled{opacity:.5;}
 .dot{width:10px; height:10px; border-radius:50%; background:var(--ok);}
 .dot.off{background:var(--bad);} .dot.warn{background:var(--warn);}
 .brand{position:fixed; top:14px; left:18px; font-size:13px; color:var(--muted); letter-spacing:.12em;}
-#look{position:fixed; width:2px; height:2px; opacity:0; pointer-events:none; top:0; left:0;}
+/* The camera is not shown by default — nobody wants to watch themselves all
+   day. It can be turned on while mounting the tablet, to aim it. */
+#look.preview{position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+              opacity:0; pointer-events:none; transform:scaleX(-1);}
+#look.preview.on{opacity:.85;}
+.camhint{color:var(--muted); font-size:15px; margin-bottom:14px; text-align:center;}
 
 /* The target window shown instead of the camera feed. */
 .target{
@@ -105,6 +110,8 @@ button:disabled{opacity:.5;}
 .target .tr{top:18px; right:18px; border-left:0; border-bottom:0; border-top-right-radius:16px;}
 .target .bl{bottom:18px; left:18px; border-right:0; border-top:0; border-bottom-left-radius:16px;}
 .target .br{bottom:18px; right:18px; border-left:0; border-top:0; border-bottom-right-radius:16px;}
+.target.seen{border-color:var(--teal); box-shadow:0 0 0 4px rgba(23,162,162,.25);}
+.target.seen .target-in b{color:var(--teal);}
 .target .sweep{
   position:absolute; left:8%; right:8%; height:3px; border-radius:2px;
   background:linear-gradient(90deg,transparent,var(--teal),transparent);
@@ -117,7 +124,6 @@ button:disabled{opacity:.5;}
 <body>
 
 <div class="brand">MAYA TEX</div>
-<video id="look" autoplay playsinline muted></video>
 <div class="corner"><span id="camDot" class="dot warn"></span><span id="camTxt">camera</span>
   <span id="netDot" class="dot"></span><span id="netTxt">online</span></div>
 
@@ -146,7 +152,9 @@ button:disabled{opacity:.5;}
   <!-- The target window. The camera is running behind this to read the
        badge, but nothing it sees is shown: staff should not spend the day
        watching themselves. A photograph is taken only at the punch. -->
+  <div class="camhint">The camera is up here ↑ — hold your phone about a hand's length away</div>
   <div class="target">
+    <video id="look" autoplay playsinline muted class="preview"></video>
     <i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
     <div class="sweep"></div>
     <div class="target-in">
@@ -160,6 +168,8 @@ button:disabled{opacity:.5;}
   <div class="loc" id="idleLoc">—</div>
   <div class="hint">Open Maya Staff on your phone and hold it up</div>
   <div class="msg" id="idleMsg"></div>
+  <button class="ghost" id="previewBtn" onclick="togglePreview()"
+          style="width:auto;padding:8px 14px;font-size:13px;margin-top:14px">Show camera</button>
 </div>
 
 <!-- ── GREETING + STAGES ──────────────────────────────────────── -->
@@ -277,10 +287,20 @@ const workCanvas = document.createElement('canvas');
 async function startCamera() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 960 } }, audio: false
+      video: { facingMode: 'user', width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false
     });
     $('look').srcObject = stream;
     await $('look').play().catch(() => {});
+    // Ask for continuous focus where the tablet supports it. A fixed-focus
+    // camera cannot read anything held right against the glass, which is why
+    // the screen tells people to stand back a little.
+    try {
+      const track = stream.getVideoTracks()[0];
+      const caps = track.getCapabilities ? track.getCapabilities() : {};
+      const want = [];
+      if (caps.focusMode && caps.focusMode.indexOf('continuous') > -1) want.push({ focusMode: 'continuous' });
+      if (want.length) await track.applyConstraints({ advanced: want });
+    } catch (e) { /* older tablet: nothing to do */ }
     camReady = true;
     $('camDot').className = 'dot'; $('camTxt').textContent = 'camera';
   } catch (e) {
@@ -303,17 +323,36 @@ async function loop() {
         const found = await detector.detect(v);
         if (found && found.length) text = found[0].rawValue;
       } else {
-        workCanvas.width = v.videoWidth; workCanvas.height = v.videoHeight;
+        // Only the middle of the picture, at full resolution: a phone screen
+        // held up fills a small part of the frame, and scaling the whole
+        // 1080p image down throws away the very detail we need.
+        const side = Math.floor(Math.min(v.videoWidth, v.videoHeight) * 0.7);
+        const sx = Math.floor((v.videoWidth - side) / 2), sy = Math.floor((v.videoHeight - side) / 2);
+        workCanvas.width = side; workCanvas.height = side;
         const ctx = workCanvas.getContext('2d', { willReadFrequently: true });
-        ctx.drawImage(v, 0, 0, workCanvas.width, workCanvas.height);
-        const img = ctx.getImageData(0, 0, workCanvas.width, workCanvas.height);
-        const res = window.jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
+        ctx.drawImage(v, sx, sy, side, side, 0, 0, side, side);
+        const img = ctx.getImageData(0, 0, side, side);
+        const res = window.jsQR(img.data, img.width, img.height, { inversionAttempts: 'attemptBoth' });
         if (res) text = res.data;
       }
     } catch (e) { /* keep looking */ }
-    if (text && text.indexOf('MAYA2|') === 0) readBadge(text);
+    if (text) {
+      flashSeen();                                   // aimed correctly — say so
+      if (text.indexOf('MAYA2|') === 0) readBadge(text);
+    }
   }
   rafId = requestAnimationFrame(loop);
+}
+
+// Any QR at all, valid or not, lights the frame. Without this a man has no
+// way of knowing whether the camera can even see his phone.
+let flashUntil = 0;
+function flashSeen() {
+  const t = document.querySelector('.target');
+  if (!t) return;
+  flashUntil = Date.now() + 700;
+  t.classList.add('seen');
+  setTimeout(() => { if (Date.now() >= flashUntil) t.classList.remove('seen'); }, 720);
 }
 
 // One call: who is he, and which stage is he at.
@@ -426,11 +465,21 @@ function grabFrame() {
   } catch (e) { return null; }
 }
 
+function togglePreview() {
+  const v = $('look'), on = !v.classList.contains('on');
+  v.classList.toggle('on', on);
+  $('previewBtn').textContent = on ? 'Hide camera' : 'Show camera';
+  try { localStorage.setItem('mayaTerminalPreview', on ? '1' : '0'); } catch (e) {}
+}
+
 // ── start ────────────────────────────────────────────────────
 async function startTerminal() {
   $('idleLoc').textContent = TERM.location;
   show('scrIdle');
   await startCamera();
+  try {
+    if (localStorage.getItem('mayaTerminalPreview') === '1') togglePreview();
+  } catch (e) {}
   startLooking();
   // Keep the screen awake if the tablet allows it.
   try { if ('wakeLock' in navigator) navigator.wakeLock.request('screen').catch(() => {}); } catch (e) {}
