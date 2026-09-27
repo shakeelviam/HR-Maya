@@ -14,7 +14,13 @@
 // ============================================================
 
 (function () {
-  const EXEC_URL = 'https://script.google.com/macros/s/AKfycbyG5XLC79FnyLtSGGWunhJwU83SV0b0kz3y1FKdal-JBcTUM-X0ax134konYyTaKxYiiQ/exec';
+  // The endpoint lives in config.js and nowhere else. /dev only ever answers
+  // the script owner, so it is coerced to /exec the way api.js does.
+  const execUrl = () => {
+    const u = (typeof CONFIG !== 'undefined' && CONFIG && CONFIG.API_URL) ? String(CONFIG.API_URL) : '';
+    if (!u) throw new Error('config.js is missing — API_URL not set');
+    return u.replace('/dev', '/exec');
+  };
   const SUBMITTED = 'Submitted';          // an agent's own submission, waiting for HR
   const STAGES = ['Selected', 'Visa Issued', 'Travelling', 'Arrived', 'Employee'];
   const OTHER  = ['On Hold', 'Cancelled'];
@@ -25,12 +31,12 @@
   let CAND = [], AGENCIES = [], FILTER = '';
 
   async function callApi(qs) {
-    const r = await fetch(EXEC_URL + '?' + qs + '&_=' + Date.now(), { cache: 'no-store' });
+    const r = await fetch(execUrl() + '?' + qs + '&_=' + Date.now(), { cache: 'no-store' });
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const d = await r.json(); if (!d.success) throw new Error(d.error || 'error'); return d;
   }
   async function callPost(method, body) {
-    const r = await fetch(EXEC_URL + '?method=' + method, {
+    const r = await fetch(execUrl() + '?method=' + method, {
       method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) });
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const d = await r.json(); if (!d.success) throw new Error(d.error || 'error'); return d;
@@ -165,11 +171,20 @@
       const wrap = document.getElementById('rcTableWrap'); if (!wrap) return;
       const rows = FILTER ? CAND.filter(r => String(r['Status']).trim() === FILTER) : CAND;
       if (!rows.length) { wrap.innerHTML = '<div class="text-muted small">No candidates' + (FILTER ? ' at ' + esc(FILTER) : '') + '.</div>'; return; }
-      // A submission's next step is Selected — that is HR accepting them.
-      const nextOf = (st) => {
-        if (st === SUBMITTED) return STAGES[0];
-        const i = STAGES.indexOf(st);
-        return (i > -1 && i < STAGES.length - 2) ? STAGES[i + 1] : '';
+      // Every stage a candidate can be put at, in the order they happen.
+      // A dropdown, not a one-way button: a man's visa gets cancelled, a
+      // ticket falls through, somebody clicks the wrong thing — all of it
+      // needs to go backwards as easily as forwards.
+      const PICKABLE = [SUBMITTED].concat(STAGES.filter(x => x !== 'Employee')).concat(OTHER);
+      const stagePicker = (r, st) => {
+        if (st === 'Employee') {
+          return '<span class="badge bg-success">Employee</span>' +
+                 '<div class="text-muted small">' + esc(r['Employee ID'] || '') + '</div>';
+        }
+        return '<select class="form-select form-select-sm rc-stage" data-id="' + esc(r['Candidate ID']) + '"' +
+               ' data-current="' + esc(st) + '" style="min-width:130px">' +
+          PICKABLE.map(x => '<option' + (x === st ? ' selected' : '') + '>' + esc(x) + '</option>').join('') +
+          '</select>';
       };
       wrap.innerHTML =
         '<table class="table table-sm align-middle"><thead><tr>' +
@@ -178,16 +193,14 @@
         '</tr></thead><tbody>' +
         rows.map(r => {
           const st = String(r['Status'] || '').trim();
-          const nxt = nextOf(st);
-          const dates = [['Sel', r['Selected On']], ['Visa', r['Visa Issued On']], ['Travel', r['Travel Date']],
+          const dates =[['Sel', r['Selected On']], ['Visa', r['Visa Issued On']], ['Travel', r['Travel Date']],
                          ['Arr', r['Arrived On']], ['Join', r['Joined On']]]
             .filter(x => x[1]).map(x => x[0] + ' ' + esc(x[1])).join(' · ');
+          // Convert is the only thing that is not a stage change: it creates
+          // the HR Maya row, so it stays a deliberate button.
           let action = '';
-          if (st === 'Employee') action = '<span class="badge bg-success">' + esc(r['Employee ID'] || 'Employee') + '</span>';
-          else if (st === 'Arrived') action = '<button class="btn btn-success btn-sm" onclick="app.convertCandidate(\'' + r['Candidate ID'] + '\')"><i class="bi bi-person-check"></i> Convert</button>';
-          else if (nxt) action = '<button class="btn btn-outline-primary btn-sm" onclick="app.moveCandidate(\'' + r['Candidate ID'] + '\',\'' + nxt + '\')">→ ' + esc(nxt) + '</button>';
-          const more = (st !== 'Employee')
-            ? ' <button class="btn btn-outline-secondary btn-sm" onclick="app.holdCandidate(\'' + r['Candidate ID'] + '\')" title="On hold / cancel"><i class="bi bi-three-dots"></i></button>' : '';
+          if (st === 'Arrived') action = '<button class="btn btn-success btn-sm" onclick="app.convertCandidate(\'' + r['Candidate ID'] + '\')"><i class="bi bi-person-check"></i> Convert</button>';
+          else if (st === 'Employee') action = '<span class="text-muted small">on the payroll</span>';
           return '<tr>' +
             '<td class="small">' + esc(r['Candidate ID']) + '</td>' +
             '<td><b>' + esc(r['Name (English)']) + '</b><div class="text-muted small">' + esc(r['Nationality'] || '') + (r['Mobile / WhatsApp'] ? ' · ' + esc(r['Mobile / WhatsApp']) : '') + '</div></td>' +
@@ -198,7 +211,7 @@
                 (r['Experience (years)'] ? r['Experience (years)'] + ' yrs' : ''),
                 r['Languages']].filter(Boolean).join(' · ')) + '</div></td>' +
             '<td class="small">' + esc(r['Agency'] || r['Agency ID'] || '—') + '</td>' +
-            '<td><span class="badge bg-' + (STAGE_COLOR[st] || 'secondary') + '">' + esc(st) + '</span></td>' +
+            '<td>' + stagePicker(r, st) + '</td>' +
             '<td class="small text-muted">' + (dates || '—') + '</td>' +
             '<td class="small">' + esc(r['Remark'] || '') +
               // What the agent attached, if anything.
@@ -207,9 +220,16 @@
                   (r['Photo'] ? '<a href="' + esc(r['Photo']) + '" target="_blank" rel="noopener">Photo</a> ' : '') +
                   (r['CV'] ? '<a href="' + esc(r['CV']) + '" target="_blank" rel="noopener">CV</a>' : '') + '</div>'
                 : '') + '</td>' +
-            '<td class="text-end text-nowrap">' + action + more + '</td>' +
+            '<td class="text-end text-nowrap">' + action + '</td>' +
           '</tr>';
         }).join('') + '</tbody></table>';
+
+      // Changing the dropdown IS the action — no second click to confirm.
+      wrap.querySelectorAll('.rc-stage').forEach(sel => {
+        sel.addEventListener('change', function () {
+          app.setStage(this.getAttribute('data-id'), this.value, this.getAttribute('data-current'), this);
+        });
+      });
     }
 
     app.addCandidate = async function () {
@@ -227,6 +247,34 @@
         ['rcName', 'rcPassport', 'rcMobile', 'rcRemark'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
         app.loadRecruitment();
       } catch (err) { say('rcAddStatus', esc(err.message), true); }
+    };
+
+    // Any stage, any direction. The date is only asked for where the sheet
+    // keeps one for that stage; On Hold and Cancelled ask for the reason.
+    const STAGE_DATE = { 'Selected': 'Selected on', 'Visa Issued': 'Visa issued on',
+                         'Travelling': 'Travel date', 'Arrived': 'Arrived on' };
+    app.setStage = async function (id, stage, current, el) {
+      if (stage === current) return;
+      const body = { candidateId: id, status: stage };
+
+      if (STAGE_DATE[stage]) {
+        const when = prompt(STAGE_DATE[stage] + '? (dd-mm-yyyy)', isoToDd(todayIso()));
+        if (when === null) { if (el) el.value = current; return; }          // cancelled — put it back
+        body.date = String(when).trim();
+      } else if (stage === 'On Hold' || stage === 'Cancelled') {
+        const why = prompt(stage + ' — reason (optional):', '');
+        if (why === null) { if (el) el.value = current; return; }
+        if (String(why).trim()) body.note = String(why).trim();
+      }
+
+      if (el) el.disabled = true;
+      try {
+        const d = await callPost('setCandidateStage', body);
+        say('rcStatus', esc(d.message)); app.loadRecruitment();
+      } catch (err) {
+        say('rcStatus', esc(err.message), true);
+        if (el) { el.value = current; el.disabled = false; }               // leave the row as it was
+      }
     };
 
     app.moveCandidate = async function (id, stage) {
