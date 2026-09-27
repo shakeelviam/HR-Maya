@@ -22,30 +22,59 @@
 // ============================================================
 
 (function () {
-  const EXEC_URL = 'https://script.google.com/macros/s/AKfycbyG5XLC79FnyLtSGGWunhJwU83SV0b0kz3y1FKdal-JBcTUM-X0ax134konYyTaKxYiiQ/exec';
+  // The endpoint lives in config.js and nowhere else. /dev only ever answers
+  // the script owner, so it is coerced to /exec the way api.js does.
+  const execUrl = () => {
+    const u = (typeof CONFIG !== 'undefined' && CONFIG && CONFIG.API_URL) ? String(CONFIG.API_URL) : '';
+    if (!u) throw new Error('config.js is missing — API_URL not set');
+    return u.replace('/dev', '/exec');
+  };
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
       .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
   function toDdMmYyyy(iso) { if (!iso) return ''; const [y, m, d] = iso.split('-'); return d + '-' + m + '-' + y; }
+  // The sheet keeps dd-mm-yyyy; <input type="date"> only speaks yyyy-mm-dd.
+  function toIso(dd) {
+    const m = String(dd || '').trim().match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+    if (!m) return '';
+    return m[3] + '-' + String(m[2]).padStart(2, '0') + '-' + String(m[1]).padStart(2, '0');
+  }
+  function daysBetween(isoA, isoB) {
+    if (!isoA || !isoB) return 0;
+    const n = Math.round((new Date(isoB) - new Date(isoA)) / 86400000) + 1;
+    return n > 0 ? n : 0;
+  }
   function adminEmail() { const el = document.getElementById('userEmail'); return el && el.innerText && el.innerText !== 'Loading...' ? el.innerText.trim() : 'Dashboard'; }
 
   async function callApi(qs) {
     // One auto-retry for Apps Script cold-start (transient 404/network).
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        const res = await fetch(EXEC_URL + '?' + qs + '&_=' + Date.now(), { cache: 'no-store' });
+        const res = await fetch(execUrl() + '?' + qs + '&_=' + Date.now(), { cache: 'no-store' });
         if (!res.ok) throw new Error('HTTP ' + res.status);
         const d = await res.json(); if (!d.success) throw new Error(d.error || 'Unknown error'); return d;
       } catch (e) { if (attempt === 1) throw e; await new Promise(r => setTimeout(r, 800)); }
     }
   }
+  // Same POST, but a refusal comes back as data instead of an exception.
+  // Amending needs that: the overlap guard answers with success:false AND an
+  // overlaps list, and the user has to be able to see it and decide.
+  async function postRaw(method, body) {
+    const res = await fetch(execUrl() + '?method=' + method, {
+      method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return await res.json();
+  }
+
   // Decisions go by POST: a bulk approve can carry more ids than a URL should.
   async function postApi(method, body) {
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        const res = await fetch(EXEC_URL + '?method=' + method, {
+        const res = await fetch(execUrl() + '?method=' + method, {
           method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify(body)
         });
@@ -196,6 +225,7 @@
     app.LRQ = '';             // search text
     app.LRTYPE = '';          // type filter
     app.LRSEL = {};           // ticked grant ids
+    app.LREDIT = null;        // grant id currently open for editing
 
     // ══════════════════ Request Leave ══════════════════
     app.loadGrantPage = async function () {
@@ -319,7 +349,7 @@
       const wrap = document.getElementById('lrTableWrap');
       if (!wrap) return;
       wrap.innerHTML = '<div class="text-muted small">Loading…</div>';
-      app.LRSEL = {};
+      app.LRSEL = {}; app.LREDIT = null;
       try {
         app.LREG = await callApi('method=getLeaveRegister');
         app.renderLeaveTypeFilter();
@@ -383,6 +413,7 @@
 
       const body = rows.map(r => {
         const st = String(r.status).toLowerCase();
+        if (app.LREDIT === r.grantId) return editRowHtml(r, st);
         const cls = STATUS_CLASS[st] || 'bg-danger';
         const when = r.inProgress ? ' <span class="badge bg-info text-dark">in progress</span>'
                    : r.startsInFuture ? ' <span class="text-muted small">upcoming</span>' : '';
@@ -390,7 +421,13 @@
         const acts = [];
         if (r.canApprove) acts.push('<button class="btn btn-success btn-sm me-1" onclick="app.lrDecide(\'approve\',\'' + esc(r.grantId) + '\')"><i class="bi bi-check2"></i> Approve</button>');
         if (r.canReject)  acts.push('<button class="btn btn-outline-danger btn-sm me-1" onclick="app.lrDecide(\'reject\',\'' + esc(r.grantId) + '\')">Reject</button>');
-        if (r.canCancel && st === 'approved') acts.push('<button class="btn btn-outline-secondary btn-sm" onclick="app.lrDecide(\'cancel\',\'' + esc(r.grantId) + '\')">Cancel</button>');
+        if (r.canCancel && st === 'approved') acts.push('<button class="btn btn-outline-secondary btn-sm me-1" onclick="app.lrDecide(\'cancel\',\'' + esc(r.grantId) + '\')">Cancel</button>');
+        // Dates change after the fact — a flight moves, a man comes back
+        // early. Editable while the leave is live, which includes Approved.
+        if (st === 'pending approval' || st === 'approved') {
+          acts.push('<button class="btn btn-outline-primary btn-sm" title="Change the dates or the type" ' +
+            'onclick="app.lrEdit(\'' + esc(r.grantId) + '\')"><i class="bi bi-pencil"></i> Edit</button>');
+        }
         const tick = r.canApprove
           ? '<input type="checkbox" class="form-check-input lr-tick" data-gid="' + esc(r.grantId) + '"' + (app.LRSEL[r.grantId] ? ' checked' : '') + '>'
           : '';
@@ -418,7 +455,99 @@
         if (this.checked) app.LRSEL[this.dataset.gid] = true; else delete app.LRSEL[this.dataset.gid];
         app.renderBulkBar();
       }));
+
+      // Live day count while the dates are being changed, so nobody has to
+      // count on their fingers before saving.
+      const ed = wrap.querySelector('tr.lr-editing');
+      if (ed) {
+        const s = ed.querySelector('.lre-start'), e = ed.querySelector('.lre-end'), d = ed.querySelector('.lre-days');
+        const calc = () => { const n = daysBetween(s.value, e.value); d.innerHTML = n ? '<b>' + n + '</b>' : '<span class="text-danger">—</span>'; };
+        s.addEventListener('change', calc); e.addEventListener('change', calc);
+        setTimeout(() => { try { s.focus(); } catch (x) {} }, 0);
+      }
       app.renderBulkBar();
+    };
+
+    // ── Amending a leave that is already on the books ────────────────────
+    // The row turns into its own little form: type is a dropdown, the dates
+    // are real date pickers, the day count follows along. Saving moves only
+    // the difference in balance and rebuilds attendance across both the old
+    // and the new range, so a shortened leave gives the days back and the
+    // days it no longer covers stop being leave.
+    function editRowHtml(r, st) {
+      const types = (app.LREG && app.LREG.data ? app.LREG.data : []).reduce((a, x) => { if (x.type) a[x.type] = true; return a; }, {});
+      types[r.type] = true;
+      const typeOpts = Object.keys(types).sort()
+        .map(t => '<option' + (t === r.type ? ' selected' : '') + '>' + esc(t) + '</option>').join('');
+      const cls = STATUS_CLASS[st] || 'bg-danger';
+      return '<tr class="lr-editing table-warning" data-gid="' + esc(r.grantId) + '">' +
+        '<td></td>' +
+        '<td><b>' + esc(r.name) + '</b><br><span class="text-muted small">' + esc(r.empId) + '</span></td>' +
+        '<td><select class="form-select form-select-sm lre-type" style="min-width:130px">' + typeOpts + '</select></td>' +
+        '<td style="white-space:nowrap">' +
+          '<input type="date" class="form-control form-control-sm lre-start mb-1" value="' + esc(toIso(r.start)) + '" style="min-width:140px">' +
+          '<input type="date" class="form-control form-control-sm lre-end" value="' + esc(toIso(r.end)) + '" style="min-width:140px">' +
+        '</td>' +
+        '<td class="text-end lre-days"><b>' + esc(r.days) + '</b></td>' +
+        '<td><span class="badge ' + cls + '">' + esc(r.status) + '</span></td>' +
+        '<td colspan="2" class="small text-muted">' +
+          (st === 'approved'
+            ? 'Approved leave. Saving rewrites the attendance rows for the old dates and the new ones, and moves only the difference in balance.'
+            : 'Still pending. Saving only changes the request.') +
+        '</td>' +
+        '<td class="text-end" style="white-space:nowrap">' +
+          '<button class="btn btn-primary btn-sm me-1" onclick="app.lrSaveEdit(\'' + esc(r.grantId) + '\')"><i class="bi bi-check2"></i> Save</button>' +
+          '<button class="btn btn-link btn-sm" onclick="app.lrCancelEdit()">Cancel</button>' +
+        '</td>' +
+        '</tr>';
+    }
+
+    app.lrEdit = function (grantId) { app.LREDIT = grantId; app.renderLeaveRegister(); };
+    app.lrCancelEdit = function () { app.LREDIT = null; app.renderLeaveRegister(); };
+
+    app.lrSaveEdit = async function (grantId) {
+      const tr = document.querySelector('tr.lr-editing[data-gid="' + grantId + '"]');
+      if (!tr) return;
+      const r = (app.LREG.data.find(x => x.grantId === grantId)) || {};
+      const type = tr.querySelector('.lre-type').value;
+      const startIso = tr.querySelector('.lre-start').value;
+      const endIso = tr.querySelector('.lre-end').value;
+      if (!startIso || !endIso) { alert('Both dates are needed.'); return; }
+      if (new Date(endIso) < new Date(startIso)) { alert('End date is before the start date.'); return; }
+      const days = daysBetween(startIso, endIso);
+      const unchanged = (type === r.type) && (toIso(r.start) === startIso) && (toIso(r.end) === endIso);
+      if (unchanged) { app.lrCancelEdit(); return; }
+
+      const what = r.name + ': ' + r.type + ' ' + r.start + ' → ' + r.end + ' (' + r.days + ' days)\n' +
+                   'becomes ' + type + ' ' + toDdMmYyyy(startIso) + ' → ' + toDdMmYyyy(endIso) + ' (' + days + ' days)';
+      if (!confirm(what + '\n\nSave this change?')) return;
+      const note = prompt('Why is it changing? (recorded against the leave)', '');
+      if (note === null) return;
+
+      const btn = tr.querySelector('button');
+      btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+      const body = { grantId: grantId, type: type, start: toDdMmYyyy(startIso), end: toDdMmYyyy(endIso),
+                     by: adminEmail(), note: note };
+      try {
+        let d = await postRaw('amendLeaveGrant', body);
+        // The overlap guard is a refusal with the clashing leaves attached.
+        // Show them and let the decision be made, rather than hiding it.
+        if (!d.success && d.overlaps && d.overlaps.length) {
+          if (confirm(d.error + '\n\nSave it anyway?')) {
+            body.force = true;
+            d = await postRaw('amendLeaveGrant', body);
+          } else {
+            btn.disabled = false; btn.innerHTML = '<i class="bi bi-check2"></i> Save'; return;
+          }
+        }
+        if (!d.success) throw new Error(d.error || 'Unknown error');
+        app.LREDIT = null;
+        alert(d.message);
+        app.loadLeaveRegister();
+      } catch (err) {
+        alert(err.message);
+        btn.disabled = false; btn.innerHTML = '<i class="bi bi-check2"></i> Save';
+      }
     };
 
     app.renderBulkBar = function () {
