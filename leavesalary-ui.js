@@ -17,7 +17,7 @@
 //
 // Backend: getLeaveSalaryList, payLeaveSalary, cancelLeaveSalary,
 //          getLeaveSalaryHistory, generateLeaveSalaryVoucher,
-//          reprintLeaveSalaryVoucher, setLeaveTicketAmount
+//          setLeaveTicketAmount
 // ============================================================
 
 (function () {
@@ -370,36 +370,90 @@
       });
     };
 
+    // Paying is three separate stages and they must stay separate.
+    // Before the money is written, any error means nothing happened and we
+    // stop. After it is written, NOTHING below may make it look as though
+    // the payment failed — a voucher that will not print is a printing
+    // problem, and the man has still been paid.
     app.lsPay = async function () {
       const items = app.lsItems(false);
       if (!items.length) return;
       say('');
-      try {
-        // Ask the backend first — it is the one that decides the figures.
-        const pv = await postApi('payLeaveSalary', { items: items, by: adminEmail(), preview: true });
-        const lines = pv.paid.map(p => '  ' + p.name + '   ' + p.paidFrom + ' → ' + p.paidTo +
-          '   ' + p.daysPaid + 'd' + (p.lessDays ? ' less ' + p.lessDays + 'd' : '') +
-          (p.otherDeduction ? ' less KD ' + kd(p.otherDeduction) + (p.deductionNote ? ' (' + p.deductionNote + ')' : '') : '') +
-          (p.ticket ? ' + ticket' : '') + '   KD ' + kd(p.net)).join('\n');
-        const skipped = pv.refused && pv.refused.length ? '\n\nSkipped:\n' + pv.refused.join('\n') : '';
-        if (!confirm('Pay ' + pv.count + ' leave salary payment(s), KD ' + kd(pv.total) + ' in total?\n\n' +
-                     lines + skipped + '\n\nThis is paid outside payroll and cannot be undone except by cancelling the voucher.')) return;
 
-        const d = await postApi('payLeaveSalary', { items: items, by: adminEmail() });
-        say(esc(d.message));
-        app.LSSEL = {};
-        // Print what was just paid.
-        const nos = d.paid.map(p => p.voucherNo);
-        if (nos.length) {
-          const v = await postApi('reprintLeaveSalaryVoucher', { voucherNos: nos });
-          if (v.vouchers && v.vouchers.length) {
-            say(esc(d.message) + '<div class="mt-2">' + v.vouchers.map(x =>
-              '<a class="btn btn-sm btn-outline-primary me-1 mb-1" target="_blank" rel="noopener" href="' + esc(x.url) + '">' +
-              '<i class="bi bi-file-earmark-pdf"></i> ' + esc(x.voucherNo) + '</a>').join('') + '</div>');
-          }
-        }
+      // ── Stage 1: what would be paid. Nothing is written yet. ──────────
+      let pv;
+      try {
+        pv = await postApi('payLeaveSalary', { items: items, by: adminEmail(), preview: true });
+      } catch (err) { say(esc(err.message), true); return; }
+
+      const rows = Array.isArray(pv.paid) ? pv.paid : [];
+      const refused = Array.isArray(pv.refused) ? pv.refused : [];
+      if (!rows.length) {
+        say('Nothing can be paid.' + (refused.length
+          ? '<ul class="mb-0 mt-1 small">' + refused.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>'
+          : ''), true);
+        return;
+      }
+
+      const lines = rows.map(p => '  ' + p.name + '   ' + p.paidFrom + ' → ' + p.paidTo +
+        '   ' + p.daysPaid + 'd' + (p.lessDays ? ' less ' + p.lessDays + 'd' : '') +
+        (p.otherDeduction ? ' less KD ' + kd(p.otherDeduction) + (p.deductionNote ? ' (' + p.deductionNote + ')' : '') : '') +
+        (p.ticket ? ' + ticket' : '') + '   KD ' + kd(p.net)).join('\n');
+      const skipped = refused.length ? '\n\nSkipped:\n' + refused.join('\n') : '';
+      if (!confirm('Pay ' + rows.length + ' leave salary payment(s), KD ' + kd(pv.total) + ' in total?\n\n' +
+                   lines + skipped + '\n\nThis is paid outside payroll and cannot be undone except by cancelling the voucher.')) return;
+
+      // ── Stage 2: the payment. If this throws, nothing was written. ────
+      let d;
+      try {
+        d = await postApi('payLeaveSalary', { items: items, by: adminEmail() });
+      } catch (err) { say(esc(err.message), true); return; }
+
+      app.LSSEL = {};
+      const nos = (Array.isArray(d.paid) ? d.paid : [])
+                    .map(p => (p && p.voucherNo) ? String(p.voucherNo) : '')
+                    .filter(Boolean);
+      const turned = Array.isArray(d.refused) ? d.refused : [];
+
+      // The backend can accept the request and still pay nobody — every man
+      // refused for a reason it knows and the screen does not. Say the
+      // reason. Never print, and never leave it looking like a payment.
+      if (!nos.length) {
+        say('<b>Nothing was paid.</b>' + (turned.length
+          ? '<ul class="mb-0 mt-1 small">' + turned.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>'
+          : ' ' + esc(d.message)), true);
         app.loadLeaveSalary();
-      } catch (err) { say(esc(err.message), true); }
+        return;
+      }
+
+      // From here the money IS recorded in the log.
+      say(esc(d.message));
+
+      // ── Stage 3: the vouchers. One at a time, by voucher number, so a
+      // voucher that fails cannot take the rest of them down with it. ──
+      const ok = [], bad = [];
+      for (let i = 0; i < nos.length; i++) {
+        try {
+          const v = await callApi('method=generateLeaveSalaryVoucher&voucherNo=' + encodeURIComponent(nos[i]));
+          if (v && v.url) ok.push({ voucherNo: nos[i], url: v.url }); else bad.push(nos[i]);
+        } catch (e) { bad.push(nos[i]); }
+      }
+
+      let html = esc(d.message);
+      if (ok.length) {
+        html += '<div class="mt-2">' + ok.map(x =>
+          '<a class="btn btn-sm btn-outline-primary me-1 mb-1" target="_blank" rel="noopener" href="' + esc(x.url) + '">' +
+          '<i class="bi bi-file-earmark-pdf"></i> ' + esc(x.voucherNo) + '</a>').join('') + '</div>';
+      }
+      if (bad.length) {
+        html += '<div class="mt-2 small text-danger"><b>Paid, but the voucher did not print.</b> ' +
+                'The payment is recorded — do not pay again. Press to try printing:</div>' +
+                '<div class="mt-1">' + bad.map(no =>
+                  '<button class="btn btn-sm btn-outline-danger me-1 mb-1" onclick="app.lsPrint(\'' + esc(no) + '\')">' +
+                  '<i class="bi bi-printer"></i> ' + esc(no) + '</button>').join('') + '</div>';
+      }
+      say(html);
+      app.loadLeaveSalary();
     };
 
     app.lsSettle = async function () {
@@ -468,11 +522,19 @@
       }
     };
 
+    // The window is opened on the click itself, before the wait, or the
+    // browser treats it as a pop-up and blocks it.
     app.lsPrint = async function (voucherNo) {
+      const w = window.open('', '_blank');
+      if (w) { try { w.opener = null; } catch (e) {} }
       try {
         const d = await callApi('method=generateLeaveSalaryVoucher&voucherNo=' + encodeURIComponent(voucherNo));
-        window.open(d.url, '_blank', 'noopener');
-      } catch (err) { alert(err.message); }
+        if (!d || !d.url) throw new Error('No voucher file came back.');
+        if (w) w.location.href = d.url; else window.open(d.url, '_blank');
+      } catch (err) {
+        if (w) { try { w.close(); } catch (e) {} }
+        alert(err.message);
+      }
     };
 
     app.lsCancel = async function (voucherNo) {
