@@ -207,23 +207,45 @@ async function doTodayDayOff() {
 }
 
 // ── Update my documents ──────────────────────────────────────────────
-// The staff document form. The name goes on the link so the man does not
-// have to find himself in a list of 68 — the form opens on his own
-// confirmation screen. Employee ID rides along for the form to use when
-// it is wired into HR Maya directly.
+// The staff document form. The man signed in here with his Employee ID
+// and PIN, so the kiosk already knows who he is. It asks the backend for
+// a signed half-hour link and passes it along, and the form then opens
+// on HIS page — his own documents, and which of them have run out —
+// instead of making him find himself in a list of 68 names.
 const DOCS_UPDATE_URL = 'https://shakeelviam.github.io/maya-tex-docs/';
-function openDocsUpdate() {
+async function openDocsUpdate() {
     const nameEl = document.getElementById('kioskEmpName');
     const name = nameEl ? String(nameEl.innerText || '').trim() : '';
-    let url = DOCS_UPDATE_URL;
     const q = [];
     if (name && name.toLowerCase() !== 'welcome') q.push('name=' + encodeURIComponent(name));
     if (currentEmpId) q.push('id=' + encodeURIComponent(currentEmpId));
-    if (q.length) url += '?' + q.join('&');
-    // New tab so the kiosk session stays open behind it; if the tablet
-    // blocks pop-ups, go there in this tab instead.
-    const w = window.open(url, '_blank', 'noopener');
-    if (!w) window.location.href = url;
+
+    // The tab is opened HERE, empty, while we are still inside the tap.
+    // A window.open after an await is no longer part of the tap and phones
+    // block it as a pop-up — so the tab is taken first and pointed at the
+    // form once the signed link comes back. That way the signature is only
+    // ever fetched when somebody actually presses this button, instead of
+    // on every single login by every man, several times a day.
+    //
+    // NOT 'noopener' here: that flag makes window.open return null by
+    // design, and then there is no tab left to point anywhere. The link
+    // it protects against is cut by hand instead, on the line below.
+    const w = window.open('', '_blank');
+    if (w) {
+        try { w.opener = null; } catch (e) {}          // same as noopener would have done
+        try { w.document.write('Opening your documents…'); } catch (e) {}
+    }
+
+    if (currentEmpId) {
+        try {
+            const r = await gsRequest('makeMyDocsLink', { empId: currentEmpId });
+            if (r && r.success && r.t) q.push('t=' + encodeURIComponent(r.t));
+        } catch (e) { /* the form falls back to its own name search */ }
+    }
+
+    const url = DOCS_UPDATE_URL + (q.length ? '?' + q.join('&') : '');
+    // If the tab was blocked, behave exactly as the kiosk always has.
+    if (w) w.location.href = url; else window.location.href = url;
 }
 
 // Tap "No — Check In" on the Day Off screen
