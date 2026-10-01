@@ -55,13 +55,52 @@
 
   /* Chrome: progress, counter, notes */
   #bar { position: fixed; left: 0; top: 0; height: 4px; background: #C4622D; width: 0; transition: width 180ms ease; }
+
+  #nav {
+    position: fixed; right: 16px; bottom: 14px;
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(17,29,36,0.92);
+    border: 1px solid #2C3C46;
+    border-radius: 26px;
+    padding: 5px 7px;
+  }
+  #nav button {
+    appearance: none; -webkit-appearance: none;
+    font: inherit; font-size: 15px; line-height: 1;
+    color: #D7E2E9; background: #223139;
+    border: 1px solid #33454F; border-radius: 18px;
+    padding: 9px 14px; min-width: 42px; min-height: 38px;
+    cursor: pointer;
+  }
+  #nav button:hover:not(:disabled) { background: #C4622D; border-color: #C4622D; color: #FFF8F2; }
+  #nav button:focus-visible { outline: 2px solid #D98E5F; outline-offset: 2px; }
+  #nav button:disabled { opacity: 0.35; cursor: default; }
   #count {
-    position: fixed; right: 18px; bottom: 14px;
-    font-size: 13px; letter-spacing: 0.6px;
-    color: #7C8C97; background: rgba(11,19,23,0.8);
-    padding: 5px 11px; border-radius: 20px;
+    font-size: 13px; letter-spacing: 0.6px; color: #92A3AD;
+    padding: 0 8px; min-width: 56px; text-align: center;
     font-variant-numeric: tabular-nums;
   }
+
+  #menu {
+    position: fixed; right: 16px; bottom: 68px;
+    width: 340px; max-height: 60vh; overflow-y: auto;
+    background: #11242E; border: 1px solid #2C3C46; border-radius: 14px;
+    padding: 7px; display: none;
+  }
+  #menu.open { display: block; }
+  #menu button {
+    display: flex; align-items: baseline; gap: 10px;
+    width: 100%; text-align: left;
+    appearance: none; -webkit-appearance: none;
+    font: inherit; font-size: 14px; line-height: 1.35;
+    color: #D7E2E9; background: transparent;
+    border: none; border-radius: 9px; padding: 9px 11px; cursor: pointer;
+  }
+  #menu button:hover { background: #223139; }
+  #menu button:focus-visible { outline: 2px solid #D98E5F; outline-offset: -2px; }
+  #menu button[aria-current="true"] { background: #C4622D; color: #FFF8F2; }
+  #menu .num { color: #7C8C97; font-variant-numeric: tabular-nums; min-width: 18px; }
+  #menu button[aria-current="true"] .num { color: #FFD9C0; }
   #notes {
     position: fixed; left: 0; right: 0; bottom: 0;
     max-height: 42vh; overflow-y: auto;
@@ -83,7 +122,7 @@
     body { background: #fff; overflow: visible; }
     #stage { position: static; width: auto; height: auto; transform: none; box-shadow: none; }
     .slide { position: relative; display: block !important; width: 1920px; height: 1080px; break-after: page; }
-    #bar, #count, #notes, #hint { display: none !important; }
+    #bar, #nav, #menu, #notes, #hint { display: none !important; }
   }
 </style>
 </head>
@@ -547,20 +586,48 @@
 </section>
 </div>
 </div>
-<div id="count"></div>
-<div id="hint">← → to move · N for notes · F for full screen</div>
+<div id="menu" role="menu" aria-label="Go to slide"></div>
+<div id="nav">
+  <button id="prev" type="button" title="Previous slide" aria-label="Previous slide">&#8592;</button>
+  <span id="count" aria-live="polite"></span>
+  <button id="next" type="button" title="Next slide" aria-label="Next slide">&#8594;</button>
+  <button id="toc" type="button" title="All slides" aria-label="All slides" aria-expanded="false">&#9776;</button>
+</div>
+<div id="hint">← → or the buttons · N for notes · F for full screen</div>
 <div id="notes"><h4>Speaker notes</h4><p id="notesBody"></p></div>
 
 <script>
 (function () {
   var NOTES = ["Four slides of plan, four of numbers. The order is deliberate: show them the shifts first, so the gaps that follow are read as reasons for the plan rather than as complaints.","Lead with Kaifan's 11:00 — it shows the times come from the operation, not from a template. The point to land: no branch is being asked to add hours, only to start them at a different time.","Do not dwell on individual cases here — the point is that all four are structural. If anyone asks whether people are simply not following the roster, the answer is on the next slide: with these numbers the roster cannot be written in the first place.","The arithmetic: seven days open, five on which a man may rest. Without help, a branch needs staff of 1.25 times its daily requirement. The 9-hour daily overtime allowance is one man-shift, which covers one rest day, and that brings the requirement down to four extra people across the four branches. Ardiya needs none.","This is the heart of the proposal and it costs nothing. The rule is one sentence a supervisor can remember: tomorrow's shift never starts earlier than today's, except after a rest day.","This is the slide that saves the money without spending any. The one sentence to land: the kitchen, the store and the accommodation share a postcode, so the food is already where the buses are. Two arms means two vehicles at the busy moments instead of three. If anyone challenges the midnight change, the point is that the beef and chicken are for the next day and the closing crew is still on site at 03:45 to receive them.","The number to land is eight, and the reason is in the third tile: seven is the arithmetic answer and it fails the first time somebody takes annual leave, which is where we are standing today. Eight is Haider plus two. If the room pushes back on the third man, the honest answer is that seven works until someone travels, and then the 03:15 run is the one that does not go out.","61% is what these four branches give up between them. Khairan and Store Hawally are excluded: their overtime is already inside the allowance, so they contribute nothing either way. If asked why not more: the allowance is what pays for the rest days, so cutting it further puts the day offs back at risk.","Hand the keyboard over, or type the figures in yourself as they are called out. The column recalculates as you go. If nobody has the sales figures in the room, leave the column empty and ask for it to be filled in before the next review — the point of the slide is that overtime has to be judged against what the branch earns, and only management can put that number on the page.","Close on the net figure, not the gross saving — the 494 KD is the number that survives the question about the four salaries, and it does not yet carry the drivers. If approval for the four kitchen men is held back, say plainly which branches then keep working seven days a week: Jabriya, Qurain and Kaifan. Bring a driver package into the room if you have one; otherwise take the decision as a number to be set."];
+  var TITLES = ["Rostering and overtime","The shifts we propose","The gaps we are asking to close","Why nobody gets a day off","Rotate forward, never backward","Everything leaves from Hawally","A driver’s day is two short runs, not one long shift","What it saves","Overtime against what the branch earns","What we need approved"];
   var slides = Array.prototype.slice.call(document.querySelectorAll('#stage > .slide'));
   var stage = document.getElementById('stage');
   var bar = document.getElementById('bar');
   var count = document.getElementById('count');
   var notes = document.getElementById('notes');
   var notesBody = document.getElementById('notesBody');
+  var nav = document.getElementById('nav');
+  var menu = document.getElementById('menu');
+  var prevBtn = document.getElementById('prev');
+  var nextBtn = document.getElementById('next');
+  var tocBtn = document.getElementById('toc');
   var i = 0;
+
+  slides.forEach(function (s, k) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.setAttribute('role', 'menuitem');
+    b.innerHTML = '<span class="num">' + (k + 1) + '</span><span></span>';
+    b.lastChild.textContent = TITLES[k] || s.dataset.id;
+    b.addEventListener('click', function () { show(k); closeMenu(); });
+    menu.appendChild(b);
+  });
+  var menuItems = Array.prototype.slice.call(menu.children);
+
+  function closeMenu() {
+    menu.classList.remove('open');
+    tocBtn.setAttribute('aria-expanded', 'false');
+  }
 
   function fit() {
     var s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
@@ -573,6 +640,9 @@
     bar.style.width = ((i + 1) / slides.length * 100) + '%';
     count.textContent = (i + 1) + ' / ' + slides.length;
     notesBody.textContent = NOTES[i] || 'No notes for this slide.';
+    prevBtn.disabled = (i === 0);
+    nextBtn.disabled = (i === slides.length - 1);
+    menuItems.forEach(function (b, k) { b.setAttribute('aria-current', k === i ? 'true' : 'false'); });
     if (history.replaceState) history.replaceState(null, '', '#' + slides[i].dataset.id);
   }
 
@@ -591,16 +661,31 @@
       case 'Home': show(0); break;
       case 'End': show(slides.length - 1); break;
       case 'n': case 'N': notes.classList.toggle('open'); break;
+      case 'g': case 'G': tocBtn.click(); break;
       case 'f': case 'F':
         if (document.fullscreenElement) { document.exitFullscreen(); }
         else if (document.documentElement.requestFullscreen) { document.documentElement.requestFullscreen(); }
         break;
-      case 'Escape': if (e.target.blur) e.target.blur(); break;
+      case 'Escape': closeMenu(); if (e.target.blur) e.target.blur(); break;
     }
   });
 
+  prevBtn.addEventListener('click', function () { show(i - 1); });
+  nextBtn.addEventListener('click', function () { show(i + 1); });
+  tocBtn.addEventListener('click', function () {
+    var open = menu.classList.toggle('open');
+    tocBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) {
+      var current = menuItems[i];
+      if (current && current.scrollIntoView) current.scrollIntoView({ block: 'nearest' });
+    }
+  });
+
+  // Clicking the slide itself still advances; the chrome and the inputs do not.
   document.addEventListener('click', function (e) {
-    if (e.target.closest('#notes') || e.target.closest('input')) return;
+    if (e.target.closest('#nav') || e.target.closest('#menu') ||
+        e.target.closest('#notes') || e.target.closest('input')) return;
+    closeMenu();
     show(e.clientX < window.innerWidth / 2 ? i - 1 : i + 1);
   });
 
