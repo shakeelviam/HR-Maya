@@ -8,11 +8,11 @@ const B={
         'Rajan Shrestha','Subas Pun Magar','Sudeep Limbu','Suman Karki'],
    sup:['Keshab Alemagar','Foudman Limbu','James Andrew Refrea'],
    note:'Arjun Pariyar and Bikash Bikram Shah are on leave. Opening cut to four and four.'},
- Kaifan :{onSite:'11:00',close:'03:30',open:3,closing:3,peakEnd:'23:00',today:[542,365],
+ Kaifan :{onSite:'11:00',firstStart:'12:00',close:'03:30',open:3,closing:3,peakEnd:'23:00',today:[542,365],
    men:['Dipendra Thapa','Dhirendra Khatri','Milan Tamang','Jash Bahadur Gaha','Kabir Bhattarai',
         'Nilam Tamang','Nishan Rai','Pujan Bhattarai'],
    sup:['Dipendra Thapa','Dhirendra Khatri','Milan Tamang'],
-   note:'Opens 11:00 for the Central Kitchen delivery. Three and three.'},
+   note:'The delivery crew is on site at 11:00 for the Central Kitchen; the opening band starts with the branch at 12:00, so its nine hours reach 21:00 instead of 20:00. Three and three.'},
  Qurain :{onSite:'12:30',close:'03:30',open:3,closing:3,peakEnd:'23:30',today:[732,438],
    men:['Lakpa Dorje Lama','Bimal Chamling','Devram Chaudhary','Dipak Lo','Pramesh Pyakurel',
         'Sandeep Khadka','Saroj KC'],
@@ -20,10 +20,10 @@ const B={
    note:'Crew boards at Mahboula, twelve minutes away.'},
  Jahra  :{onSite:'12:30',close:'03:30',open:3,closing:3,peakEnd:'23:00',today:[0,0],
    men:['Employee 1','Employee 2','Employee 3','Employee 4','Employee 5','Employee 6'],
-   sup:['Employee 1','Employee 2'], newBranch:true,
-   supRole:{'Employee 1':'supervisor','Employee 2':'assistant supervisor'},
+   sup:['Employee 1','Employee 2','Employee 3'], newBranch:true,
+   supRole:{'Employee 1':'supervisor','Employee 2':'assistant supervisor','Employee 3':'acting'},
    note:'Jahra runs Talabat orders only. Shift times are taken from Jabriya and the floor is the dine-in standard, both for want of an order curve &mdash; reset once two weeks of orders have been seen.'},
- Jabriya:{onSite:'12:30',close:'03:30',open:3,closing:4,peakEnd:'23:00',today:[712,485],
+ Jabriya:{onSite:'12:30',close:'03:30',open:3,closing:4,peakEnd:'23:30',today:[712,485],
    men:['Bibek Nepali','Yogendra Oli','Manish Gurung','Ajay Gurung','Jit Bahadur Thakali',
         'Kristal Ghalan','Mukti Lama','Puran Kumar Thapa','Ram Bahadur Sirmal'],
    sup:['Bibek Nepali','Yogendra Oli','Manish Gurung'],
@@ -63,9 +63,10 @@ function build(n,b){
   ord.forEach((m,i)=>{ rest[m]=RESTOK[Math.floor(i/2)%RESTOK.length]; pair[m]=Math.floor(i/2)+1; });
 
   const close=h(b.close)+(h(b.close)<12?24:0);
-  const dblH=close-h(b.onSite)-9;             // the only overtime in the model
+  const fs=b.firstStart||b.onSite;            // when the First band's nine hours begin
+  const dblH=close-h(b.onSite)-9;             // a double still arrives for the delivery
   const peakStart=L(h(b.peakEnd)-9);          // the Peak band's start time
-  const holdH=Math.max(0,h(b.peakEnd)-h(b.onSite)-9);   // last resort: hold a First man late
+  const holdH=Math.max(0,h(b.peakEnd)-h(fs)-9);         // last resort: hold a First man late
   const opens=L(h(b.onSite)+1);               // the branch opens an hour after arrival
   const isSup=m=>b.sup.includes(m);
 
@@ -84,11 +85,18 @@ function build(n,b){
       const S=men.filter(m=>band(m,SA[m],SP[m],d)==='Second');
 
       // R8 — a double only on the first working day after the rest day
-      // A double may only follow a rest day, AND the man must be on Second from
-      // the next day on. Closing at 03:30 and starting again at 12:30 or 14:00 is
-      // the turnaround this roster exists to prevent.
-      const canDbl=men.filter(m=>pos(m,d)===0 && band(m,SA[m],SP[m],d)!=='OFF'
-                                 && band(m,SA[m],SP[m],(d+1)%7)==='Second');
+      // A double is legal when the day BEFORE it is a rest day or a First shift
+      // (so he is not coming off a 03:30 close), and the day AFTER is Second or
+      // his rest day (so he never opens the morning after closing). That is the
+      // day-before-or-after-the-day-off rule, both sides of it.
+      // A double only ever the day AFTER a rest day, and he is on Second from the
+      // next day on. The day before must be the rest day itself, so a man can
+      // never be held late and then doubled the next morning.
+      const canDbl=men.filter(m=>{
+        const t=band(m,SA[m],SP[m],d); if(t==='OFF') return false;
+        return band(m,SA[m],SP[m],(d+6)%7)==='OFF'
+            && band(m,SA[m],SP[m],(d+1)%7)==='Second';
+      });
       const wantDbl=Math.max(0, Math.max(b.open-F.length, b.closing-S.length));
       const dbl=least(canDbl).slice(0,Math.max(0,wantDbl));
 
