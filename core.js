@@ -4,36 +4,76 @@ const WEEKS=4;                            // the roster repeats on a four-week c
 const CAP=300;                            // default monthly overtime target, hours per branch
 const CEIL=400;                           // and the ceiling it must never pass                            // overtime budget, hours per branch per month
 const B={
- Ardiya :{onSite:'12:30',close:'03:30',open:4,closing:4,peakEnd:'23:30',today:[780,510],
+ Ardiya :{onSite:'12:30',close:'03:30',open:4,closing:4,prof:[7,7,7,7,7,7,7],peakEnd:'23:30',today:[780,510],
    men:['Keshab Alemagar','Foudman Limbu','James Andrew Refrea','Aaitu Newar','Deb Bahadur Thapa',
         'Rajan Shrestha','Subas Pun Magar','Sudeep Limbu','Suman Karki'],
    sup:['Keshab Alemagar','Foudman Limbu','James Andrew Refrea'],
    note:'Arjun Pariyar and Bikash Bikram Shah are on leave. Opening cut to four and four.'},
- Kaifan :{onSite:'11:00',firstStart:'12:00',close:'03:30',open:3,closing:3,peakEnd:'23:30',today:[542,365],
+ Kaifan :{onSite:'11:30',close:'02:30',buffer:0.5,open:3,closing:3,soloRest:true,peakEnd:'23:30',today:[542,365],
    men:['Dipendra Thapa','Dhirendra Khatri','Milan Tamang','Jash Bahadur Gaha','Kabir Bhattarai',
         'Nilam Tamang','Nishan Rai','Pujan Bhattarai'],
    sup:['Dipendra Thapa','Nilam Tamang','Pujan Bhattarai'],
-   note:'The delivery crew is on site at 11:00 for the Central Kitchen; the opening band starts with the branch at 12:00, so its nine hours reach 21:00 instead of 20:00. Three and three.'},
- Qurain :{onSite:'12:30',close:'03:30',open:3,closing:3,soloRest:true,peakEnd:'23:30',today:[732,438],
+   // Jash is a steward and cannot work the kitchen; Milan covers his job on his
+   // rest day. One of the two must stand at every opening and every closing.
+   pin:{'Milan Tamang':'First','Jash Bahadur Gaha':'Second'},
+   pinRest:{'Jash Bahadur Gaha':2,'Milan Tamang':3},
+   coverPair:['Jash Bahadur Gaha','Milan Tamang'],
+   role:{'Jash Bahadur Gaha':'steward','Milan Tamang':'steward cover'},
+   note:'On site 11:30, open 12:00, operations to 02:00, closed 02:30 &mdash; half an hour either side for prep and cleaning. Jash Bahadur Gaha is a steward and cannot work in the kitchen; he stands on the closing shift and Milan Tamang covers his job on his rest day, so one of the two is present at every opening and every closing.'},
+ Qurain :{onSite:'12:30',close:'03:30',open:3,closing:3,soloRest:true,prof:[4,4,4,4,5,5,4],cap:300,clubWith:'Mahboula',peakEnd:'23:30',today:[732,438],
    men:['Lakpa Dorje Lama','Bimal Chamling','Devram Chaudhary','Dipak Lo','Pramesh Pyakurel',
         'Sandeep Khadka','Saroj KC'],
    sup:['Lakpa Dorje Lama','Bimal Chamling','Devram Chaudhary'],
    note:'Crew boards at Mahboula, twelve minutes away.'},
- Jahra  :{onSite:'12:30',close:'03:30',open:3,closing:3,soloRest:true,cap:200,ceil:300,peakEnd:'23:30',today:[0,0],
+ Jahra  :{onSite:'12:30',close:'03:30',open:3,closing:3,soloRest:true,prof:[4,4,4,4,5,5,4],cap:200,ceil:300,peakEnd:'23:30',today:[0,0],
    men:['Employee 1','Employee 2','Employee 3','Employee 4','Employee 5','Employee 6'],
    sup:['Employee 1','Employee 2','Employee 3'], newBranch:true,
    supRole:{'Employee 1':'supervisor','Employee 2':'assistant supervisor','Employee 3':'acting'},
-   note:'Jahra runs Talabat orders only. Shift times are taken from Jabriya and the floor is the dine-in standard, both for want of an order curve &mdash; reset once two weeks of orders have been seen.'},
-Mahboula:{onSite:'13:30',close:'01:30',open:2,closing:2,soloRest:true,peakEnd:'23:30',today:[0,0],
-   cap:150,ceil:200, prof:[4,4,4,4,4,4,4],
+   note:'Jahra runs Talabat orders only, so it is rostered on the Qurain pattern: one man off a day and the smaller floor a cloud kitchen needs.'},
+Mahboula:{onSite:'13:30',close:'01:30',open:2,closing:3,waive:['R6','R8'],peakEnd:'01:30',today:[0,0],
+   cap:150,ceil:200, prof:[3,3,3,3,3,3,3], buffer:0.5, clubWith:'Qurain',
+   title:'Mahboula &mdash; Option 1: three at closedown',
    men:['Suman Bishwakarma','Sanamsing Siangtan','Uttam Chaudhary'],
    sup:['Suman Bishwakarma','Uttam Chaudhary'],
    supRole:{'Suman Bishwakarma':'supervisor','Uttam Chaudhary':'acting'},
-   note:'Mahboula is walking distance from the accommodation, so no transport. Two to open and two to close replaces the single straight shift. The floor here is the branch&rsquo;s own four, not the dine-in six.'},
- Jabriya:{onSite:'12:30',close:'03:30',open:4,closing:4,peakEnd:'23:30',today:[712,485],
+   fixedGrid:{
+     'Suman Bishwakarma'     :['OFF','DOUBLE','DOUBLE','Second','DOUBLE','DOUBLE','Second'],
+     'Sanamsing Siangtan'    :['DOUBLE','OFF','Second','DOUBLE','DOUBLE','Second','DOUBLE'],
+     'Uttam Chaudhary'       :['DOUBLE','Second','OFF','DOUBLE','Second','DOUBLE','DOUBLE'],
+     'Joker (Qurain/Jabriya)':['Second','DOUBLE','DOUBLE','—','—','—','—']},
+   note:'Three at closedown out of three bodies forces two doubles every day. The joker comes from Qurain or Jabriya on each rest day and replaces the man who is off. Doubles are shared four, four, four between the three men with the joker taking two. Rest never falls below 12 hours, and the men walk to work so none of it is lost to travel.'},
+ MahboulaB:{onSite:'13:30',close:'01:30',open:2,closing:2,waive:['R6','R8'],peakEnd:'01:30',today:[0,0],
+   cap:150,ceil:200, prof:[2,2,2,2,2,2,2], buffer:0.5, clubWith:'Qurain',
+   title:'Mahboula &mdash; Option 2: close with two',
+   men:['Suman Bishwakarma','Sanamsing Siangtan','Uttam Chaudhary'],
+   sup:['Suman Bishwakarma','Uttam Chaudhary'],
+   supRole:{'Suman Bishwakarma':'supervisor','Uttam Chaudhary':'acting'},
+   fixedGrid:{
+     'Suman Bishwakarma'     :['OFF','First','DOUBLE','First','Second','DOUBLE','First'],
+     'Sanamsing Siangtan'    :['First','OFF','First','DOUBLE','First','Second','DOUBLE'],
+     'Uttam Chaudhary'       :['DOUBLE','Second','OFF','Second','DOUBLE','First','Second'],
+     'Joker (Qurain/Jabriya)':['Second','DOUBLE','Second','—','—','—','—']},
+   note:'Closing with two instead of three needs only one double a day: half the overtime of Option 1, two doubles each a week and never two in a row. The trade is that only two men are present for the 01:30 closedown.'},
+ MahboulaC:{onSite:'13:30',close:'01:30',open:2,closing:3,waive:['R6','R8'],peakEnd:'01:30',today:[0,0],
+   cap:150,ceil:200, prof:[3,3,3,3,3,3,3], buffer:0.5, clubWith:'Qurain',
+   title:'Mahboula &mdash; Option 3: joker every day',
+   men:['Suman Bishwakarma','Sanamsing Siangtan','Uttam Chaudhary'],
+   sup:['Suman Bishwakarma','Uttam Chaudhary'],
+   supRole:{'Suman Bishwakarma':'supervisor','Uttam Chaudhary':'acting'},
+   fixedGrid:{
+     'Suman Bishwakarma'     :['OFF','First','DOUBLE','First','Second','DOUBLE','First'],
+     'Sanamsing Siangtan'    :['First','OFF','First','DOUBLE','First','Second','DOUBLE'],
+     'Uttam Chaudhary'       :['DOUBLE','Second','OFF','Second','DOUBLE','First','Second'],
+     'Joker A'               :['Second','DOUBLE','Second','Second','Second','Second','Second'],
+     'Joker B'               :['Second','Second','Second','—','—','—','—']},
+   note:'Three at closedown kept at Option 2&rsquo;s price, by borrowing a joker every day instead of only on rest days &mdash; ten joker-days a week from Qurain or Jabriya. Four on the floor through the evening rather than three.'},
+ Jabriya:{onSite:'12:30',close:'03:30',open:4,closing:4,prof:[7,7,7,7,7,7,7],peakEnd:'23:30',today:[712,485],
    men:['Bibek Nepali','Yogendra Oli','Manish Gurung','Ajay Gurung','Jit Bahadur Thakali',
         'Kristal Ghalan','Mukti Lama','Puran Kumar Thapa','Ram Bahadur Sirmal'],
    sup:['Bibek Nepali','Yogendra Oli','Manish Gurung'],
+   pin:{'Yogendra Oli':'First','Bibek Nepali':'Second'},
+   pinRest:{'Bibek Nepali':0,'Yogendra Oli':1},
+   coverPair:['Bibek Nepali','Yogendra Oli'],
    note:'Ram Bahadur Sirmal joins from Kaifan on 7 October; Prakash Budha moves to Khairan.'},
 };
 // ---------------------------------------------------------------------------
@@ -60,17 +100,68 @@ Mahboula:{onSite:'13:30',close:'01:30',open:2,closing:2,soloRest:true,peakEnd:'2
 // results are cached on the branch's parameters. Same input, same roster.
 const _fs=require('fs'), _CF=__dirname+'/.roster-cache.json';
 let _cache=new Map();
-try{ _cache=new Map(Object.entries(JSON.parse(_fs.readFileSync(_CF,'utf8')))); }catch(e){}
+const _stamp=(()=>{ try{ return String(_fs.statSync(__filename).size)+':'+
+  require('crypto').createHash('md5').update(_fs.readFileSync(__filename)).digest('hex').slice(0,8); }
+  catch(e){ return 'x'; } })();
+try{ const j=JSON.parse(_fs.readFileSync(_CF,'utf8'));
+     if(j.__stamp===_stamp){ delete j.__stamp; _cache=new Map(Object.entries(j)); } }catch(e){}
 let _dirty=false;
 process.on('exit',()=>{ if(_dirty) try{
-  _fs.writeFileSync(_CF, JSON.stringify(Object.fromEntries(_cache))); }catch(e){} });
+  _fs.writeFileSync(_CF, JSON.stringify(Object.assign({__stamp:_stamp},Object.fromEntries(_cache)))); }catch(e){} });
+// Hours between the end of one day's shift and the start of the next, per man.
+// This is the number the slides must show: it is the promise the roster makes.
+function restGaps(b,grid,men,holdH){
+  const o=h(b.firstStart||b.onSite), on=h(b.onSite),
+        c=h(b.close)+(h(b.close)<12?24:0), ss=c-9, pe=h(b.peakEnd);
+  const sp=v=> v==='First'?[o,o+9] : String(v).startsWith('First +')?[o,pe]
+            : v==='Peak'?[pe-9,pe] : v==='Second'?[ss,c] : v==='DOUBLE'?[on,c] : null;
+  const out={}; let worst=null;
+  for(const m of men){ let mn=null;
+    for(let d=0;d<7;d++){ const a=sp(grid[m][d]), z=sp(grid[m][(d+1)%7]);
+      if(a&&z){ const g=(z[0]+24)-a[1]; if(mn===null||g<mn) mn=g; } }
+    out[m]=mn; if(mn!==null&&(worst===null||mn<worst)) worst=mn; }
+  return {perMan:out, worst};
+}
+
+// A branch whose week is written by hand -- because a joker from another
+// branch cannot be expressed as one of its own men, and because two to open
+// plus three to close out of three bodies forces two doubles every day.
+function fixed(b){
+  const close=h(b.close)+(h(b.close)<12?24:0), ss=close-9;
+  const dblH=close-h(b.onSite)-9, holdH=Math.max(0,h(b.peakEnd)-h(b.onSite)-9);
+  const men=Object.keys(b.fixedGrid);
+  const grid={}, rest={}, pair={}, perMan={}, otDay=Array(7).fill(0);
+  const rows={First:[],Peak:[],Second:[],Double:[],Hold:[]};
+  men.forEach((m,i)=>{ pair[m]=i+1; perMan[m]=0; rest[m]=-1;
+    grid[m]={}; b.fixedGrid[m].forEach((v,d)=>{ grid[m][d]=v; if(v==='OFF') rest[m]=d; }); });
+  for(let d=0; d<7; d++){
+    let F=0,S=0,D=0,H=0;
+    for(const m of men){ const v=grid[m][d];
+      if(v==='DOUBLE'){D++;F++;S++;perMan[m]+=dblH;otDay[d]+=dblH;}
+      else if(String(v).startsWith('First +')){F++;H++;perMan[m]+=holdH;otDay[d]+=holdH;}
+      else if(v==='First'){F++;}
+      else if(v==='Second'){S++;} }
+    rows.First.push(F); rows.Second.push(S); rows.Double.push(D); rows.Hold.push(H);
+    rows.Peak.push(S);
+  }
+  const wk=otDay.reduce((a,c)=>a+c,0), mo=Math.round(wk*52/12);
+  const perMo={}; men.forEach(m=>perMo[m]=Math.round(perMan[m]*52/12*10)/10);
+  return {grid,pair,rest,otDay,wk,mo,rows,dblH,holdH,
+    peakStart:L(ss%24), opens:L(h(b.onSite)+(b.buffer===undefined?1:b.buffer)),
+    secondStart:L(ss%24), cap:b.cap||CAP, ceil:b.ceil||CEIL, prof:b.prof||PROF, perMo,
+    supOT:men.filter(m=>b.sup.includes(m)).reduce((a,m)=>a+perMo[m],0), men,
+    rest_:restGaps(b,grid,men,holdH)};
+}
+
 function build(n,b){
-  const key=JSON.stringify([n,b.men,b.sup,b.onSite,b.firstStart,b.close,b.open,b.closing,
-                            b.peakEnd,b.soloRest,b.prof,b.cap]);
+  // Hash the WHOLE branch config. Keying on a hand-listed subset meant a new
+  // field (a pin, a hold rule) silently served a stale roster.
+  const key=JSON.stringify([n,b]);
   if(_cache.has(key)) return _cache.get(key);
   const out=_build(n,b); _cache.set(key,out); _dirty=true; return out;
 }
 function _build(n,b){
+  if(b.fixedGrid) return fixed(b);
   const men=b.men, N=men.length;
 
   // R4 — supervisors must never be buddies
@@ -80,6 +171,7 @@ function _build(n,b){
     if(si<supL.length){ ord.push(supL[si++]); if(hi<hlpL.length) ord.push(hlpL[hi++]); }
     else ord.push(hlpL[hi++]);
   }
+  const pin=b.pin||{}, pinRest=b.pinRest||{};
   const rest={}, pair={};
   if(b.soloRest){
     // One man off each day instead of a whole pair, spread over all seven days.
@@ -89,6 +181,10 @@ function _build(n,b){
   } else {
     ord.forEach((m,i)=>{ rest[m]=RESTOK[Math.floor(i/2)%RESTOK.length]; pair[m]=Math.floor(i/2)+1; });
   }
+  // A pinned rest day overrides the pair. The order matters: the man who works
+  // the CLOSING shift must rest the day BEFORE his counterpart, or he would be
+  // starting a double in the morning after a close.
+  for(const m in pinRest) if(rest[m]!==undefined) rest[m]=pinRest[m];
 
   const close=h(b.close)+(h(b.close)<12?24:0);
   const ss=close-9;                           // Second starts nine hours before close
@@ -98,11 +194,12 @@ function _build(n,b){
   const dblH=close-h(b.onSite)-9;             // a double still arrives for the delivery
   const peakStart=L(h(b.peakEnd)-9);          // the Peak band's start time
   const holdH=Math.max(0,h(b.peakEnd)-h(fs)-9);         // last resort: hold a First man late
-  const opens=L(h(b.onSite)+1);               // the branch opens an hour after arrival
+  const opens=L(h(b.onSite)+(b.buffer===undefined?1:b.buffer));  // buffer before opening
   const isSup=m=>b.sup.includes(m);
 
   const pos=(m,d)=>((d-rest[m]+7)%7)-1;                       // -1 on his rest day, else 0..5
   const band=(m,A,P,d)=>{ if(d===rest[m]) return 'OFF';
+    if(pin[m]) return pin[m];                 // this man always stands on one shift
     const p=pos(m,d); return p<A ? 'First' : p<A+P ? 'Peak' : 'Second'; };
 
   function lay(SA,SP,load){
@@ -129,7 +226,15 @@ function _build(n,b){
             && band(m,SA[m],SP[m],(d+1)%7)==='Second';
       });
       const wantDbl=Math.max(0, Math.max(b.open-F.length, b.closing-S.length));
-      const dbl=least(canDbl).slice(0,Math.max(0,wantDbl));
+      let dbl=least(canDbl).slice(0,Math.max(0,wantDbl));
+      // One supervisor opens and one closes; when either rests, the other works
+      // the double so both ends of the day still have him.
+      if(b.coverPair){
+        const [a,z]=b.coverPair;
+        const stand = rest[a]===d ? z : rest[z]===d ? a : null;
+        if(stand && band(stand,SA[stand],SP[stand],d)!=='OFF' && !dbl.includes(stand))
+          dbl=[stand].concat(dbl.filter(m=>m!==stand)).slice(0,Math.max(1,wantDbl));
+      }
 
       // a man who doubles is ONE body at the door, not two -- count the union
       const openCt =F.length+dbl.filter(m=>!F.includes(m)).length;
@@ -137,8 +242,12 @@ function _build(n,b){
       let peakCt=P.length+S.length+dbl.filter(m=>!P.includes(m)&&!S.includes(m)).length;
       // if the Peak band cannot make the floor, hold First men late -- this costs
       // overtime, so the search only reaches for it when headcount leaves no choice
-      const wantHold=Math.max(0,prof[d]-peakCt);
-      const hold=least(F.filter(m=>!dbl.includes(m))).slice(0,wantHold);
+      // On a holdDays day every First-shift man stays through the peak, not just
+      // the number the floor needs.
+      const avail=F.filter(m=>!dbl.includes(m));
+      const wantHold=(b.holdDays&&b.holdDays.includes(d))
+        ? avail.length : Math.max(0,prof[d]-peakCt);
+      const hold=least(avail).slice(0,wantHold);
       peakCt+=hold.length;
 
       shortOpen +=Math.max(0,b.open-openCt)+(openCt<2?1:0);   // R7
@@ -228,7 +337,8 @@ function _build(n,b){
   const mo=Math.round(cyc/WEEKS*52/12);
   const perMo={}; men.forEach(m=>perMo[m]=Math.round(perMan[m]/WEEKS*52/12*10)/10);
   return {grid,pair,rest,otDay,wk,mo,rows,dblH,holdH,peakStart,opens,secondStart:L(ss%24),cap,ceil:b.ceil||CEIL,prof,perMo,
-          supOT:men.filter(isSup).reduce((a,m)=>a+perMo[m],0)};
+          supOT:men.filter(isSup).reduce((a,m)=>a+perMo[m],0),
+          rest_:restGaps(b,grid,men,holdH)};
 }
 
 module.exports={B,PROF,CAP,CEIL,build};
