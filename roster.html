@@ -1,796 +1,240 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Rostering and Overtime — Maya Tex Restaurants</title>
-<meta name="description" content="Proposed shift timings, the gaps in how the branches run today, and what the changes deliver.">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Public+Sans:wght@300;400;600;700&display=swap">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maya HR — Roster Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; height: 100%; }
-  body {
-    background: #0B1317;
-    overflow: hidden;
-    font-family: 'Public Sans', Verdana, sans-serif;
-    -webkit-font-smoothing: antialiased;
-  }
-  h1, h2, h3, h4, h5, h6, p, ul, ol, table { margin: 0; }
-  table { border-collapse: collapse; }
+:root{
+  --dark:oklch(0.16 0.02 200); --teal:oklch(0.65 0.13 190);
+  --muted:oklch(0.52 0.01 200); --border:oklch(0.9 0.005 200);
+  --text:oklch(0.2 0.01 200); --bg:oklch(0.985 0.002 200);
+  --green:oklch(0.6 0.14 165); --amber:oklch(0.75 0.13 85);
+  --red:oklch(0.55 0.16 25); --slate:oklch(0.5 0.01 200);
+}
+*{box-sizing:border-box}
+body{background:var(--bg);font-family:system-ui,sans-serif;color:var(--text);margin:0;padding:0}
+.topbar{background:#fff;border-bottom:1px solid var(--border);padding:16px 24px;
+  display:flex;justify-content:space-between;align-items:center}
+.topbar h1{font-family:'Space Grotesk',sans-serif;font-size:1.3rem;font-weight:700;margin:0}
+.topbar .sub{font-size:0.8rem;color:var(--muted);font-family:'JetBrains Mono',monospace}
+.container{max-width:1400px;margin:0 auto;padding:24px}
 
-  #stage {
-    position: absolute;
-    top: 50%; left: 50%;
-    width: 1920px; height: 1080px;
-    transform-origin: center center;
-    box-shadow: 0 24px 80px rgba(0,0,0,0.55);
-  }
-  .slide {
-    position: absolute; inset: 0;
-    width: 1920px; height: 1080px;
-    overflow: hidden;
-    display: none;
-  }
-  .slide.live { display: block; }
-  .slide > section { position: absolute; inset: 0; width: 1920px; height: 1080px; overflow: hidden; }
+/* Login card */
+.login-wrap{min-height:100vh;background:var(--dark);display:flex;align-items:center;justify-content:center;padding:24px}
+.login-card{background:#fff;border-radius:22px;padding:40px 30px;max-width:400px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.35)}
+.login-card .logo{width:56px;height:56px;border-radius:14px;background:var(--teal);color:var(--dark);
+  display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:24px;margin:0 auto 18px}
+.login-card h2{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:600;margin-bottom:6px}
+.login-card p.sub{color:var(--muted);font-size:14px;margin-bottom:24px}
+.login-input{width:100%;border:1px solid var(--border);border-radius:10px;padding:13px;font-size:15px;margin-bottom:12px;text-align:center}
+#loginErr{min-height:20px;color:var(--red);font-size:13px}
+.btn-login{width:100%;border:none;border-radius:10px;background:var(--teal);color:var(--dark);
+  padding:14px;font-size:15px;font-weight:700;margin-top:8px;cursor:pointer;font-family:'Space Grotesk',sans-serif}
 
-  /* Sales slide: fillable cells */
-  .salesIn {
-    width: 190px;
-    padding: 6px 12px;
-    text-align: right;
-    font-family: 'Public Sans', Verdana, sans-serif;
-    font-size: 27px;
-    font-weight: 600;
-    color: #FAF7F2;
-    background: #11242E;
-    border: 1px solid #3C5765;
-    border-bottom: 3px solid #D98E5F;
-    border-radius: 5px;
-    font-variant-numeric: tabular-nums;
-  }
-  .salesIn::placeholder { color: #6E8593; font-weight: 400; }
-  .salesIn:focus { outline: 3px solid #D98E5F; outline-offset: 2px; }
+/* Card */
+.card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:22px;margin-bottom:20px}
+.card h5{font-family:'Space Grotesk',sans-serif;font-weight:600;margin-bottom:14px}
 
-  /* Chrome: progress, counter, notes */
-  #bar { position: fixed; left: 0; top: 0; height: 4px; background: #C4622D; width: 0; transition: width 180ms ease; }
+/* Grid */
+.roster-table{width:100%;border-collapse:collapse;font-size:13px}
+.roster-table th,.roster-table td{border:1px solid var(--border);padding:6px;text-align:center;vertical-align:middle}
+.roster-table th{background:var(--bg);font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:11px;text-transform:uppercase;color:var(--muted)}
+.roster-table td.emp-name{text-align:left;font-weight:600;white-space:nowrap;background:#fff;position:sticky;left:0;z-index:2}
+.roster-table th.emp-name-h{text-align:left;position:sticky;left:0;z-index:3;background:var(--bg)}
+.cell-select{width:100%;border:1px solid var(--border);border-radius:6px;padding:5px 3px;font-size:12px;background:#fff}
+.cell-select.off{background:var(--slate);color:#fff;font-weight:600}
+.cell-select.working{background:oklch(0.94 0.05 165);color:oklch(0.35 0.1 165)}
+.cell-locked{background:oklch(0.94 0.05 85);color:oklch(0.45 0.12 85);font-size:11px;font-weight:600;padding:6px 2px;border-radius:6px}
+.cell-published{border:2px solid var(--green)!important}
+.cell-empty{background:oklch(0.97 0.01 25)}
 
-  #nav {
-    position: fixed; right: 16px; bottom: 14px;
-    display: flex; align-items: center; gap: 6px;
-    background: rgba(17,29,36,0.92);
-    border: 1px solid #2C3C46;
-    border-radius: 26px;
-    padding: 5px 7px;
-  }
-  #nav button {
-    appearance: none; -webkit-appearance: none;
-    font: inherit; font-size: 15px; line-height: 1;
-    color: #D7E2E9; background: #223139;
-    border: 1px solid #33454F; border-radius: 18px;
-    padding: 9px 14px; min-width: 42px; min-height: 38px;
-    cursor: pointer;
-  }
-  #nav button:hover:not(:disabled) { background: #C4622D; border-color: #C4622D; color: #FFF8F2; }
-  #nav button:focus-visible { outline: 2px solid #D98E5F; outline-offset: 2px; }
-  #nav button:disabled { opacity: 0.35; cursor: default; }
-  #count {
-    font-size: 13px; letter-spacing: 0.6px; color: #92A3AD;
-    padding: 0 8px; min-width: 56px; text-align: center;
-    font-variant-numeric: tabular-nums;
-  }
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-bottom:16px}
+.toolbar label{font-size:12px;color:var(--muted);font-weight:600;display:block;margin-bottom:4px}
+.toolbar input[type=date]{border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:14px}
+.btn{border:none;border-radius:8px;padding:9px 18px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Space Grotesk',sans-serif}
+.btn-primary{background:var(--teal);color:var(--dark)}
+.btn-secondary{background:oklch(0.94 0.003 200);color:var(--text)}
+.btn-success{background:var(--green);color:#fff}
+.btn-outline{background:#fff;border:1px solid var(--border);color:var(--muted)}
+.btn:disabled{opacity:0.5;cursor:default}
 
-  #menu {
-    position: fixed; right: 16px; bottom: 68px;
-    width: 340px; max-height: 60vh; overflow-y: auto;
-    background: #11242E; border: 1px solid #2C3C46; border-radius: 14px;
-    padding: 7px; display: none;
-  }
-  #menu.open { display: block; }
-  #menu button {
-    display: flex; align-items: baseline; gap: 10px;
-    width: 100%; text-align: left;
-    appearance: none; -webkit-appearance: none;
-    font: inherit; font-size: 14px; line-height: 1.35;
-    color: #D7E2E9; background: transparent;
-    border: none; border-radius: 9px; padding: 9px 11px; cursor: pointer;
-  }
-  #menu button:hover { background: #223139; }
-  #menu button:focus-visible { outline: 2px solid #D98E5F; outline-offset: -2px; }
-  #menu button[aria-current="true"] { background: #C4622D; color: #FFF8F2; }
-  #menu .num { color: #7C8C97; font-variant-numeric: tabular-nums; min-width: 18px; }
-  #menu button[aria-current="true"] .num { color: #FFD9C0; }
-  #notes {
-    position: fixed; left: 0; right: 0; bottom: 0;
-    max-height: 42vh; overflow-y: auto;
-    background: #FAF7F2; color: #1C2B33;
-    border-top: 4px solid #C4622D;
-    padding: 18px 24px 22px;
-    font-size: 16px; line-height: 1.5;
-    display: none;
-  }
-  #notes.open { display: block; }
-  #notes h4 { margin: 0 0 7px; font-size: 12px; letter-spacing: 1.4px; text-transform: uppercase; color: #B0521F; }
-  #hint {
-    position: fixed; left: 18px; bottom: 14px;
-    font-size: 13px; color: #7C8C97;
-    background: rgba(11,19,23,0.8); padding: 5px 11px; border-radius: 20px;
-  }
-  @media print {
-    @page { size: 1920px 1080px; margin: 0; }
-    body { background: #fff; overflow: visible; }
-    #stage { position: static; width: auto; height: auto; transform: none; box-shadow: none; }
-    .slide { position: relative; display: block !important; width: 1920px; height: 1080px; break-after: page; }
-    #bar, #nav, #menu, #notes, #hint { display: none !important; }
-  }
+#statusMsg{min-height:24px;font-size:13px;margin-top:10px}
+.status-ok{color:oklch(0.4 0.1 165)}
+.status-err{color:var(--red)}
+
+/* Team list */
+.team-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:14px}
+.team-row:last-child{border-bottom:none}
+.team-row .id{color:var(--muted);font-size:12px;font-family:'JetBrains Mono',monospace;margin-left:6px}
+.needs-roster-badge{display:inline-block;background:oklch(0.94 0.05 25);color:oklch(0.5 0.14 25);
+  font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;margin-left:8px}
+
+/* Transfer request rows */
+.req-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
+.req-row:last-child{border-bottom:none}
+.req-meta{color:var(--muted);font-size:12px}
+.req-status{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.req-status.pending{background:oklch(0.94 0.05 85);color:oklch(0.45 0.12 85)}
+.req-status.approved{background:oklch(0.94 0.05 165);color:oklch(0.4 0.1 165)}
+.req-status.rejected{background:oklch(0.94 0.03 25);color:oklch(0.5 0.14 25)}
+.req-status.expired{background:oklch(0.94 0.003 200);color:oklch(0.4 0.01 200)}
+
+/* Discrepancies */
+.disc-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
+.disc-row:last-child{border-bottom:none}
+.disc-meta{color:var(--muted);font-size:12px}
+
+/* Amend modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:999;align-items:center;justify-content:center;padding:20px}
+.modal-box{background:#fff;border-radius:16px;padding:24px;max-width:400px;width:100%}
+.modal-box h5{font-family:'Space Grotesk',sans-serif;margin-bottom:14px}
+.modal-box label{font-size:12px;color:var(--muted);font-weight:600;display:block;margin:10px 0 4px}
+.modal-box select,.modal-box textarea,.modal-box input{width:100%;border:1px solid var(--border);border-radius:8px;padding:9px}
 </style>
 </head>
 <body>
-<div id="bar"></div>
-<div id="stage">
-<div class="slide" data-id="cover">
-<section id="cover" data-transition="fade" style="background:#1C2B33; color:#FAF7F2; font-family:'Public Sans', Verdana, sans-serif; padding:48px 128px 150px; display:flex; flex-direction:column; gap:16px">
-<div style="display:flex; flex-direction:column; gap:10px">
-<p style="font-size:26px; letter-spacing:3px; color:#4FA391">MAYA TEX RESTAURANTS &nbsp;&middot;&nbsp; WEEK OF SUNDAY 11 OCTOBER 2026</p>
-<h1 style="font-family:'Libre Baskerville', Georgia, serif; font-size:64px; font-weight:400; line-height:1.06; color:#FAF7F2">Four branches, today's men,<br>and a budget the supervisor owns</h1>
-<p style="font-size:29px; line-height:1.35; color:#C9D4DA; width:1400px">Nobody is hired. Nobody is moved in. Every branch opens and closes to the number operations set, carries the floor through the peak on the days that trade, and gives every man a rest day.</p>
-</div>
-<table style="width:1664px; font-size:26px; color:#FAF7F2; border-collapse:collapse; margin-top:10px">
-<tr style="background:#0F1C23"><th style="width:18%; text-align:left; color:#FAF7F2; padding:11px 16px">Branch</th>
-<th style="width:10%; text-align:center; color:#8FA3AE">Men</th><th style="width:24%; text-align:right; color:#8FA3AE">Overtime today</th>
-<th style="width:24%; text-align:right; color:#8FA3AE">On this roster</th><th style="width:12%; text-align:center; color:#8FA3AE">Cut</th>
-<th style="width:12%; text-align:center; color:#8FA3AE">Headroom</th></tr>
-<tr><td style="padding:5px 16px"><b>Ardiya</b></td><td style="text-align:center">9</td>
-<td style="text-align:right; color:#E09A6A">780 h &middot; 510 KD</td>
-<td style="text-align:right; color:#4FA391"><b>269 h &middot; 175 KD</b></td>
-<td style="text-align:center; color:#4FA391"><b>66%</b></td>
-<td style="text-align:center; color:#4FA391">31 h</td></tr><tr style="background:#263A45"><td style="padding:5px 16px"><b>Kaifan</b></td><td style="text-align:center">8</td>
-<td style="text-align:right; color:#E09A6A">542 h &middot; 365 KD</td>
-<td style="text-align:right; color:#4FA391"><b>247 h &middot; 161 KD</b></td>
-<td style="text-align:center; color:#4FA391"><b>54%</b></td>
-<td style="text-align:center; color:#4FA391">53 h</td></tr><tr><td style="padding:5px 16px"><b>Qurain</b></td><td style="text-align:center">7</td>
-<td style="text-align:right; color:#E09A6A">732 h &middot; 438 KD</td>
-<td style="text-align:right; color:#4FA391"><b>78 h &middot; 51 KD</b></td>
-<td style="text-align:center; color:#4FA391"><b>89%</b></td>
-<td style="text-align:center; color:#4FA391">222 h</td></tr><tr style="background:#263A45"><td style="padding:5px 16px"><b>Jabriya</b></td><td style="text-align:center">9</td>
-<td style="text-align:right; color:#E09A6A">712 h &middot; 485 KD</td>
-<td style="text-align:right; color:#4FA391"><b>269 h &middot; 175 KD</b></td>
-<td style="text-align:center; color:#4FA391"><b>62%</b></td>
-<td style="text-align:center; color:#4FA391">31 h</td></tr>
-<tr style="background:#0F1C23"><td style="padding:8px 16px"><b>The four trading</b></td><td style="text-align:center"><b>33</b></td>
-<td style="text-align:right; color:#E09A6A"><b>2766 h &middot; 1798 KD</b></td>
-<td style="text-align:right; color:#4FA391"><b>863 h &middot; 562 KD</b></td>
-<td style="text-align:center; color:#4FA391"><b>69%</b></td>
-<td style="text-align:center; color:#4FA391">337 h spare</td></tr>
-<tr style="background:#3A2A22"><td style="padding:5px 16px"><b>Jahra</b> <span style="font-size:22px; color:#D98E5F">projection</span></td><td style="text-align:center">6</td>
-<td style="text-align:right; color:#E09A6A"><span style="color:#8FA3AE">&mdash;</span></td>
-<td style="text-align:right; color:#4FA391"><b>156 h &middot; 101 KD</b></td>
-<td style="text-align:center; color:#4FA391"><b><span style="color:#8FA3AE">&mdash;</span></b></td>
-<td style="text-align:center; color:#4FA391">144 h</td></tr><tr style="background:#3A2A22"><td style="padding:5px 16px"><b>Mahboula</b> <span style="font-size:22px; color:#D98E5F">projection</span></td><td style="text-align:center">3</td>
-<td style="text-align:right; color:#E09A6A"><span style="color:#8FA3AE">&mdash;</span></td>
-<td style="text-align:right; color:#4FA391"><b>182 h &middot; 118 KD</b></td>
-<td style="text-align:center; color:#4FA391"><b><span style="color:#8FA3AE">&mdash;</span></b></td>
-<td style="text-align:center; color:#4FA391">118 h</td></tr><tr style="background:#3A2A22"><td style="padding:5px 16px"><b>MahboulaB</b> <span style="font-size:22px; color:#D98E5F">projection</span></td><td style="text-align:center">3</td>
-<td style="text-align:right; color:#E09A6A"><span style="color:#8FA3AE">&mdash;</span></td>
-<td style="text-align:right; color:#4FA391"><b>121 h &middot; 79 KD</b></td>
-<td style="text-align:center; color:#4FA391"><b><span style="color:#8FA3AE">&mdash;</span></b></td>
-<td style="text-align:center; color:#4FA391">179 h</td></tr><tr style="background:#3A2A22"><td style="padding:5px 16px"><b>MahboulaC</b> <span style="font-size:22px; color:#D98E5F">projection</span></td><td style="text-align:center">3</td>
-<td style="text-align:right; color:#E09A6A"><span style="color:#8FA3AE">&mdash;</span></td>
-<td style="text-align:right; color:#4FA391"><b>130 h &middot; 85 KD</b></td>
-<td style="text-align:center; color:#4FA391"><b><span style="color:#8FA3AE">&mdash;</span></b></td>
-<td style="text-align:center; color:#4FA391">170 h</td></tr></table>
-<div style="display:flex; gap:22px">
-<div style="flex:1.3; background:#2E7D6B; padding:18px 30px; border-radius:14px">
-<p style="font-size:26px; color:#BFE3D9">The overtime bill falls by</p>
-<p style="font-size:52px; font-weight:700; color:#FFFFFF; line-height:1.12">1236 KD a month</p>
-<p style="font-size:25px; line-height:1.3; color:#D7EFE8">14832 KD a year, with the same people we have today.</p></div>
-<div style="flex:1; background:#263A45; padding:18px 28px; border-radius:14px; border-top:5px solid #C4622D">
-<p style="font-size:25px; font-weight:700; letter-spacing:1px; color:#D98E5F">WHAT THIS IS REALLY FOR</p>
-<p style="font-size:25px; line-height:1.35; color:#C9D4DA">These branches did more trade five months ago with fewer men. This shows the work fits the strength we have. <b>The overtime saving is the by-product, not the point.</b></p></div>
-</div>
-<p style="position:absolute; left:128px; bottom:56px; width:1664px; font-size:24px; line-height:1.3; color:#8FA3AE">Overtime today from payroll, 22 August &ndash; 20 September 2026. Men on the books who have not yet joined are excluded, as are men on leave. Rosters generated against the rules and checked before printing.</p></section>
+
+<!-- ── LOGIN ─────────────────────────────────────────── -->
+<div id="loginScreen" class="login-wrap">
+  <div class="login-card">
+    <div class="logo">M</div>
+    <h2>Roster Planner</h2>
+    <p class="sub">Supervisor login</p>
+    <input class="login-input" id="supId" placeholder="Employee ID">
+    <input class="login-input" id="supPin" type="password" maxlength="4" placeholder="PIN" inputmode="numeric">
+    <div id="loginErr"></div>
+    <button class="btn-login" onclick="doLogin()">Log In</button>
+  </div>
 </div>
 
-<div class="slide" data-id="benefits">
-<section id="benefits" data-transition="fade" style="background:#FAF7F2; color:#1C2B33; font-family:'Public Sans', Verdana, sans-serif; padding:22px 128px 150px; display:flex; flex-direction:column; gap:9px">
-<div style="display:flex; flex-direction:column; gap:4px">
-<p style="font-size:22px; letter-spacing:2px; color:#1F6B59">THE SAME 33 MEN &nbsp;&middot;&nbsp; NOBODY HIRED</p>
-<h2 style="font-family:'Libre Baskerville', Georgia, serif; font-size:46px; font-weight:400; line-height:1.1">What the branch gets, and what it costs</h2>
-</div>
-<div style="display:flex; gap:16px">
-<div style="flex:1; background:#FFFFFF; padding:14px 24px; border-radius:14px; border-top:5px solid #1baf7a">
-<p style="font-size:38px; font-weight:700; color:#1baf7a; line-height:1.1">2,766 &rarr; 863 h</p><p style="font-size:23px; line-height:1.3; color:#4A5568">Overtime hours a month across the four branches</p></div>
-<div style="flex:1; background:#FFFFFF; padding:14px 24px; border-radius:14px; border-top:5px solid #1baf7a">
-<p style="font-size:38px; font-weight:700; color:#1baf7a; line-height:1.1">1,236 KD</p><p style="font-size:23px; line-height:1.3; color:#4A5568">Saved every month &mdash; 14,832 KD a year</p></div>
-<div style="flex:1; background:#FFFFFF; padding:14px 24px; border-radius:14px; border-top:5px solid #1baf7a">
-<p style="font-size:38px; font-weight:700; color:#1baf7a; line-height:1.1">69%</p><p style="font-size:23px; line-height:1.3; color:#4A5568">Cut, against a target of 60%</p></div>
-<div style="flex:1; background:#FFFFFF; padding:14px 24px; border-radius:14px; border-top:5px solid #2a78d6">
-<p style="font-size:38px; font-weight:700; color:#2a78d6; line-height:1.1">8.7&ndash;52 h</p><p style="font-size:23px; line-height:1.3; color:#4A5568">Carried by each man a month &mdash; supervisors included, and the double moves on each week</p></div>
-</div>
-<div style="display:flex; gap:20px">
-<div style="flex:1; background:#FFFFFF; padding:14px 20px 8px; border-radius:14px">
-<p style="font-size:25px; font-weight:700; color:#1C2B33">Overtime hours a month, by branch</p>
-<p style="font-size:21px; color:#4A5568; padding-bottom:4px"><span style="color:#eb6834">&#9632;</span> today &nbsp;&nbsp; <span style="color:#1baf7a">&#9632;</span> on this roster</p>
-<svg width="740" height="226" viewBox="0 0 740 226" role="img"><line x1="96" y1="180" x2="730" y2="180" stroke="#E4DED4" stroke-width="1"/><text x="84" y="186" font-size="18" fill="#77808A" text-anchor="end">0</text><line x1="96" y1="141" x2="730" y2="141" stroke="#E4DED4" stroke-width="1"/><text x="84" y="147" font-size="18" fill="#77808A" text-anchor="end">200</text><line x1="96" y1="102" x2="730" y2="102" stroke="#E4DED4" stroke-width="1"/><text x="84" y="108" font-size="18" fill="#77808A" text-anchor="end">400</text><line x1="96" y1="63" x2="730" y2="63" stroke="#E4DED4" stroke-width="1"/><text x="84" y="69" font-size="18" fill="#77808A" text-anchor="end">600</text><line x1="96" y1="24" x2="730" y2="24" stroke="#E4DED4" stroke-width="1"/><text x="84" y="30" font-size="18" fill="#77808A" text-anchor="end">800</text><rect x="106" y="27.900000000000006" width="69.25" height="152.1" rx="4" fill="#eb6834"/><rect x="179.25" y="127.545" width="69.25" height="52.455" rx="4" fill="#1baf7a"/><text x="140.625" y="20.900000000000006" font-size="19" fill="#4A5568" text-anchor="middle">780</text><text x="213.875" y="120.545" font-size="19" font-weight="700" fill="#1C2B33" text-anchor="middle">269</text><text x="177.25" y="204" font-size="20" fill="#1C2B33" text-anchor="middle">Ardiya</text><rect x="263" y="74.31" width="69.25" height="105.69" rx="4" fill="#eb6834"/><rect x="336.25" y="131.83499999999998" width="69.25" height="48.16500000000002" rx="4" fill="#1baf7a"/><text x="297.625" y="67.31" font-size="19" fill="#4A5568" text-anchor="middle">542</text><text x="370.875" y="124.83499999999998" font-size="19" font-weight="700" fill="#1C2B33" text-anchor="middle">247</text><text x="334.25" y="204" font-size="20" fill="#1C2B33" text-anchor="middle">Kaifan</text><rect x="420" y="37.25999999999999" width="69.25" height="142.74" rx="4" fill="#eb6834"/><rect x="493.25" y="164.79" width="69.25" height="15.210000000000008" rx="4" fill="#1baf7a"/><text x="454.625" y="30.25999999999999" font-size="19" fill="#4A5568" text-anchor="middle">732</text><text x="527.875" y="157.79" font-size="19" font-weight="700" fill="#1C2B33" text-anchor="middle">78</text><text x="491.25" y="204" font-size="20" fill="#1C2B33" text-anchor="middle">Qurain</text><rect x="577" y="41.16" width="69.25" height="138.84" rx="4" fill="#eb6834"/><rect x="650.25" y="127.545" width="69.25" height="52.455" rx="4" fill="#1baf7a"/><text x="611.625" y="34.16" font-size="19" fill="#4A5568" text-anchor="middle">712</text><text x="684.875" y="120.545" font-size="19" font-weight="700" fill="#1C2B33" text-anchor="middle">269</text><text x="648.25" y="204" font-size="20" fill="#1C2B33" text-anchor="middle">Jabriya</text></svg></div>
-<div style="flex:1.05; background:#FFFFFF; padding:14px 20px 8px; border-radius:14px">
-<p style="font-size:25px; font-weight:700; color:#1C2B33">Men on the floor, Thursday</p>
-<p style="font-size:21px; color:#4A5568; padding-bottom:4px"><span style="color:#2a78d6">&#9632;</span> Ardiya &nbsp; <span style="color:#eb6834">&#9632;</span> Kaifan &nbsp; <span style="color:#1baf7a">&#9632;</span> Qurain &nbsp; <span style="color:#eda100">&#9632;</span> Jabriya</p>
-<svg width="800" height="226" viewBox="0 0 800 226" role="img"><line x1="56" y1="180" x2="782" y2="180" stroke="#E4DED4" stroke-width="1"/><text x="46" y="186" font-size="18" fill="#77808A" text-anchor="end">0</text><line x1="56" y1="148.8" x2="782" y2="148.8" stroke="#E4DED4" stroke-width="1"/><text x="46" y="154.8" font-size="18" fill="#77808A" text-anchor="end">2</text><line x1="56" y1="117.6" x2="782" y2="117.6" stroke="#E4DED4" stroke-width="1"/><text x="46" y="123.6" font-size="18" fill="#77808A" text-anchor="end">4</text><line x1="56" y1="86.4" x2="782" y2="86.4" stroke="#E4DED4" stroke-width="1"/><text x="46" y="92.4" font-size="18" fill="#77808A" text-anchor="end">6</text><line x1="56" y1="55.19999999999999" x2="782" y2="55.19999999999999" stroke="#E4DED4" stroke-width="1"/><text x="46" y="61.19999999999999" font-size="18" fill="#77808A" text-anchor="end">8</text><line x1="56" y1="24" x2="782" y2="24" stroke="#E4DED4" stroke-width="1"/><text x="46" y="30" font-size="18" fill="#77808A" text-anchor="end">10</text><text x="100" y="204" font-size="18" fill="#77808A" text-anchor="middle">12:00</text><text x="232" y="204" font-size="18" fill="#77808A" text-anchor="middle">15:00</text><text x="364" y="204" font-size="18" fill="#77808A" text-anchor="middle">18:00</text><text x="496" y="204" font-size="18" fill="#77808A" text-anchor="middle">21:00</text><text x="628" y="204" font-size="18" fill="#77808A" text-anchor="middle">00:00</text><text x="760" y="204" font-size="18" fill="#77808A" text-anchor="middle">03:00</text><rect x="408" y="24" width="176" height="156" fill="#eb6834" opacity="0.08"/><text x="496" y="172" font-size="19" font-weight="700" fill="#B04A1E" text-anchor="middle">PEAK 19:00–23:00</text><line x1="56" y1="70.80000000000001" x2="782" y2="70.80000000000001" stroke="#B04A1E" stroke-width="2" stroke-dasharray="6 4"/><text x="778" y="62.80000000000001" font-size="18" font-weight="700" fill="#B04A1E" text-anchor="end">floor wanted: 7</text><path d="M56.0 180.0 L78.0 180.0 L100.0 180.0 L122.0 117.6 L144.0 117.6 L166.0 117.6 L188.0 117.6 L210.0 117.6 L232.0 117.6 L254.0 117.6 L276.0 117.6 L298.0 117.6 L320.0 117.6 L342.0 117.6 L364.0 117.6 L386.0 39.6 L408.0 39.6 L430.0 39.6 L452.0 39.6 L474.0 39.6 L496.0 39.6 L518.0 70.8 L540.0 70.8 L562.0 70.8 L584.0 70.8 L606.0 102.0 L628.0 102.0 L650.0 102.0 L672.0 102.0 L694.0 102.0 L716.0 102.0 L738.0 102.0 L760.0 102.0 L782.0 180.0" fill="none" stroke="#2a78d6" stroke-width="2.5" stroke-linejoin="round"/><path d="M56.0 180.0 L78.0 133.2 L100.0 133.2 L122.0 133.2 L144.0 133.2 L166.0 133.2 L188.0 133.2 L210.0 133.2 L232.0 133.2 L254.0 133.2 L276.0 133.2 L298.0 133.2 L320.0 133.2 L342.0 70.8 L364.0 70.8 L386.0 70.8 L408.0 70.8 L430.0 70.8 L452.0 70.8 L474.0 70.8 L496.0 70.8 L518.0 70.8 L540.0 70.8 L562.0 70.8 L584.0 70.8 L606.0 117.6 L628.0 117.6 L650.0 117.6 L672.0 117.6 L694.0 117.6 L716.0 117.6 L738.0 180.0 L760.0 180.0 L782.0 180.0" fill="none" stroke="#eb6834" stroke-width="2.5" stroke-linejoin="round"/><path d="M56.0 180.0 L78.0 180.0 L100.0 180.0 L122.0 133.2 L144.0 133.2 L166.0 133.2 L188.0 133.2 L210.0 133.2 L232.0 133.2 L254.0 133.2 L276.0 133.2 L298.0 133.2 L320.0 133.2 L342.0 133.2 L364.0 133.2 L386.0 86.4 L408.0 86.4 L430.0 86.4 L452.0 86.4 L474.0 86.4 L496.0 86.4 L518.0 102.0 L540.0 102.0 L562.0 102.0 L584.0 102.0 L606.0 133.2 L628.0 133.2 L650.0 133.2 L672.0 133.2 L694.0 133.2 L716.0 133.2 L738.0 133.2 L760.0 133.2 L782.0 180.0" fill="none" stroke="#1baf7a" stroke-width="2.5" stroke-linejoin="round"/><path d="M56.0 180.0 L78.0 180.0 L100.0 180.0 L122.0 117.6 L144.0 117.6 L166.0 117.6 L188.0 117.6 L210.0 117.6 L232.0 117.6 L254.0 117.6 L276.0 117.6 L298.0 117.6 L320.0 117.6 L342.0 117.6 L364.0 117.6 L386.0 39.6 L408.0 39.6 L430.0 39.6 L452.0 39.6 L474.0 39.6 L496.0 39.6 L518.0 70.8 L540.0 70.8 L562.0 70.8 L584.0 70.8 L606.0 102.0 L628.0 102.0 L650.0 102.0 L672.0 102.0 L694.0 102.0 L716.0 102.0 L738.0 102.0 L760.0 102.0 L782.0 180.0" fill="none" stroke="#eda100" stroke-width="2.5" stroke-linejoin="round"/><circle cx="430" cy="39.599999999999994" r="5" fill="#2a78d6" stroke="#FFFFFF" stroke-width="2"/><line x1="430" y1="33.599999999999994" x2="430" y2="31.599999999999994" stroke="#2a78d6" stroke-width="1.5"/><text x="430" y="27.599999999999994" font-size="19" font-weight="700" fill="#2a78d6" text-anchor="middle">Ardiya 9</text><circle cx="451.99999999999994" cy="70.80000000000001" r="5" fill="#eb6834" stroke="#FFFFFF" stroke-width="2"/><line x1="451.99999999999994" y1="64.80000000000001" x2="451.99999999999994" y2="62.80000000000001" stroke="#eb6834" stroke-width="1.5"/><text x="451.99999999999994" y="58.80000000000001" font-size="19" font-weight="700" fill="#eb6834" text-anchor="middle">Kaifan 7</text><circle cx="474.00000000000006" cy="86.4" r="5" fill="#1baf7a" stroke="#FFFFFF" stroke-width="2"/><line x1="474.00000000000006" y1="80.4" x2="474.00000000000006" y2="92" stroke="#1baf7a" stroke-width="1.5"/><text x="474.00000000000006" y="88" font-size="19" font-weight="700" fill="#1baf7a" text-anchor="middle">Qurain 6</text><circle cx="496" cy="39.599999999999994" r="5" fill="#eda100" stroke="#FFFFFF" stroke-width="2"/><line x1="496" y1="33.599999999999994" x2="496" y2="114" stroke="#eda100" stroke-width="1.5"/><text x="496" y="110" font-size="19" font-weight="700" fill="#eda100" text-anchor="middle">Jabriya 9</text></svg></div>
-</div>
-<div style="background:#FFFFFF; padding:12px 20px 6px; border-radius:14px">
-<p style="font-size:25px; font-weight:700; color:#1C2B33">Men on the floor through the peak &mdash; every day of the week</p>
-<p style="font-size:21px; color:#4A5568; padding-bottom:2px"><span style="color:#2a78d6">&#9632;</span> Ardiya &nbsp; <span style="color:#eb6834">&#9632;</span> Kaifan &nbsp; <span style="color:#1baf7a">&#9632;</span> Qurain &nbsp; <span style="color:#eda100">&#9632;</span> Jabriya</p>
-<svg width="1660" height="222" viewBox="0 0 1660 222" role="img"><line x1="56" y1="178" x2="1636" y2="178" stroke="#E4DED4" stroke-width="1"/><text x="46" y="184" font-size="18" fill="#77808A" text-anchor="end">0</text><line x1="56" y1="147.6" x2="1636" y2="147.6" stroke="#E4DED4" stroke-width="1"/><text x="46" y="153.6" font-size="18" fill="#77808A" text-anchor="end">2</text><line x1="56" y1="117.19999999999999" x2="1636" y2="117.19999999999999" stroke="#E4DED4" stroke-width="1"/><text x="46" y="123.19999999999999" font-size="18" fill="#77808A" text-anchor="end">4</text><line x1="56" y1="86.8" x2="1636" y2="86.8" stroke="#E4DED4" stroke-width="1"/><text x="46" y="92.8" font-size="18" fill="#77808A" text-anchor="end">6</text><line x1="56" y1="56.39999999999999" x2="1636" y2="56.39999999999999" stroke="#E4DED4" stroke-width="1"/><text x="46" y="62.39999999999999" font-size="18" fill="#77808A" text-anchor="end">8</text><line x1="56" y1="26" x2="1636" y2="26" stroke="#E4DED4" stroke-width="1"/><text x="46" y="32" font-size="18" fill="#77808A" text-anchor="end">10</text><rect x="66" y="71.60000000000001" width="46.92857142857143" height="106.39999999999999" rx="4" fill="#2a78d6"/><text x="89.46428571428572" y="65.60000000000001" font-size="17" font-weight="700" fill="#2a78d6" text-anchor="middle">7</text><rect x="118.92857142857143" y="86.8" width="46.92857142857143" height="91.2" rx="4" fill="#eb6834"/><text x="142.39285714285714" y="80.8" font-size="17" font-weight="700" fill="#eb6834" text-anchor="middle">6</text><rect x="171.85714285714286" y="117.19999999999999" width="46.92857142857143" height="60.80000000000001" rx="4" fill="#1baf7a"/><text x="195.32142857142858" y="111.19999999999999" font-size="17" font-weight="700" fill="#1baf7a" text-anchor="middle">4</text><rect x="224.78571428571428" y="71.60000000000001" width="46.92857142857143" height="106.39999999999999" rx="4" fill="#eda100"/><text x="248.25" y="65.60000000000001" font-size="17" font-weight="700" fill="#eda100" text-anchor="middle">7</text><line x1="62" y1="86.8" x2="271.7142857142857" y2="86.8" stroke="#B04A1E" stroke-width="2.5" stroke-dasharray="5 3"/><text x="168.85714285714286" y="200" font-size="19" font-weight="400" fill="#1C2B33" text-anchor="middle">Sun</text><rect x="291.7142857142857" y="71.60000000000001" width="46.92857142857143" height="106.39999999999999" rx="4" fill="#2a78d6"/><text x="315.17857142857144" y="65.60000000000001" font-size="17" font-weight="700" fill="#2a78d6" text-anchor="middle">7</text><rect x="344.64285714285717" y="86.8" width="46.92857142857143" height="91.2" rx="4" fill="#eb6834"/><text x="368.1071428571429" y="80.8" font-size="17" font-weight="700" fill="#eb6834" text-anchor="middle">6</text><rect x="397.57142857142856" y="117.19999999999999" width="46.92857142857143" height="60.80000000000001" rx="4" fill="#1baf7a"/><text x="421.0357142857143" y="111.19999999999999" font-size="17" font-weight="700" fill="#1baf7a" text-anchor="middle">4</text><rect x="450.5" y="71.60000000000001" width="46.92857142857143" height="106.39999999999999" rx="4" fill="#eda100"/><text x="473.9642857142857" y="65.60000000000001" font-size="17" font-weight="700" fill="#eda100" text-anchor="middle">7</text><line x1="287.7142857142857" y1="86.8" x2="497.42857142857144" y2="86.8" stroke="#B04A1E" stroke-width="2.5" stroke-dasharray="5 3"/><text x="394.57142857142856" y="200" font-size="19" font-weight="400" fill="#1C2B33" text-anchor="middle">Mon</text><rect x="517.4285714285714" y="71.60000000000001" width="46.92857142857143" height="106.39999999999999" rx="4" fill="#2a78d6"/><text x="540.8928571428571" y="65.60000000000001" font-size="17" font-weight="700" fill="#2a78d6" text-anchor="middle">7</text><rect x="570.3571428571429" y="86.8" width="46.92857142857143" height="91.2" rx="4" fill="#eb6834"/><text x="593.8214285714286" y="80.8" font-size="17" font-weight="700" fill="#eb6834" text-anchor="middle">6</text><rect x="623.2857142857143" y="117.19999999999999" width="46.92857142857143" height="60.80000000000001" rx="4" fill="#1baf7a"/><text x="646.75" y="111.19999999999999" font-size="17" font-weight="700" fill="#1baf7a" text-anchor="middle">4</text><rect x="676.2142857142858" y="71.60000000000001" width="46.92857142857143" height="106.39999999999999" rx="4" fill="#eda100"/><text x="699.6785714285714" y="65.60000000000001" font-size="17" font-weight="700" fill="#eda100" text-anchor="middle">7</text><line x1="513.4285714285714" y1="86.8" x2="723.1428571428571" y2="86.8" stroke="#B04A1E" stroke-width="2.5" stroke-dasharray="5 3"/><text x="620.2857142857143" y="200" font-size="19" font-weight="400" fill="#1C2B33" text-anchor="middle">Tue</text><rect x="743.1428571428571" y="71.60000000000001" width="46.92857142857143" height="106.39999999999999" rx="4" fill="#2a78d6"/><text x="766.6071428571428" y="65.60000000000001" font-size="17" font-weight="700" fill="#2a78d6" text-anchor="middle">7</text><rect x="796.0714285714286" y="86.8" width="46.92857142857143" height="91.2" rx="4" fill="#eb6834"/><text x="819.5357142857142" y="80.8" font-size="17" font-weight="700" fill="#eb6834" text-anchor="middle">6</text><rect x="849" y="117.19999999999999" width="46.92857142857143" height="60.80000000000001" rx="4" fill="#1baf7a"/><text x="872.4642857142857" y="111.19999999999999" font-size="17" font-weight="700" fill="#1baf7a" text-anchor="middle">4</text><rect x="901.9285714285713" y="71.60000000000001" width="46.92857142857143" height="106.39999999999999" rx="4" fill="#eda100"/><text x="925.392857142857" y="65.60000000000001" font-size="17" font-weight="700" fill="#eda100" text-anchor="middle">7</text><line x1="739.1428571428571" y1="86.8" x2="948.8571428571429" y2="86.8" stroke="#B04A1E" stroke-width="2.5" stroke-dasharray="5 3"/><text x="846" y="200" font-size="19" font-weight="400" fill="#1C2B33" text-anchor="middle">Wed</text><rect x="968.8571428571429" y="71.60000000000001" width="46.92857142857143" height="106.39999999999999" rx="4" fill="#2a78d6"/><text x="992.3214285714286" y="65.60000000000001" font-size="17" font-weight="700" fill="#2a78d6" text-anchor="middle">7</text><rect x="1021.7857142857143" y="71.60000000000001" width="46.92857142857143" height="106.39999999999999" rx="4" fill="#eb6834"/><text x="1045.25" y="65.60000000000001" font-size="17" font-weight="700" fill="#eb6834" text-anchor="middle">7</text><rect x="1074.7142857142858" y="102" width="46.92857142857143" height="76" rx="4" fill="#1baf7a"/><text x="1098.1785714285716" y="96" font-size="17" font-weight="700" fill="#1baf7a" text-anchor="middle">5</text><rect x="1127.642857142857" y="71.60000000000001" width="46.92857142857143" height="106.39999999999999" rx="4" fill="#eda100"/><text x="1151.107142857143" y="65.60000000000001" font-size="17" font-weight="700" fill="#eda100" text-anchor="middle">7</text><line x1="964.8571428571429" y1="71.60000000000001" x2="1174.5714285714287" y2="71.60000000000001" stroke="#B04A1E" stroke-width="2.5" stroke-dasharray="5 3"/><text x="1071.7142857142858" y="200" font-size="19" font-weight="700" fill="#B04A1E" text-anchor="middle">Thu ·  busiest</text><rect x="1194.5714285714287" y="71.60000000000001" width="46.92857142857143" height="106.39999999999999" rx="4" fill="#2a78d6"/><text x="1218.0357142857144" y="65.60000000000001" font-size="17" font-weight="700" fill="#2a78d6" text-anchor="middle">7</text><rect x="1247.5" y="71.60000000000001" width="46.92857142857143" height="106.39999999999999" rx="4" fill="#eb6834"/><text x="1270.9642857142858" y="65.60000000000001" font-size="17" font-weight="700" fill="#eb6834" text-anchor="middle">7</text><rect x="1300.4285714285716" y="102" width="46.92857142857143" height="76" rx="4" fill="#1baf7a"/><text x="1323.8928571428573" y="96" font-size="17" font-weight="700" fill="#1baf7a" text-anchor="middle">5</text><rect x="1353.357142857143" y="71.60000000000001" width="46.92857142857143" height="106.39999999999999" rx="4" fill="#eda100"/><text x="1376.8214285714287" y="65.60000000000001" font-size="17" font-weight="700" fill="#eda100" text-anchor="middle">7</text><line x1="1190.5714285714287" y1="71.60000000000001" x2="1400.2857142857144" y2="71.60000000000001" stroke="#B04A1E" stroke-width="2.5" stroke-dasharray="5 3"/><text x="1297.4285714285716" y="200" font-size="19" font-weight="700" fill="#B04A1E" text-anchor="middle">Fri ·  busiest</text><rect x="1420.2857142857142" y="71.60000000000001" width="46.92857142857143" height="106.39999999999999" rx="4" fill="#2a78d6"/><text x="1443.75" y="65.60000000000001" font-size="17" font-weight="700" fill="#2a78d6" text-anchor="middle">7</text><rect x="1473.2142857142856" y="86.8" width="46.92857142857143" height="91.2" rx="4" fill="#eb6834"/><text x="1496.6785714285713" y="80.8" font-size="17" font-weight="700" fill="#eb6834" text-anchor="middle">6</text><rect x="1526.142857142857" y="117.19999999999999" width="46.92857142857143" height="60.80000000000001" rx="4" fill="#1baf7a"/><text x="1549.607142857143" y="111.19999999999999" font-size="17" font-weight="700" fill="#1baf7a" text-anchor="middle">4</text><rect x="1579.0714285714284" y="71.60000000000001" width="46.92857142857143" height="106.39999999999999" rx="4" fill="#eda100"/><text x="1602.5357142857142" y="65.60000000000001" font-size="17" font-weight="700" fill="#eda100" text-anchor="middle">7</text><line x1="1416.2857142857142" y1="86.8" x2="1626" y2="86.8" stroke="#B04A1E" stroke-width="2.5" stroke-dasharray="5 3"/><text x="1523.142857142857" y="200" font-size="19" font-weight="400" fill="#1C2B33" text-anchor="middle">Sat</text><text x="1634" y="47.28" font-size="18" font-weight="700" fill="#B04A1E" text-anchor="end">dashed line = floor wanted that day</text></svg></div>
-<p style="position:absolute; left:128px; bottom:56px; width:1664px; font-size:23px; line-height:1.28; color:#77808A">Overtime today from payroll, 22 August &ndash; 20 September 2026, at each branch&rsquo;s own hourly rate. The right-hand chart counts every man physically on the floor, half-hour by half-hour, on the busiest day of the week. The lower chart is the same count taken across all seven days, against the floor set for that day. <b>Every branch meets its floor every day except</b> <b style="color:#B04A1E">Qurain on Sun, 4 against 6; Qurain on Mon, 4 against 6; Qurain on Tue, 4 against 6; Qurain on Wed, 4 against 6; Qurain on Thu, 5 against 7; Qurain on Fri, 5 against 7; Qurain on Sat, 4 against 6</b>. Rosters use only men who have joined; nobody on leave is counted.</p>
-</section>
-</div>
+<!-- ── MAIN APP ──────────────────────────────────────── -->
+<div id="mainApp" style="display:none">
+  <div class="topbar">
+    <div>
+      <h1 id="locName">Roster Planner</h1>
+      <div class="sub" id="supName">—</div>
+    </div>
+    <button class="btn btn-outline" onclick="logout()">Logout</button>
+  </div>
 
-<div class="slide" data-id="ardiya">
-<section id="ardiya" data-transition="fade" style="background:#FAF7F2; color:#1C2B33; font-family:'Public Sans', Verdana, sans-serif; padding:34px 128px 150px; display:flex; flex-direction:column; gap:9px">
-<div style="display:flex; flex-direction:column; gap:4px">
-<p style="font-size:22px; letter-spacing:2px; color:#1F6B59">AT TODAY'S STRENGTH &nbsp;&middot;&nbsp; NOBODY HIRED &nbsp;&middot;&nbsp; WEEK OF SUNDAY 11 OCTOBER</p>
-<h2 style="font-family:'Libre Baskerville', Georgia, serif; font-size:44px; font-weight:400; line-height:1.1; color:#1C2B33">Ardiya &mdash; 9 men</h2>
-<p style="font-size:24px; line-height:1.3; color:#4A5568">On site <b>12:30</b>, opens <b>13:30</b> &mdash; an hour of buffer. &nbsp;&middot;&nbsp; <b>First 12:30&ndash;21:30</b> &times;4  &nbsp;&middot;&nbsp; <b>Peak 14:30&ndash;23:30</b> &nbsp;&middot;&nbsp; <b>Second 18:30&ndash;03:30</b> &times;4 &nbsp;&middot;&nbsp; <b style="color:#B04A1E">DOUBLE 12:30&ndash;03:30</b> (+6 h, only the day after a rest day) &nbsp;&middot;&nbsp; <b style="color:#B04A1E">First +2h</b> where the floor needs it</p>
-</div>
-<table style="width:1664px; font-size:23px; color:#1C2B33; border-collapse:collapse">
-<tr style="background:#1C2B33"><th style="width:19%; text-align:left; color:#FAF7F2; font-size:23px; padding:6px 16px">Employee</th>
-<th style="width:4%; text-align:center; color:#8FA3AE">Pair</th>
-<th style="width:8.7%; text-align:center; color:#FAF7F2">Sun</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Mon</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Tue</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Wed</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Thu</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Fri</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Sat</th>
-<th style="width:7%; text-align:right; color:#8FA3AE">Extra</th>
-<th style="width:9%; text-align:right; color:#8FA3AE; padding-right:16px">Min rest</th></tr>
-<tr><td style="padding:3px 16px">Keshab Alemagar <span style="color:#1F6B59">&#9733;</span></td><td style="text-align:center; color:#77808A">1</td><td style="text-align:center; color:#77808A">DAY OFF</td><td style="text-align:center; color:#B04A1E"><b>DOUBLE</b></td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:right; padding-right:16px; color:#B04A1E"><b>6 h</b></td><td style="text-align:right; padding-right:16px; color:#77808A">15 h</td></tr>
-<tr style="background:#F3F0EA"><td style="padding:3px 16px">Foudman Limbu <span style="color:#1F6B59">&#9733;</span></td><td style="text-align:center; color:#77808A">2</td><td style="text-align:center">Second</td><td style="text-align:center; color:#77808A">DAY OFF</td><td style="text-align:center; color:#B04A1E"><b>DOUBLE</b></td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:right; padding-right:16px; color:#B04A1E"><b>6 h</b></td><td style="text-align:right; padding-right:16px; color:#77808A">15 h</td></tr>
-<tr><td style="padding:3px 16px">James Andrew Refrea <span style="color:#1F6B59">&#9733;</span></td><td style="text-align:center; color:#77808A">3</td><td style="text-align:center; color:#B04A1E"><b>First +2h</b></td><td style="text-align:center">Second</td><td style="text-align:center; color:#77808A">DAY OFF</td><td style="text-align:center; color:#B04A1E"><b>First +2h</b></td><td style="text-align:center">First</td><td style="text-align:center; color:#B04A1E"><b>First +2h</b></td><td style="text-align:center; color:#B04A1E"><b>First +2h</b></td><td style="text-align:right; padding-right:16px; color:#B04A1E"><b>8 h</b></td><td style="text-align:right; padding-right:16px; color:#77808A">13 h</td></tr>
-<tr style="background:#F3F0EA"><td style="padding:3px 16px">Aaitu Newar</td><td style="text-align:center; color:#77808A">1</td><td style="text-align:center; color:#77808A">DAY OFF</td><td style="text-align:center; color:#B04A1E"><b>First +2h</b></td><td style="text-align:center; color:#B04A1E"><b>First +2h</b></td><td style="text-align:center; color:#B04A1E"><b>First +2h</b></td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:right; padding-right:16px; color:#B04A1E"><b>6 h</b></td><td style="text-align:right; padding-right:16px; color:#77808A">13 h</td></tr>
-<tr><td style="padding:3px 16px">Deb Bahadur Thapa</td><td style="text-align:center; color:#77808A">2</td><td style="text-align:center">Second</td><td style="text-align:center; color:#77808A">DAY OFF</td><td style="text-align:center; color:#B04A1E"><b>First +2h</b></td><td style="text-align:center; color:#B04A1E"><b>First +2h</b></td><td style="text-align:center; color:#B04A1E"><b>First +2h</b></td><td style="text-align:center; color:#B04A1E"><b>First +2h</b></td><td style="text-align:center">First</td><td style="text-align:right; padding-right:16px; color:#B04A1E"><b>8 h</b></td><td style="text-align:right; padding-right:16px; color:#77808A">13 h</td></tr>
-<tr style="background:#F3F0EA"><td style="padding:3px 16px">Rajan Shrestha</td><td style="text-align:center; color:#77808A">3</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center; color:#77808A">DAY OFF</td><td style="text-align:center; color:#B04A1E"><b>DOUBLE</b></td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:right; padding-right:16px; color:#B04A1E"><b>6 h</b></td><td style="text-align:right; padding-right:16px; color:#77808A">15 h</td></tr>
-<tr><td style="padding:3px 16px">Subas Pun Magar</td><td style="text-align:center; color:#77808A">4</td><td style="text-align:center; color:#B04A1E"><b>First +2h</b></td><td style="text-align:center; color:#B04A1E"><b>First +2h</b></td><td style="text-align:center; color:#B04A1E"><b>First +2h</b></td><td style="text-align:center; color:#77808A">DAY OFF</td><td style="text-align:center">First</td><td style="text-align:center">First</td><td style="text-align:center; color:#B04A1E"><b>First +2h</b></td><td style="text-align:right; padding-right:16px; color:#B04A1E"><b>8 h</b></td><td style="text-align:right; padding-right:16px; color:#77808A">13 h</td></tr>
-<tr style="background:#F3F0EA"><td style="padding:3px 16px">Sudeep Limbu</td><td style="text-align:center; color:#77808A">4</td><td style="text-align:center; color:#B04A1E"><b>First +2h</b></td><td style="text-align:center; color:#B04A1E"><b>First +2h</b></td><td style="text-align:center">Second</td><td style="text-align:center; color:#77808A">DAY OFF</td><td style="text-align:center; color:#B04A1E"><b>First +2h</b></td><td style="text-align:center">First</td><td style="text-align:center; color:#B04A1E"><b>First +2h</b></td><td style="text-align:right; padding-right:16px; color:#B04A1E"><b>8 h</b></td><td style="text-align:right; padding-right:16px; color:#77808A">13 h</td></tr>
-<tr><td style="padding:3px 16px">Suman Karki</td><td style="text-align:center; color:#77808A">5</td><td style="text-align:center; color:#B04A1E"><b>DOUBLE</b></td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center; color:#77808A">DAY OFF</td><td style="text-align:right; padding-right:16px; color:#B04A1E"><b>6 h</b></td><td style="text-align:right; padding-right:16px; color:#77808A">15 h</td></tr>
-<tr style="background:#1C2B33; color:#FAF7F2"><td style="padding:5px 16px"><b>Through the rush</b></td><td></td>
-<td style="text-align:center; color:#4FA391"><b>7</b></td><td style="text-align:center; color:#4FA391"><b>7</b></td><td style="text-align:center; color:#4FA391"><b>7</b></td><td style="text-align:center; color:#4FA391"><b>7</b></td><td style="text-align:center; color:#4FA391"><b>7</b></td><td style="text-align:center; color:#4FA391"><b>7</b></td><td style="text-align:center; color:#4FA391"><b>7</b></td>
-<td style="text-align:center; color:#8FA3AE">want 7/7/7/7/7/7/7</td><td></td></tr>
+  <div class="container">
 
-<tr style="background:#1C2B33; color:#FAF7F2"><td style="padding:5px 16px"><b>Overtime hours</b></td><td></td>
-<td style="text-align:center; color:#E09A6A"><b>12</b></td><td style="text-align:center; color:#E09A6A"><b>12</b></td><td style="text-align:center; color:#E09A6A"><b>12</b></td><td style="text-align:center; color:#E09A6A"><b>12</b></td><td style="text-align:center; color:#E09A6A"><b>4</b></td><td style="text-align:center; color:#E09A6A"><b>4</b></td><td style="text-align:center; color:#E09A6A"><b>6</b></td>
-<td style="text-align:right; color:#E09A6A"><b>62 h</b></td>
-<td style="text-align:right; padding-right:16px; color:#1F6B59"><b>13 h min</b></td></tr>
-</table>
-<div style="display:flex; gap:14px">
-<div style="flex:1; background:#FFFFFF; padding:10px 22px; border-radius:14px; border-top:5px solid #B04A1E"><p style="font-size:23px; color:#4A5568">Overtime today</p><p style="font-size:30px; font-weight:700; color:#B04A1E; line-height:1.2">780 h &middot; 510 KD</p></div>
-<div style="flex:1; background:#FFFFFF; padding:10px 22px; border-radius:14px; border-top:5px solid #1F6B59"><p style="font-size:23px; color:#4A5568">On this roster</p><p style="font-size:30px; font-weight:700; color:#1F6B59; line-height:1.2">269 h &middot; 175 KD</p></div>
+    <!-- My Team (always shown — includes Transfer, even for exempt locations) -->
+    <div class="card" id="teamCard" style="display:none">
+      <h5><i class="bi bi-people"></i> My Team</h5>
+      <div id="teamExemptNote" style="display:none;color:var(--muted);font-size:13px;margin-bottom:12px"></div>
+      <div id="teamList"></div>
+    </div>
 
-<div style="flex:1; background:#FFFFFF; padding:10px 22px; border-radius:14px; border-top:5px solid #1F6B59"><p style="font-size:23px; color:#4A5568">Cut</p><p style="font-size:30px; font-weight:700; color:#1F6B59; line-height:1.2">66%</p></div>
-<div style="flex:1; background:#FFFFFF; padding:10px 22px; border-radius:14px; border-top:5px solid #1F6B59"><p style="font-size:23px; color:#4A5568">Supervisor's headroom</p><p style="font-size:30px; font-weight:700; color:#1F6B59; line-height:1.2">31 of 300 h</p></div>
-</div>
-<div style="display:flex; align-items:center; gap:24px; background:#FFFFFF; padding:11px 26px; border-radius:14px; border-left:6px solid #2E7D6B">
-<p style="width:330px; font-size:24px; font-weight:700; color:#1F6B59">The supervisor owns the budget</p>
-<p style="flex:1; font-size:24px; line-height:1.3; color:#1C2B33">This roster spends <b>269 of his 300 hours</b>. The rest is his to deploy on a busy night, a sickness or a rest day &mdash; and what he does with it is measured.
- <b>Over the four-week cycle every man carries between 26 and 34.7 hours</b> &mdash; the double moves down the list each week instead of sitting on the same man.</p>
-</div>
-<p style="position:absolute; left:128px; bottom:56px; width:1664px; font-size:23px; line-height:1.28; color:#77808A">&#9733; one on the opening and one on the closing every day; no two supervisors share a pair, so no shift is left without one. The Peak band is a full nine hours and carries no overtime &mdash; it is what replaced holding the opening crew late. A double only ever follows a rest day, and the man is on Second from the next day on, so nobody closes at 03:30 and opens the next morning. Buddy pairs share a rest day, Saturday to Wednesday only. Overtime is shared by every man, supervisors included, least-burdened first, on a four-week cycle so the double never sits on the same man. Peak strength is the floor the branch must hold through the rush: 7 every day. Arjun Pariyar and Bikash Bikram Shah are on leave. Opening cut to four and four.</p>
-</section>
+    <!-- Discrepancies -->
+    <div class="card" id="discCard" style="display:none">
+      <h5><i class="bi bi-exclamation-triangle" style="color:var(--amber)"></i> Needs Review</h5>
+      <div id="discList"></div>
+    </div>
+
+    <!-- Incoming Transfer Requests (I'm the destination — needs my approval) -->
+    <div class="card" id="incomingCard" style="display:none">
+      <h5><i class="bi bi-box-arrow-in-down"></i> Incoming Transfer Requests</h5>
+      <div id="incomingList"></div>
+    </div>
+
+    <!-- Outgoing Transfer Requests (I requested these — status only) -->
+    <div class="card" id="outgoingCard" style="display:none">
+      <h5><i class="bi bi-box-arrow-up"></i> My Transfer Requests</h5>
+      <div id="outgoingList"></div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="card" id="toolbarCard">
+      <div class="toolbar">
+        <div>
+          <label>From</label>
+          <input type="date" id="fromDate">
+        </div>
+        <div>
+          <label>To</label>
+          <input type="date" id="toDate">
+        </div>
+        <button class="btn btn-primary" onclick="loadRoster()">Load</button>
+        <button class="btn btn-outline" onclick="copyPrevious()">Copy previous range</button>
+        <div style="flex:1"></div>
+        <button class="btn btn-secondary" onclick="saveDraft()">Save Draft</button>
+        <button class="btn btn-success" onclick="publish()">Publish</button>
+      </div>
+      <div id="statusMsg"></div>
+    </div>
+
+    <!-- Grid -->
+    <div class="card" id="gridCard" style="overflow-x:auto">
+      <div id="gridWrap"><p style="color:var(--muted)">Pick a date range and click Load.</p></div>
+    </div>
+
+  </div>
 </div>
 
-<div class="slide" data-id="jabriya">
-<section id="jabriya" data-transition="fade" style="background:#1C2B33; color:#FAF7F2; font-family:'Public Sans', Verdana, sans-serif; padding:34px 128px 150px; display:flex; flex-direction:column; gap:9px">
-<div style="display:flex; flex-direction:column; gap:4px">
-<p style="font-size:22px; letter-spacing:2px; color:#4FA391">AT TODAY'S STRENGTH &nbsp;&middot;&nbsp; NOBODY HIRED &nbsp;&middot;&nbsp; WEEK OF SUNDAY 11 OCTOBER</p>
-<h2 style="font-family:'Libre Baskerville', Georgia, serif; font-size:44px; font-weight:400; line-height:1.1; color:#FAF7F2">Jabriya &mdash; 9 men</h2>
-<p style="font-size:24px; line-height:1.3; color:#C9D4DA">On site <b>12:30</b>, opens <b>13:30</b> &mdash; an hour of buffer. &nbsp;&middot;&nbsp; <b>First 12:30&ndash;21:30</b> &times;4  &nbsp;&middot;&nbsp; <b>Peak 14:30&ndash;23:30</b> &nbsp;&middot;&nbsp; <b>Second 18:30&ndash;03:30</b> &times;4 &nbsp;&middot;&nbsp; <b style="color:#E09A6A">DOUBLE 12:30&ndash;03:30</b> (+6 h, only the day after a rest day) &nbsp;&middot;&nbsp; <b style="color:#E09A6A">First +2h</b> where the floor needs it</p>
-</div>
-<table style="width:1664px; font-size:23px; color:#FAF7F2; border-collapse:collapse">
-<tr style="background:#0F1C23"><th style="width:19%; text-align:left; color:#FAF7F2; font-size:23px; padding:6px 16px">Employee</th>
-<th style="width:4%; text-align:center; color:#8FA3AE">Pair</th>
-<th style="width:8.7%; text-align:center; color:#FAF7F2">Sun</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Mon</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Tue</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Wed</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Thu</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Fri</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Sat</th>
-<th style="width:7%; text-align:right; color:#8FA3AE">Extra</th>
-<th style="width:9%; text-align:right; color:#8FA3AE; padding-right:16px">Min rest</th></tr>
-<tr><td style="padding:3px 16px">Bibek Nepali <span style="color:#4FA391">&#9733;</span></td><td style="text-align:center; color:#8FA3AE">1</td><td style="text-align:center; color:#8FA3AE">DAY OFF</td><td style="text-align:center; color:#E09A6A"><b>DOUBLE</b></td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:right; padding-right:16px; color:#E09A6A"><b>6 h</b></td><td style="text-align:right; padding-right:16px; color:#8FA3AE">15 h</td></tr>
-<tr style="background:#263A45"><td style="padding:3px 16px">Yogendra Oli <span style="color:#4FA391">&#9733;</span></td><td style="text-align:center; color:#8FA3AE">2</td><td style="text-align:center; color:#E09A6A"><b>DOUBLE</b></td><td style="text-align:center; color:#8FA3AE">DAY OFF</td><td style="text-align:center; color:#E09A6A"><b>First +2h</b></td><td style="text-align:center; color:#E09A6A"><b>First +2h</b></td><td style="text-align:center">First</td><td style="text-align:center">First</td><td style="text-align:center">First</td><td style="text-align:right; padding-right:16px; color:#E09A6A"><b>10 h</b></td><td style="text-align:right; padding-right:16px; color:#8FA3AE">13 h</td></tr>
-<tr><td style="padding:3px 16px">Manish Gurung <span style="color:#4FA391">&#9733;</span></td><td style="text-align:center; color:#8FA3AE">3</td><td style="text-align:center; color:#E09A6A"><b>First +2h</b></td><td style="text-align:center; color:#E09A6A"><b>First +2h</b></td><td style="text-align:center; color:#8FA3AE">DAY OFF</td><td style="text-align:center; color:#E09A6A"><b>First +2h</b></td><td style="text-align:center">First</td><td style="text-align:center">First</td><td style="text-align:center; color:#E09A6A"><b>First +2h</b></td><td style="text-align:right; padding-right:16px; color:#E09A6A"><b>8 h</b></td><td style="text-align:right; padding-right:16px; color:#8FA3AE">13 h</td></tr>
-<tr style="background:#263A45"><td style="padding:3px 16px">Ajay Gurung</td><td style="text-align:center; color:#8FA3AE">1</td><td style="text-align:center; color:#8FA3AE">DAY OFF</td><td style="text-align:center; color:#E09A6A"><b>First +2h</b></td><td style="text-align:center; color:#E09A6A"><b>First +2h</b></td><td style="text-align:center; color:#E09A6A"><b>First +2h</b></td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:right; padding-right:16px; color:#E09A6A"><b>6 h</b></td><td style="text-align:right; padding-right:16px; color:#8FA3AE">13 h</td></tr>
-<tr><td style="padding:3px 16px">Jit Bahadur Thakali</td><td style="text-align:center; color:#8FA3AE">2</td><td style="text-align:center">Second</td><td style="text-align:center; color:#8FA3AE">DAY OFF</td><td style="text-align:center; color:#E09A6A"><b>DOUBLE</b></td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:right; padding-right:16px; color:#E09A6A"><b>6 h</b></td><td style="text-align:right; padding-right:16px; color:#8FA3AE">15 h</td></tr>
-<tr style="background:#263A45"><td style="padding:3px 16px">Kristal Ghalan</td><td style="text-align:center; color:#8FA3AE">3</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center; color:#8FA3AE">DAY OFF</td><td style="text-align:center; color:#E09A6A"><b>DOUBLE</b></td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:right; padding-right:16px; color:#E09A6A"><b>6 h</b></td><td style="text-align:right; padding-right:16px; color:#8FA3AE">15 h</td></tr>
-<tr><td style="padding:3px 16px">Mukti Lama</td><td style="text-align:center; color:#8FA3AE">4</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center; color:#8FA3AE">DAY OFF</td><td style="text-align:center; color:#E09A6A"><b>First +2h</b></td><td style="text-align:center; color:#E09A6A"><b>First +2h</b></td><td style="text-align:center; color:#E09A6A"><b>First +2h</b></td><td style="text-align:right; padding-right:16px; color:#E09A6A"><b>6 h</b></td><td style="text-align:right; padding-right:16px; color:#8FA3AE">13 h</td></tr>
-<tr style="background:#263A45"><td style="padding:3px 16px">Puran Kumar Thapa</td><td style="text-align:center; color:#8FA3AE">4</td><td style="text-align:center; color:#E09A6A"><b>First +2h</b></td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center; color:#8FA3AE">DAY OFF</td><td style="text-align:center; color:#E09A6A"><b>First +2h</b></td><td style="text-align:center; color:#E09A6A"><b>First +2h</b></td><td style="text-align:center; color:#E09A6A"><b>First +2h</b></td><td style="text-align:right; padding-right:16px; color:#E09A6A"><b>8 h</b></td><td style="text-align:right; padding-right:16px; color:#8FA3AE">13 h</td></tr>
-<tr><td style="padding:3px 16px">Ram Bahadur Sirmal</td><td style="text-align:center; color:#8FA3AE">5</td><td style="text-align:center; color:#E09A6A"><b>First +2h</b></td><td style="text-align:center; color:#E09A6A"><b>First +2h</b></td><td style="text-align:center; color:#E09A6A"><b>First +2h</b></td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center; color:#8FA3AE">DAY OFF</td><td style="text-align:right; padding-right:16px; color:#E09A6A"><b>6 h</b></td><td style="text-align:right; padding-right:16px; color:#8FA3AE">13 h</td></tr>
-<tr style="background:#0F1C23; color:#FAF7F2"><td style="padding:5px 16px"><b>Through the rush</b></td><td></td>
-<td style="text-align:center; color:#4FA391"><b>7</b></td><td style="text-align:center; color:#4FA391"><b>7</b></td><td style="text-align:center; color:#4FA391"><b>7</b></td><td style="text-align:center; color:#4FA391"><b>7</b></td><td style="text-align:center; color:#4FA391"><b>7</b></td><td style="text-align:center; color:#4FA391"><b>7</b></td><td style="text-align:center; color:#4FA391"><b>7</b></td>
-<td style="text-align:center; color:#8FA3AE">want 7/7/7/7/7/7/7</td><td></td></tr>
-
-<tr style="background:#0F1C23; color:#FAF7F2"><td style="padding:5px 16px"><b>Overtime hours</b></td><td></td>
-<td style="text-align:center; color:#E09A6A"><b>12</b></td><td style="text-align:center; color:#E09A6A"><b>12</b></td><td style="text-align:center; color:#E09A6A"><b>12</b></td><td style="text-align:center; color:#E09A6A"><b>12</b></td><td style="text-align:center; color:#E09A6A"><b>4</b></td><td style="text-align:center; color:#E09A6A"><b>4</b></td><td style="text-align:center; color:#E09A6A"><b>6</b></td>
-<td style="text-align:right; color:#E09A6A"><b>62 h</b></td>
-<td style="text-align:right; padding-right:16px; color:#4FA391"><b>13 h min</b></td></tr>
-</table>
-<div style="display:flex; gap:14px">
-<div style="flex:1; background:#263A45; padding:10px 22px; border-radius:14px; border-top:5px solid #E09A6A"><p style="font-size:23px; color:#C9D4DA">Overtime today</p><p style="font-size:30px; font-weight:700; color:#E09A6A; line-height:1.2">712 h &middot; 485 KD</p></div>
-<div style="flex:1; background:#263A45; padding:10px 22px; border-radius:14px; border-top:5px solid #4FA391"><p style="font-size:23px; color:#C9D4DA">On this roster</p><p style="font-size:30px; font-weight:700; color:#4FA391; line-height:1.2">269 h &middot; 175 KD</p></div>
-
-<div style="flex:1; background:#263A45; padding:10px 22px; border-radius:14px; border-top:5px solid #4FA391"><p style="font-size:23px; color:#C9D4DA">Cut</p><p style="font-size:30px; font-weight:700; color:#4FA391; line-height:1.2">62%</p></div>
-<div style="flex:1; background:#263A45; padding:10px 22px; border-radius:14px; border-top:5px solid #4FA391"><p style="font-size:23px; color:#C9D4DA">Supervisor's headroom</p><p style="font-size:30px; font-weight:700; color:#4FA391; line-height:1.2">31 of 300 h</p></div>
-</div>
-<div style="display:flex; align-items:center; gap:24px; background:#263A45; padding:11px 26px; border-radius:14px; border-left:6px solid #2E7D6B">
-<p style="width:330px; font-size:24px; font-weight:700; color:#4FA391">The supervisor owns the budget</p>
-<p style="flex:1; font-size:24px; line-height:1.3; color:#FAF7F2">This roster spends <b>269 of his 300 hours</b>. The rest is his to deploy on a busy night, a sickness or a rest day &mdash; and what he does with it is measured.
- <b>Over the four-week cycle every man carries between 26 and 43.3 hours</b> &mdash; the double moves down the list each week instead of sitting on the same man.</p>
-</div>
-<p style="position:absolute; left:128px; bottom:56px; width:1664px; font-size:23px; line-height:1.28; color:#8FA3AE">&#9733; one on the opening and one on the closing every day; no two supervisors share a pair, so no shift is left without one. The Peak band is a full nine hours and carries no overtime &mdash; it is what replaced holding the opening crew late. A double only ever follows a rest day, and the man is on Second from the next day on, so nobody closes at 03:30 and opens the next morning. Buddy pairs share a rest day, Saturday to Wednesday only. Overtime is shared by every man, supervisors included, least-burdened first, on a four-week cycle so the double never sits on the same man. Peak strength is the floor the branch must hold through the rush: 7 every day. Ram Bahadur Sirmal joins from Kaifan on 7 October; Prakash Budha moves to Khairan.</p>
-</section>
+<!-- ── TRANSFER REQUEST MODAL ────────────────────────── -->
+<div id="transferModal" class="modal-overlay">
+  <div class="modal-box">
+    <h5>Transfer Employee</h5>
+    <div class="sub" id="transferWho" style="color:var(--muted);font-size:13px"></div>
+    <label>To Location</label>
+    <select id="transferLocation" onchange="onTransferLocationChange()"></select>
+    <label>Effective Date</label>
+    <input type="date" id="transferDate">
+    <label>Reason (optional)</label>
+    <textarea id="transferReason" rows="2" placeholder="e.g. permanent reassignment"></textarea>
+    <div id="transferApprovalNote" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="btn btn-outline" style="flex:1" onclick="closeTransfer()">Cancel</button>
+      <button class="btn btn-success" style="flex:1" id="transferConfirmBtn" onclick="submitTransfer()">Send Request</button>
+    </div>
+    <div id="transferMsg" style="font-size:12px;margin-top:10px"></div>
+  </div>
 </div>
 
-<div class="slide" data-id="kaifan">
-<section id="kaifan" data-transition="fade" style="background:#FAF7F2; color:#1C2B33; font-family:'Public Sans', Verdana, sans-serif; padding:34px 128px 150px; display:flex; flex-direction:column; gap:9px">
-<div style="display:flex; flex-direction:column; gap:4px">
-<p style="font-size:22px; letter-spacing:2px; color:#1F6B59">AT TODAY'S STRENGTH &nbsp;&middot;&nbsp; NOBODY HIRED &nbsp;&middot;&nbsp; WEEK OF SUNDAY 11 OCTOBER</p>
-<h2 style="font-family:'Libre Baskerville', Georgia, serif; font-size:44px; font-weight:400; line-height:1.1; color:#1C2B33">Kaifan &mdash; 8 men</h2>
-<p style="font-size:24px; line-height:1.3; color:#4A5568">On site <b>11:30</b>, opens <b>12:00</b> &mdash; half an hour of buffer. &nbsp;&middot;&nbsp; <b>First 11:30&ndash;20:30</b> &times;3  &nbsp;&middot;&nbsp; <b>Peak 14:30&ndash;23:30</b> &nbsp;&middot;&nbsp; <b>Second 17:30&ndash;02:30</b> &times;3 &nbsp;&middot;&nbsp; <b style="color:#B04A1E">DOUBLE 11:30&ndash;02:30</b> (+6 h, only the day after a rest day) &nbsp;&middot;&nbsp; <b style="color:#B04A1E">First +3h</b> where the floor needs it</p>
-</div>
-<table style="width:1664px; font-size:23px; color:#1C2B33; border-collapse:collapse">
-<tr style="background:#1C2B33"><th style="width:19%; text-align:left; color:#FAF7F2; font-size:23px; padding:6px 16px">Employee</th>
-<th style="width:4%; text-align:center; color:#8FA3AE">Pair</th>
-<th style="width:8.7%; text-align:center; color:#FAF7F2">Sun</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Mon</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Tue</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Wed</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Thu</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Fri</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Sat</th>
-<th style="width:7%; text-align:right; color:#8FA3AE">Extra</th>
-<th style="width:9%; text-align:right; color:#8FA3AE; padding-right:16px">Min rest</th></tr>
-<tr><td style="padding:3px 16px">Dipendra Thapa <span style="color:#1F6B59">&#9733;</span></td><td style="text-align:center; color:#77808A">1</td><td style="text-align:center; color:#77808A">DAY OFF</td><td style="text-align:center; color:#B04A1E"><b>First +3h</b></td><td style="text-align:center; color:#B04A1E"><b>First +3h</b></td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:right; padding-right:16px; color:#B04A1E"><b>6 h</b></td><td style="text-align:right; padding-right:16px; color:#77808A">12 h</td></tr>
-<tr style="background:#F3F0EA"><td style="padding:3px 16px">Dhirendra Khatri</td><td style="text-align:center; color:#77808A">2</td><td style="text-align:center">Second</td><td style="text-align:center; color:#77808A">DAY OFF</td><td style="text-align:center; color:#B04A1E"><b>First +3h</b></td><td style="text-align:center">First</td><td style="text-align:center; color:#B04A1E"><b>First +3h</b></td><td style="text-align:center; color:#B04A1E"><b>First +3h</b></td><td style="text-align:center; color:#B04A1E"><b>First +3h</b></td><td style="text-align:right; padding-right:16px; color:#B04A1E"><b>12 h</b></td><td style="text-align:right; padding-right:16px; color:#77808A">12 h</td></tr>
-<tr><td style="padding:3px 16px">Milan Tamang <span style="font-size:20px; color:#B04A1E">steward cover</span></td><td style="text-align:center; color:#77808A">4</td><td style="text-align:center; color:#B04A1E"><b>First +3h</b></td><td style="text-align:center">First</td><td style="text-align:center; color:#B04A1E"><b>DOUBLE</b></td><td style="text-align:center; color:#77808A">DAY OFF</td><td style="text-align:center; color:#B04A1E"><b>First +3h</b></td><td style="text-align:center">First</td><td style="text-align:center">First</td><td style="text-align:right; padding-right:16px; color:#B04A1E"><b>12 h</b></td><td style="text-align:right; padding-right:16px; color:#77808A">12 h</td></tr>
-<tr style="background:#F3F0EA"><td style="padding:3px 16px">Jash Bahadur Gaha <span style="font-size:20px; color:#B04A1E">steward</span></td><td style="text-align:center; color:#77808A">6</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center; color:#77808A">DAY OFF</td><td style="text-align:center; color:#B04A1E"><b>DOUBLE</b></td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:right; padding-right:16px; color:#B04A1E"><b>6 h</b></td><td style="text-align:right; padding-right:16px; color:#77808A">15 h</td></tr>
-<tr><td style="padding:3px 16px">Kabir Bhattarai</td><td style="text-align:center; color:#77808A">7</td><td style="text-align:center; color:#B04A1E"><b>First +3h</b></td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center; color:#77808A">DAY OFF</td><td style="text-align:right; padding-right:16px; color:#B04A1E"><b>3 h</b></td><td style="text-align:right; padding-right:16px; color:#77808A">15 h</td></tr>
-<tr style="background:#F3F0EA"><td style="padding:3px 16px">Nilam Tamang <span style="color:#1F6B59">&#9733;</span></td><td style="text-align:center; color:#77808A">3</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center; color:#77808A">DAY OFF</td><td style="text-align:center; color:#B04A1E"><b>First +3h</b></td><td style="text-align:center; color:#B04A1E"><b>First +3h</b></td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:right; padding-right:16px; color:#B04A1E"><b>6 h</b></td><td style="text-align:right; padding-right:16px; color:#77808A">12 h</td></tr>
-<tr><td style="padding:3px 16px">Nishan Rai</td><td style="text-align:center; color:#77808A">8</td><td style="text-align:center; color:#77808A">DAY OFF</td><td style="text-align:center; color:#B04A1E"><b>First +3h</b></td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:right; padding-right:16px; color:#B04A1E"><b>3 h</b></td><td style="text-align:right; padding-right:16px; color:#77808A">15 h</td></tr>
-<tr style="background:#F3F0EA"><td style="padding:3px 16px">Pujan Bhattarai <span style="color:#1F6B59">&#9733;</span></td><td style="text-align:center; color:#77808A">5</td><td style="text-align:center; color:#B04A1E"><b>First +3h</b></td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center; color:#77808A">DAY OFF</td><td style="text-align:center; color:#B04A1E"><b>First +3h</b></td><td style="text-align:center; color:#B04A1E"><b>First +3h</b></td><td style="text-align:right; padding-right:16px; color:#B04A1E"><b>9 h</b></td><td style="text-align:right; padding-right:16px; color:#77808A">12 h</td></tr>
-<tr style="background:#1C2B33; color:#FAF7F2"><td style="padding:5px 16px"><b>Through the rush</b></td><td></td>
-<td style="text-align:center; color:#4FA391"><b>6</b></td><td style="text-align:center; color:#4FA391"><b>6</b></td><td style="text-align:center; color:#4FA391"><b>6</b></td><td style="text-align:center; color:#4FA391"><b>6</b></td><td style="text-align:center; color:#4FA391"><b>7</b></td><td style="text-align:center; color:#4FA391"><b>7</b></td><td style="text-align:center; color:#4FA391"><b>6</b></td>
-<td style="text-align:center; color:#8FA3AE">want 6/6/6/6/7/7/6</td><td></td></tr>
-
-<tr style="background:#1C2B33; color:#FAF7F2"><td style="padding:5px 16px"><b>Overtime hours</b></td><td></td>
-<td style="text-align:center; color:#E09A6A"><b>9</b></td><td style="text-align:center; color:#E09A6A"><b>6</b></td><td style="text-align:center; color:#E09A6A"><b>12</b></td><td style="text-align:center; color:#E09A6A"><b>9</b></td><td style="text-align:center; color:#E09A6A"><b>9</b></td><td style="text-align:center; color:#E09A6A"><b>6</b></td><td style="text-align:center; color:#E09A6A"><b>6</b></td>
-<td style="text-align:right; color:#E09A6A"><b>57 h</b></td>
-<td style="text-align:right; padding-right:16px; color:#1F6B59"><b>12 h min</b></td></tr>
-</table>
-<div style="display:flex; gap:14px">
-<div style="flex:1; background:#FFFFFF; padding:10px 22px; border-radius:14px; border-top:5px solid #B04A1E"><p style="font-size:23px; color:#4A5568">Overtime today</p><p style="font-size:30px; font-weight:700; color:#B04A1E; line-height:1.2">542 h &middot; 365 KD</p></div>
-<div style="flex:1; background:#FFFFFF; padding:10px 22px; border-radius:14px; border-top:5px solid #1F6B59"><p style="font-size:23px; color:#4A5568">On this roster</p><p style="font-size:30px; font-weight:700; color:#1F6B59; line-height:1.2">247 h &middot; 161 KD</p></div>
-
-<div style="flex:1; background:#FFFFFF; padding:10px 22px; border-radius:14px; border-top:5px solid #1F6B59"><p style="font-size:23px; color:#4A5568">Cut</p><p style="font-size:30px; font-weight:700; color:#1F6B59; line-height:1.2">54%</p></div>
-<div style="flex:1; background:#FFFFFF; padding:10px 22px; border-radius:14px; border-top:5px solid #1F6B59"><p style="font-size:23px; color:#4A5568">Supervisor's headroom</p><p style="font-size:30px; font-weight:700; color:#1F6B59; line-height:1.2">53 of 300 h</p></div>
-</div>
-<div style="display:flex; align-items:center; gap:24px; background:#FFFFFF; padding:11px 26px; border-radius:14px; border-left:6px solid #2E7D6B">
-<p style="width:330px; font-size:24px; font-weight:700; color:#1F6B59">The supervisor owns the budget</p>
-<p style="flex:1; font-size:24px; line-height:1.3; color:#1C2B33">This roster spends <b>247 of his 300 hours</b>. The rest is his to deploy on a busy night, a sickness or a rest day &mdash; and what he does with it is measured.
- <b>Over the four-week cycle every man carries between 13 and 52 hours</b> &mdash; the double moves down the list each week instead of sitting on the same man.</p>
-</div>
-<p style="position:absolute; left:128px; bottom:56px; width:1664px; font-size:23px; line-height:1.28; color:#77808A">&#9733; one on the opening and one on the closing every day; no two supervisors share a pair, so no shift is left without one. The Peak band is a full nine hours and carries no overtime &mdash; it is what replaced holding the opening crew late. A double only ever follows a rest day, and the man is on Second from the next day on, so nobody closes at 02:30 and opens the next morning. One man rests each day rather than a whole pair, so the branch keeps its full strength every day of the week. Overtime is shared by every man, supervisors included, least-burdened first, on a four-week cycle so the double never sits on the same man. Peak strength is the floor the branch must hold through the rush: 7 on Thu, Fri; 6 on Sun, Mon, Tue, Wed, Sat. On site 11:30, open 12:00, operations to 02:00, closed 02:30 &mdash; half an hour either side for prep and cleaning. Jash Bahadur Gaha is a steward and cannot work in the kitchen; he stands on the closing shift and Milan Tamang covers his job on his rest day, so one of the two is present at every opening and every closing.</p>
-</section>
+<!-- ── REJECT MODAL (small note prompt) ──────────────── -->
+<div id="rejectModal" class="modal-overlay">
+  <div class="modal-box" style="max-width:340px">
+    <h5>Reject Transfer Request</h5>
+    <div class="sub" id="rejectWho" style="color:var(--muted);font-size:13px"></div>
+    <label>Note (optional)</label>
+    <textarea id="rejectNote" rows="2" placeholder="e.g. we already have full coverage"></textarea>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="btn btn-outline" style="flex:1" onclick="closeReject()">Cancel</button>
+      <button class="btn btn-outline" style="flex:1;color:var(--red);border-color:var(--red)" onclick="submitReject()">Reject</button>
+    </div>
+    <div id="rejectMsg" style="font-size:12px;margin-top:10px"></div>
+  </div>
 </div>
 
-<div class="slide" data-id="qurain">
-<section id="qurain" data-transition="fade" style="background:#1C2B33; color:#FAF7F2; font-family:'Public Sans', Verdana, sans-serif; padding:34px 128px 150px; display:flex; flex-direction:column; gap:9px">
-<div style="display:flex; flex-direction:column; gap:4px">
-<p style="font-size:22px; letter-spacing:2px; color:#4FA391">AT TODAY'S STRENGTH &nbsp;&middot;&nbsp; NOBODY HIRED &nbsp;&middot;&nbsp; WEEK OF SUNDAY 11 OCTOBER</p>
-<h2 style="font-family:'Libre Baskerville', Georgia, serif; font-size:44px; font-weight:400; line-height:1.1; color:#FAF7F2">Qurain &mdash; 7 men</h2>
-<p style="font-size:24px; line-height:1.3; color:#C9D4DA">On site <b>12:30</b>, opens <b>13:30</b> &mdash; an hour of buffer. &nbsp;&middot;&nbsp; <b>First 12:30&ndash;21:30</b> &times;3  &nbsp;&middot;&nbsp; <b>Peak 14:30&ndash;23:30</b> &nbsp;&middot;&nbsp; <b>Second 18:30&ndash;03:30</b> &times;3 &nbsp;&middot;&nbsp; <b style="color:#E09A6A">DOUBLE 12:30&ndash;03:30</b> (+6 h, only the day after a rest day) &nbsp;&middot;&nbsp; <b style="color:#E09A6A">First +2h</b> where the floor needs it</p>
-</div>
-<table style="width:1664px; font-size:23px; color:#FAF7F2; border-collapse:collapse">
-<tr style="background:#0F1C23"><th style="width:19%; text-align:left; color:#FAF7F2; font-size:23px; padding:6px 16px">Employee</th>
-<th style="width:4%; text-align:center; color:#8FA3AE">Pair</th>
-<th style="width:8.7%; text-align:center; color:#FAF7F2">Sun</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Mon</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Tue</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Wed</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Thu</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Fri</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Sat</th>
-<th style="width:7%; text-align:right; color:#8FA3AE">Extra</th>
-<th style="width:9%; text-align:right; color:#8FA3AE; padding-right:16px">Min rest</th></tr>
-<tr><td style="padding:3px 16px">Lakpa Dorje Lama <span style="color:#4FA391">&#9733;</span></td><td style="text-align:center; color:#8FA3AE">1</td><td style="text-align:center; color:#8FA3AE">DAY OFF</td><td style="text-align:center">First</td><td style="text-align:center; color:#E09A6A"><b>First +2h</b></td><td style="text-align:center">First</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:right; padding-right:16px; color:#E09A6A"><b>2 h</b></td><td style="text-align:right; padding-right:16px; color:#8FA3AE">13 h</td></tr>
-<tr style="background:#263A45"><td style="padding:3px 16px">Bimal Chamling <span style="color:#4FA391">&#9733;</span></td><td style="text-align:center; color:#8FA3AE">3</td><td style="text-align:center">First</td><td style="text-align:center">First</td><td style="text-align:center; color:#8FA3AE">DAY OFF</td><td style="text-align:center; color:#E09A6A"><b>First +2h</b></td><td style="text-align:center">First</td><td style="text-align:center; color:#E09A6A"><b>First +2h</b></td><td style="text-align:center">First</td><td style="text-align:right; padding-right:16px; color:#E09A6A"><b>4 h</b></td><td style="text-align:right; padding-right:16px; color:#8FA3AE">13 h</td></tr>
-<tr><td style="padding:3px 16px">Devram Chaudhary <span style="color:#4FA391">&#9733;</span></td><td style="text-align:center; color:#8FA3AE">5</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center; color:#8FA3AE">DAY OFF</td><td style="text-align:center; color:#E09A6A"><b>First +2h</b></td><td style="text-align:center">Second</td><td style="text-align:right; padding-right:16px; color:#E09A6A"><b>2 h</b></td><td style="text-align:right; padding-right:16px; color:#8FA3AE">15 h</td></tr>
-<tr style="background:#263A45"><td style="padding:3px 16px">Dipak Lo</td><td style="text-align:center; color:#8FA3AE">2</td><td style="text-align:center; color:#E09A6A"><b>First +2h</b></td><td style="text-align:center; color:#8FA3AE">DAY OFF</td><td style="text-align:center">First</td><td style="text-align:center">First</td><td style="text-align:center; color:#E09A6A"><b>First +2h</b></td><td style="text-align:center">First</td><td style="text-align:center">First</td><td style="text-align:right; padding-right:16px; color:#E09A6A"><b>4 h</b></td><td style="text-align:right; padding-right:16px; color:#8FA3AE">13 h</td></tr>
-<tr><td style="padding:3px 16px">Pramesh Pyakurel</td><td style="text-align:center; color:#8FA3AE">4</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center; color:#8FA3AE">DAY OFF</td><td style="text-align:center; color:#E09A6A"><b>First +2h</b></td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:right; padding-right:16px; color:#E09A6A"><b>2 h</b></td><td style="text-align:right; padding-right:16px; color:#8FA3AE">15 h</td></tr>
-<tr style="background:#263A45"><td style="padding:3px 16px">Sandeep Khadka</td><td style="text-align:center; color:#8FA3AE">6</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center; color:#8FA3AE">DAY OFF</td><td style="text-align:center; color:#E09A6A"><b>First +2h</b></td><td style="text-align:right; padding-right:16px; color:#E09A6A"><b>2 h</b></td><td style="text-align:right; padding-right:16px; color:#8FA3AE">15 h</td></tr>
-<tr><td style="padding:3px 16px">Saroj KC</td><td style="text-align:center; color:#8FA3AE">7</td><td style="text-align:center">First</td><td style="text-align:center; color:#E09A6A"><b>First +2h</b></td><td style="text-align:center">First</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center; color:#8FA3AE">DAY OFF</td><td style="text-align:right; padding-right:16px; color:#E09A6A"><b>2 h</b></td><td style="text-align:right; padding-right:16px; color:#8FA3AE">13 h</td></tr>
-<tr style="background:#0F1C23; color:#FAF7F2"><td style="padding:5px 16px"><b>Through the rush</b></td><td></td>
-<td style="text-align:center; color:#4FA391"><b>4</b></td><td style="text-align:center; color:#4FA391"><b>4</b></td><td style="text-align:center; color:#4FA391"><b>4</b></td><td style="text-align:center; color:#4FA391"><b>4</b></td><td style="text-align:center; color:#4FA391"><b>5</b></td><td style="text-align:center; color:#4FA391"><b>5</b></td><td style="text-align:center; color:#4FA391"><b>4</b></td>
-<td style="text-align:center; color:#8FA3AE">want 4/4/4/4/5/5/4</td><td></td></tr>
-
-<tr style="background:#0F1C23; color:#FAF7F2"><td style="padding:5px 16px"><b>Overtime hours</b></td><td></td>
-<td style="text-align:center; color:#E09A6A"><b>2</b></td><td style="text-align:center; color:#E09A6A"><b>2</b></td><td style="text-align:center; color:#E09A6A"><b>2</b></td><td style="text-align:center; color:#E09A6A"><b>2</b></td><td style="text-align:center; color:#E09A6A"><b>4</b></td><td style="text-align:center; color:#E09A6A"><b>4</b></td><td style="text-align:center; color:#E09A6A"><b>2</b></td>
-<td style="text-align:right; color:#E09A6A"><b>18 h</b></td>
-<td style="text-align:right; padding-right:16px; color:#4FA391"><b>13 h min</b></td></tr>
-</table>
-<div style="display:flex; gap:14px">
-<div style="flex:1; background:#263A45; padding:10px 22px; border-radius:14px; border-top:5px solid #E09A6A"><p style="font-size:23px; color:#C9D4DA">Overtime today</p><p style="font-size:30px; font-weight:700; color:#E09A6A; line-height:1.2">732 h &middot; 438 KD</p></div>
-<div style="flex:1; background:#263A45; padding:10px 22px; border-radius:14px; border-top:5px solid #4FA391"><p style="font-size:23px; color:#C9D4DA">On this roster</p><p style="font-size:30px; font-weight:700; color:#4FA391; line-height:1.2">78 h &middot; 51 KD</p></div>
-
-<div style="flex:1; background:#263A45; padding:10px 22px; border-radius:14px; border-top:5px solid #4FA391"><p style="font-size:23px; color:#C9D4DA">Cut</p><p style="font-size:30px; font-weight:700; color:#4FA391; line-height:1.2">89%</p></div>
-<div style="flex:1; background:#263A45; padding:10px 22px; border-radius:14px; border-top:5px solid #4FA391"><p style="font-size:23px; color:#C9D4DA">With Mahboula</p><p style="font-size:30px; font-weight:700; color:#4FA391; line-height:1.2">199&ndash;260 of 300 h</p></div>
-</div>
-<div style="display:flex; align-items:center; gap:24px; background:#263A45; padding:11px 26px; border-radius:14px; border-left:6px solid #2E7D6B">
-<p style="width:330px; font-size:24px; font-weight:700; color:#4FA391">One budget, two branches</p>
-<p style="flex:1; font-size:24px; line-height:1.3; color:#FAF7F2">Qurain and Mahboula do not share men, but they share <b>one 300-hour allowance</b>. This roster spends <b>78 hours</b> here, which leaves <b>222 hours</b> for Mahboula. Its three options land the pair at <b>199 to 260 of the 300</b> &mdash; so the pair stays inside the allowance whichever option management picks.
- <b>Over the four-week cycle every man carries between 8.7 and 13 hours</b> &mdash; the double moves down the list each week instead of sitting on the same man.</p>
-</div>
-<p style="position:absolute; left:128px; bottom:56px; width:1664px; font-size:23px; line-height:1.28; color:#8FA3AE">&#9733; one on the opening and one on the closing every day; no two supervisors share a pair, so no shift is left without one. The Peak band is a full nine hours and carries no overtime &mdash; it is what replaced holding the opening crew late. A double only ever follows a rest day, and the man is on Second from the next day on, so nobody closes at 03:30 and opens the next morning. One man rests each day rather than a whole pair, so the branch keeps its full strength every day of the week. Overtime is shared by every man, supervisors included, least-burdened first, on a four-week cycle so the double never sits on the same man. Qurain and Mahboula draw on one 300-hour allowance between them, not 300 each; no man works both sites. Peak strength is the floor the branch must hold through the rush: 5 on Thu, Fri; 4 on Sun, Mon, Tue, Wed, Sat. Crew boards at Mahboula, twelve minutes away.</p>
-</section>
+<!-- ── AMEND MODAL ───────────────────────────────────── -->
+<div id="amendModal" class="modal-overlay">
+  <div class="modal-box">
+    <h5>Emergency Amend</h5>
+    <div class="sub" id="amendWho" style="color:var(--muted);font-size:13px"></div>
+    <label>Status</label>
+    <select id="amendStatus">
+      <option value="Working">Working</option>
+      <option value="Day Off">Day Off</option>
+    </select>
+    <label>Shift</label>
+    <select id="amendShift"></select>
+    <label>Reason (required)</label>
+    <textarea id="amendReason" rows="2" placeholder="e.g. covering for sick colleague"></textarea>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="btn btn-outline" style="flex:1" onclick="closeAmend()">Cancel</button>
+      <button class="btn btn-success" style="flex:1" onclick="submitAmend()">Save Amend</button>
+    </div>
+    <div id="amendMsg" style="font-size:12px;margin-top:10px"></div>
+  </div>
 </div>
 
-<div class="slide" data-id="mahboula">
-<section id="mahboula" data-transition="fade" style="background:#FAF7F2; color:#1C2B33; font-family:'Public Sans', Verdana, sans-serif; padding:34px 128px 150px; display:flex; flex-direction:column; gap:9px">
-<div style="display:flex; flex-direction:column; gap:4px">
-<p style="font-size:22px; letter-spacing:2px; color:#1F6B59">AT TODAY'S STRENGTH &nbsp;&middot;&nbsp; NOBODY HIRED &nbsp;&middot;&nbsp; WEEK OF SUNDAY 11 OCTOBER</p>
-<h2 style="font-family:'Libre Baskerville', Georgia, serif; font-size:44px; font-weight:400; line-height:1.1; color:#1C2B33">Mahboula &mdash; Option 1: three at closedown &mdash; 3 men</h2>
-<p style="font-size:24px; line-height:1.3; color:#4A5568">On site <b>13:30</b>, opens <b>14:00</b> &mdash; half an hour of buffer. &nbsp;&middot;&nbsp; <b>First 13:30&ndash;22:30</b> &times;2  &nbsp;&middot;&nbsp; <b>Second 16:30&ndash;01:30</b> &times;3 &nbsp;&middot;&nbsp; <b style="color:#B04A1E">DOUBLE 13:30&ndash;01:30</b> (+3 h, only the day after a rest day)</p>
-</div>
-<table style="width:1664px; font-size:23px; color:#1C2B33; border-collapse:collapse">
-<tr style="background:#1C2B33"><th style="width:19%; text-align:left; color:#FAF7F2; font-size:23px; padding:6px 16px">Employee</th>
-<th style="width:4%; text-align:center; color:#8FA3AE">Pair</th>
-<th style="width:8.7%; text-align:center; color:#FAF7F2">Sun</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Mon</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Tue</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Wed</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Thu</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Fri</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Sat</th>
-<th style="width:7%; text-align:right; color:#8FA3AE">Extra</th>
-<th style="width:9%; text-align:right; color:#8FA3AE; padding-right:16px">Min rest</th></tr>
-<tr><td style="padding:3px 16px">Suman Bishwakarma <span style="color:#1F6B59">&#9733;</span> <span style="font-size:20px; color:#77808A">supervisor</span></td><td style="text-align:center; color:#77808A">1</td><td style="text-align:center; color:#77808A">DAY OFF</td><td style="text-align:center; color:#B04A1E"><b>DOUBLE</b></td><td style="text-align:center; color:#B04A1E"><b>DOUBLE</b></td><td style="text-align:center">Second</td><td style="text-align:center; color:#B04A1E"><b>DOUBLE</b></td><td style="text-align:center; color:#B04A1E"><b>DOUBLE</b></td><td style="text-align:center">Second</td><td style="text-align:right; padding-right:16px; color:#B04A1E"><b>12 h</b></td><td style="text-align:right; padding-right:16px; color:#77808A">12 h</td></tr>
-<tr style="background:#F3F0EA"><td style="padding:3px 16px">Sanamsing Siangtan</td><td style="text-align:center; color:#77808A">2</td><td style="text-align:center; color:#B04A1E"><b>DOUBLE</b></td><td style="text-align:center; color:#77808A">DAY OFF</td><td style="text-align:center">Second</td><td style="text-align:center; color:#B04A1E"><b>DOUBLE</b></td><td style="text-align:center; color:#B04A1E"><b>DOUBLE</b></td><td style="text-align:center">Second</td><td style="text-align:center; color:#B04A1E"><b>DOUBLE</b></td><td style="text-align:right; padding-right:16px; color:#B04A1E"><b>12 h</b></td><td style="text-align:right; padding-right:16px; color:#77808A">12 h</td></tr>
-<tr><td style="padding:3px 16px">Uttam Chaudhary <span style="color:#1F6B59">&#9733;</span> <span style="font-size:20px; color:#77808A">acting</span></td><td style="text-align:center; color:#77808A">3</td><td style="text-align:center; color:#B04A1E"><b>DOUBLE</b></td><td style="text-align:center">Second</td><td style="text-align:center; color:#77808A">DAY OFF</td><td style="text-align:center; color:#B04A1E"><b>DOUBLE</b></td><td style="text-align:center">Second</td><td style="text-align:center; color:#B04A1E"><b>DOUBLE</b></td><td style="text-align:center; color:#B04A1E"><b>DOUBLE</b></td><td style="text-align:right; padding-right:16px; color:#B04A1E"><b>12 h</b></td><td style="text-align:right; padding-right:16px; color:#77808A">12 h</td></tr>
-<tr style="background:#F3F0EA"><td style="padding:3px 16px"><span style="color:#B04A1E">Joker (Qurain/Jabriya)</span></td><td style="text-align:center; color:#77808A">4</td><td style="text-align:center">Second</td><td style="text-align:center; color:#B04A1E"><b>DOUBLE</b></td><td style="text-align:center; color:#B04A1E"><b>DOUBLE</b></td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:right; padding-right:16px; color:#B04A1E"><b>6 h</b></td><td style="text-align:right; padding-right:16px; color:#77808A">12 h</td></tr>
-<tr style="background:#1C2B33; color:#FAF7F2"><td style="padding:5px 16px"><b>Through the rush</b></td><td></td>
-<td style="text-align:center; color:#4FA391"><b>3</b></td><td style="text-align:center; color:#4FA391"><b>3</b></td><td style="text-align:center; color:#4FA391"><b>3</b></td><td style="text-align:center; color:#4FA391"><b>3</b></td><td style="text-align:center; color:#4FA391"><b>3</b></td><td style="text-align:center; color:#4FA391"><b>3</b></td><td style="text-align:center; color:#4FA391"><b>3</b></td>
-<td style="text-align:center; color:#8FA3AE">want 3/3/3/3/3/3/3</td><td></td></tr>
-<tr style="background:#1C2B33; color:#FAF7F2"><td style="padding:5px 16px"><b>At closedown</b></td><td></td>
-<td style="text-align:center; color:#4FA391"><b>3</b></td><td style="text-align:center; color:#4FA391"><b>3</b></td><td style="text-align:center; color:#4FA391"><b>3</b></td><td style="text-align:center; color:#4FA391"><b>3</b></td><td style="text-align:center; color:#4FA391"><b>3</b></td><td style="text-align:center; color:#4FA391"><b>3</b></td><td style="text-align:center; color:#4FA391"><b>3</b></td>
-<td style="text-align:center; color:#8FA3AE">need 3</td><td></td></tr>
-<tr style="background:#1C2B33; color:#FAF7F2"><td style="padding:5px 16px"><b>Overtime hours</b></td><td></td>
-<td style="text-align:center; color:#E09A6A"><b>6</b></td><td style="text-align:center; color:#E09A6A"><b>6</b></td><td style="text-align:center; color:#E09A6A"><b>6</b></td><td style="text-align:center; color:#E09A6A"><b>6</b></td><td style="text-align:center; color:#E09A6A"><b>6</b></td><td style="text-align:center; color:#E09A6A"><b>6</b></td><td style="text-align:center; color:#E09A6A"><b>6</b></td>
-<td style="text-align:right; color:#E09A6A"><b>42 h</b></td>
-<td style="text-align:right; padding-right:16px; color:#1F6B59"><b>12 h min</b></td></tr>
-</table>
-<div style="display:flex; gap:14px">
-
-<div style="flex:1; background:#FFFFFF; padding:10px 22px; border-radius:14px; border-top:5px solid #1F6B59"><p style="font-size:23px; color:#4A5568">On this roster</p><p style="font-size:30px; font-weight:700; color:#1F6B59; line-height:1.2">182 h &middot; 118 KD</p></div>
-
-
-<div style="flex:1; background:#FFFFFF; padding:10px 22px; border-radius:14px; border-top:5px solid #1F6B59"><p style="font-size:23px; color:#4A5568">With Qurain</p><p style="font-size:30px; font-weight:700; color:#1F6B59; line-height:1.2">260 of 300 h</p></div>
-</div>
-<div style="display:flex; align-items:center; gap:24px; background:#FFFFFF; padding:11px 26px; border-radius:14px; border-left:6px solid #2E7D6B">
-<p style="width:330px; font-size:24px; font-weight:700; color:#1F6B59">One budget, two branches</p>
-<p style="flex:1; font-size:24px; line-height:1.3; color:#1C2B33">Mahboula and Qurain do not share men, but they share <b>one 300-hour allowance</b>. This roster spends <b>182 hours</b> here, which leaves <b>118 hours</b> for Qurain. Its roster land the pair at <b>260 of the 300</b> &mdash; so the pair stays inside the allowance whichever option management picks.
- <b>Over the four-week cycle every man carries between 52 and 52 hours</b> &mdash; the double moves down the list each week instead of sitting on the same man.</p>
-</div>
-<p style="position:absolute; left:128px; bottom:56px; width:1664px; font-size:23px; line-height:1.28; color:#77808A">&#9733; one on the opening and one on the closing every day; no two supervisors share a pair, so no shift is left without one. The week is written by hand because the joker belongs to another branch. Overtime is shared by every man, supervisors included, least-burdened first, on a four-week cycle so the double never sits on the same man. Mahboula and Qurain draw on one 300-hour allowance between them, not 300 each; no man works both sites. Peak strength is the floor the branch must hold through the rush: 3 every day. Three at closedown out of three bodies forces two doubles every day. The joker comes from Qurain or Jabriya on each rest day and replaces the man who is off. Doubles are shared four, four, four between the three men with the joker taking two. Rest never falls below 12 hours, and the men walk to work so none of it is lost to travel.</p>
-</section>
-</div>
-
-<div class="slide" data-id="mahboulab">
-<section id="mahboulab" data-transition="fade" style="background:#1C2B33; color:#FAF7F2; font-family:'Public Sans', Verdana, sans-serif; padding:34px 128px 150px; display:flex; flex-direction:column; gap:9px">
-<div style="display:flex; flex-direction:column; gap:4px">
-<p style="font-size:22px; letter-spacing:2px; color:#4FA391">AT TODAY'S STRENGTH &nbsp;&middot;&nbsp; NOBODY HIRED &nbsp;&middot;&nbsp; WEEK OF SUNDAY 11 OCTOBER</p>
-<h2 style="font-family:'Libre Baskerville', Georgia, serif; font-size:44px; font-weight:400; line-height:1.1; color:#FAF7F2">Mahboula &mdash; Option 2: close with two &mdash; 3 men</h2>
-<p style="font-size:24px; line-height:1.3; color:#C9D4DA">On site <b>13:30</b>, opens <b>14:00</b> &mdash; half an hour of buffer. &nbsp;&middot;&nbsp; <b>First 13:30&ndash;22:30</b> &times;2  &nbsp;&middot;&nbsp; <b>Second 16:30&ndash;01:30</b> &times;2 &nbsp;&middot;&nbsp; <b style="color:#E09A6A">DOUBLE 13:30&ndash;01:30</b> (+3 h, only the day after a rest day) &nbsp;&middot;&nbsp; <b style="color:#E09A6A">First +1h</b> where the floor needs it</p>
-</div>
-<table style="width:1664px; font-size:23px; color:#FAF7F2; border-collapse:collapse">
-<tr style="background:#0F1C23"><th style="width:19%; text-align:left; color:#FAF7F2; font-size:23px; padding:6px 16px">Employee</th>
-<th style="width:4%; text-align:center; color:#8FA3AE">Pair</th>
-<th style="width:8.7%; text-align:center; color:#FAF7F2">Sun</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Mon</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Tue</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Wed</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Thu</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Fri</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Sat</th>
-<th style="width:7%; text-align:right; color:#8FA3AE">Extra</th>
-<th style="width:9%; text-align:right; color:#8FA3AE; padding-right:16px">Min rest</th></tr>
-<tr><td style="padding:3px 16px">Suman Bishwakarma <span style="color:#4FA391">&#9733;</span> <span style="font-size:20px; color:#8FA3AE">supervisor</span></td><td style="text-align:center; color:#8FA3AE">1</td><td style="text-align:center; color:#8FA3AE">DAY OFF</td><td style="text-align:center; color:#E09A6A"><b>First +1h</b></td><td style="text-align:center; color:#E09A6A"><b>DOUBLE</b></td><td style="text-align:center; color:#E09A6A"><b>First +1h</b></td><td style="text-align:center">Second</td><td style="text-align:center; color:#E09A6A"><b>DOUBLE</b></td><td style="text-align:center; color:#E09A6A"><b>First +1h</b></td><td style="text-align:right; padding-right:16px; color:#E09A6A"><b>9 h</b></td><td style="text-align:right; padding-right:16px; color:#8FA3AE">12 h</td></tr>
-<tr style="background:#263A45"><td style="padding:3px 16px">Sanamsing Siangtan</td><td style="text-align:center; color:#8FA3AE">2</td><td style="text-align:center; color:#E09A6A"><b>First +1h</b></td><td style="text-align:center; color:#8FA3AE">DAY OFF</td><td style="text-align:center; color:#E09A6A"><b>First +1h</b></td><td style="text-align:center; color:#E09A6A"><b>DOUBLE</b></td><td style="text-align:center; color:#E09A6A"><b>First +1h</b></td><td style="text-align:center">Second</td><td style="text-align:center; color:#E09A6A"><b>DOUBLE</b></td><td style="text-align:right; padding-right:16px; color:#E09A6A"><b>9 h</b></td><td style="text-align:right; padding-right:16px; color:#8FA3AE">12 h</td></tr>
-<tr><td style="padding:3px 16px">Uttam Chaudhary <span style="color:#4FA391">&#9733;</span> <span style="font-size:20px; color:#8FA3AE">acting</span></td><td style="text-align:center; color:#8FA3AE">3</td><td style="text-align:center; color:#E09A6A"><b>DOUBLE</b></td><td style="text-align:center">Second</td><td style="text-align:center; color:#8FA3AE">DAY OFF</td><td style="text-align:center">Second</td><td style="text-align:center; color:#E09A6A"><b>DOUBLE</b></td><td style="text-align:center; color:#E09A6A"><b>First +1h</b></td><td style="text-align:center">Second</td><td style="text-align:right; padding-right:16px; color:#E09A6A"><b>7 h</b></td><td style="text-align:right; padding-right:16px; color:#8FA3AE">12 h</td></tr>
-<tr style="background:#263A45"><td style="padding:3px 16px"><span style="color:#E09A6A">Joker (Qurain/Jabriya)</span></td><td style="text-align:center; color:#8FA3AE">4</td><td style="text-align:center">Second</td><td style="text-align:center; color:#E09A6A"><b>DOUBLE</b></td><td style="text-align:center">Second</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:right; padding-right:16px; color:#E09A6A"><b>3 h</b></td><td style="text-align:right; padding-right:16px; color:#8FA3AE">12 h</td></tr>
-<tr style="background:#0F1C23; color:#FAF7F2"><td style="padding:5px 16px"><b>Through the rush</b></td><td></td>
-<td style="text-align:center; color:#4FA391"><b>3</b></td><td style="text-align:center; color:#4FA391"><b>3</b></td><td style="text-align:center; color:#4FA391"><b>3</b></td><td style="text-align:center; color:#4FA391"><b>3</b></td><td style="text-align:center; color:#4FA391"><b>3</b></td><td style="text-align:center; color:#4FA391"><b>3</b></td><td style="text-align:center; color:#4FA391"><b>3</b></td>
-<td style="text-align:center; color:#8FA3AE">want 3/3/3/3/3/3/3</td><td></td></tr>
-<tr style="background:#0F1C23; color:#FAF7F2"><td style="padding:5px 16px"><b>At closedown</b></td><td></td>
-<td style="text-align:center; color:#4FA391"><b>2</b></td><td style="text-align:center; color:#4FA391"><b>2</b></td><td style="text-align:center; color:#4FA391"><b>2</b></td><td style="text-align:center; color:#4FA391"><b>2</b></td><td style="text-align:center; color:#4FA391"><b>2</b></td><td style="text-align:center; color:#4FA391"><b>2</b></td><td style="text-align:center; color:#4FA391"><b>2</b></td>
-<td style="text-align:center; color:#8FA3AE">need 2</td><td></td></tr>
-<tr style="background:#0F1C23; color:#FAF7F2"><td style="padding:5px 16px"><b>Overtime hours</b></td><td></td>
-<td style="text-align:center; color:#E09A6A"><b>4</b></td><td style="text-align:center; color:#E09A6A"><b>4</b></td><td style="text-align:center; color:#E09A6A"><b>4</b></td><td style="text-align:center; color:#E09A6A"><b>4</b></td><td style="text-align:center; color:#E09A6A"><b>4</b></td><td style="text-align:center; color:#E09A6A"><b>4</b></td><td style="text-align:center; color:#E09A6A"><b>4</b></td>
-<td style="text-align:right; color:#E09A6A"><b>28 h</b></td>
-<td style="text-align:right; padding-right:16px; color:#4FA391"><b>12 h min</b></td></tr>
-</table>
-<div style="display:flex; gap:14px">
-
-<div style="flex:1; background:#263A45; padding:10px 22px; border-radius:14px; border-top:5px solid #4FA391"><p style="font-size:23px; color:#C9D4DA">On this roster</p><p style="font-size:30px; font-weight:700; color:#4FA391; line-height:1.2">121 h &middot; 79 KD</p></div>
-
-
-<div style="flex:1; background:#263A45; padding:10px 22px; border-radius:14px; border-top:5px solid #8FA3AE"><p style="font-size:23px; color:#C9D4DA">Qurain spends</p><p style="font-size:30px; font-weight:700; color:#8FA3AE; line-height:1.2">78 h</p></div><div style="flex:1; background:#263A45; padding:10px 22px; border-radius:14px; border-top:5px solid #4FA391"><p style="font-size:23px; color:#C9D4DA">Pair total</p><p style="font-size:30px; font-weight:700; color:#4FA391; line-height:1.2">199 of 300 h</p></div>
-</div>
-<div style="display:flex; align-items:center; gap:24px; background:#263A45; padding:11px 26px; border-radius:14px; border-left:6px solid #2E7D6B">
-<p style="width:330px; font-size:24px; font-weight:700; color:#4FA391">One budget, two branches</p>
-<p style="flex:1; font-size:24px; line-height:1.3; color:#FAF7F2">This option spends <b>121 hours</b>. Qurain already spends <b>78</b> of the same <b>300-hour</b> allowance, so the pair lands at <b>199</b> and leaves <b>101 hours</b> for both supervisors to deploy between them.
- <b>Over the four-week cycle every man carries between 30.3 and 39 hours</b> &mdash; the double moves down the list each week instead of sitting on the same man.</p>
-</div>
-<p style="position:absolute; left:128px; bottom:56px; width:1664px; font-size:23px; line-height:1.28; color:#8FA3AE">&#9733; one on the opening and one on the closing every day; no two supervisors share a pair, so no shift is left without one. The week is written by hand because the joker belongs to another branch. Overtime is shared by every man, supervisors included, least-burdened first, on a four-week cycle so the double never sits on the same man. Mahboula and Qurain draw on one 300-hour allowance between them, not 300 each; no man works both sites. Peak strength is the floor the branch must hold through the rush: 3 every day. Closing with two instead of three needs only one double a day instead of two. The Early man is still held to 23:30 so the branch keeps three through the rush, which is why this comes to 121 hours rather than 91. The trade is that only two men are present for the 01:30 closedown.</p>
-</section>
-</div>
-
-<div class="slide" data-id="mahboulac">
-<section id="mahboulac" data-transition="fade" style="background:#FAF7F2; color:#1C2B33; font-family:'Public Sans', Verdana, sans-serif; padding:34px 128px 150px; display:flex; flex-direction:column; gap:9px">
-<div style="display:flex; flex-direction:column; gap:4px">
-<p style="font-size:22px; letter-spacing:2px; color:#1F6B59">AT TODAY'S STRENGTH &nbsp;&middot;&nbsp; NOBODY HIRED &nbsp;&middot;&nbsp; WEEK OF SUNDAY 11 OCTOBER</p>
-<h2 style="font-family:'Libre Baskerville', Georgia, serif; font-size:44px; font-weight:400; line-height:1.1; color:#1C2B33">Mahboula &mdash; Option 3: joker every day &mdash; 3 men</h2>
-<p style="font-size:24px; line-height:1.3; color:#4A5568">On site <b>13:30</b>, opens <b>14:00</b> &mdash; half an hour of buffer. &nbsp;&middot;&nbsp; <b>First 13:30&ndash;22:30</b> &times;2  &nbsp;&middot;&nbsp; <b>Second 16:30&ndash;01:30</b> &times;3 &nbsp;&middot;&nbsp; <b style="color:#B04A1E">DOUBLE 13:30&ndash;01:30</b> (+3 h, only the day after a rest day)</p>
-</div>
-<table style="width:1664px; font-size:23px; color:#1C2B33; border-collapse:collapse">
-<tr style="background:#1C2B33"><th style="width:19%; text-align:left; color:#FAF7F2; font-size:23px; padding:6px 16px">Employee</th>
-<th style="width:4%; text-align:center; color:#8FA3AE">Pair</th>
-<th style="width:8.7%; text-align:center; color:#FAF7F2">Sun</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Mon</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Tue</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Wed</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Thu</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Fri</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Sat</th>
-<th style="width:7%; text-align:right; color:#8FA3AE">Extra</th>
-<th style="width:9%; text-align:right; color:#8FA3AE; padding-right:16px">Min rest</th></tr>
-<tr><td style="padding:3px 16px">Suman Bishwakarma <span style="color:#1F6B59">&#9733;</span> <span style="font-size:20px; color:#77808A">supervisor</span></td><td style="text-align:center; color:#77808A">1</td><td style="text-align:center; color:#77808A">DAY OFF</td><td style="text-align:center">Second</td><td style="text-align:center; color:#B04A1E"><b>DOUBLE</b></td><td style="text-align:center; color:#B04A1E"><b>DOUBLE</b></td><td style="text-align:center">First</td><td style="text-align:center">First</td><td style="text-align:center; color:#B04A1E"><b>DOUBLE</b></td><td style="text-align:right; padding-right:16px; color:#B04A1E"><b>9 h</b></td><td style="text-align:right; padding-right:16px; color:#77808A">12 h</td></tr>
-<tr style="background:#F3F0EA"><td style="padding:3px 16px">Sanamsing Siangtan</td><td style="text-align:center; color:#77808A">2</td><td style="text-align:center; color:#B04A1E"><b>DOUBLE</b></td><td style="text-align:center; color:#77808A">DAY OFF</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center; color:#B04A1E"><b>DOUBLE</b></td><td style="text-align:center">Second</td><td style="text-align:right; padding-right:16px; color:#B04A1E"><b>6 h</b></td><td style="text-align:right; padding-right:16px; color:#77808A">12 h</td></tr>
-<tr><td style="padding:3px 16px">Uttam Chaudhary <span style="color:#1F6B59">&#9733;</span> <span style="font-size:20px; color:#77808A">acting</span></td><td style="text-align:center; color:#77808A">3</td><td style="text-align:center; color:#B04A1E"><b>DOUBLE</b></td><td style="text-align:center; color:#B04A1E"><b>DOUBLE</b></td><td style="text-align:center; color:#77808A">DAY OFF</td><td style="text-align:center">First</td><td style="text-align:center; color:#B04A1E"><b>DOUBLE</b></td><td style="text-align:center">Second</td><td style="text-align:center">First</td><td style="text-align:right; padding-right:16px; color:#B04A1E"><b>9 h</b></td><td style="text-align:right; padding-right:16px; color:#77808A">12 h</td></tr>
-<tr style="background:#F3F0EA"><td style="padding:3px 16px"><span style="color:#B04A1E">Joker (Qurain/Jabriya)</span></td><td style="text-align:center; color:#77808A">4</td><td style="text-align:center">Second</td><td style="text-align:center; color:#B04A1E"><b>DOUBLE</b></td><td style="text-align:center; color:#B04A1E"><b>DOUBLE</b></td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:right; padding-right:16px; color:#B04A1E"><b>6 h</b></td><td style="text-align:right; padding-right:16px; color:#77808A">12 h</td></tr>
-<tr style="background:#1C2B33; color:#FAF7F2"><td style="padding:5px 16px"><b>Through the rush</b></td><td></td>
-<td style="text-align:center; color:#4FA391"><b>3</b></td><td style="text-align:center; color:#4FA391"><b>3</b></td><td style="text-align:center; color:#4FA391"><b>3</b></td><td style="text-align:center; color:#4FA391"><b>3</b></td><td style="text-align:center; color:#4FA391"><b>3</b></td><td style="text-align:center; color:#4FA391"><b>3</b></td><td style="text-align:center; color:#4FA391"><b>3</b></td>
-<td style="text-align:center; color:#8FA3AE">want 3/3/3/3/3/3/3</td><td></td></tr>
-<tr style="background:#1C2B33; color:#FAF7F2"><td style="padding:5px 16px"><b>At closedown</b></td><td></td>
-<td style="text-align:center; color:#4FA391"><b>3</b></td><td style="text-align:center; color:#4FA391"><b>3</b></td><td style="text-align:center; color:#4FA391"><b>3</b></td><td style="text-align:center; color:#4FA391"><b>3</b></td><td style="text-align:center; color:#4FA391"><b>3</b></td><td style="text-align:center; color:#4FA391"><b>3</b></td><td style="text-align:center; color:#4FA391"><b>3</b></td>
-<td style="text-align:center; color:#8FA3AE">need 3</td><td></td></tr>
-<tr style="background:#1C2B33; color:#FAF7F2"><td style="padding:5px 16px"><b>Overtime hours</b></td><td></td>
-<td style="text-align:center; color:#E09A6A"><b>6</b></td><td style="text-align:center; color:#E09A6A"><b>6</b></td><td style="text-align:center; color:#E09A6A"><b>6</b></td><td style="text-align:center; color:#E09A6A"><b>3</b></td><td style="text-align:center; color:#E09A6A"><b>3</b></td><td style="text-align:center; color:#E09A6A"><b>3</b></td><td style="text-align:center; color:#E09A6A"><b>3</b></td>
-<td style="text-align:right; color:#E09A6A"><b>30 h</b></td>
-<td style="text-align:right; padding-right:16px; color:#1F6B59"><b>12 h min</b></td></tr>
-</table>
-<div style="display:flex; gap:14px">
-
-<div style="flex:1; background:#FFFFFF; padding:10px 22px; border-radius:14px; border-top:5px solid #1F6B59"><p style="font-size:23px; color:#4A5568">On this roster</p><p style="font-size:30px; font-weight:700; color:#1F6B59; line-height:1.2">130 h &middot; 85 KD</p></div>
-
-
-<div style="flex:1; background:#FFFFFF; padding:10px 22px; border-radius:14px; border-top:5px solid #77808A"><p style="font-size:23px; color:#4A5568">Qurain spends</p><p style="font-size:30px; font-weight:700; color:#77808A; line-height:1.2">78 h</p></div><div style="flex:1; background:#FFFFFF; padding:10px 22px; border-radius:14px; border-top:5px solid #1F6B59"><p style="font-size:23px; color:#4A5568">Pair total</p><p style="font-size:30px; font-weight:700; color:#1F6B59; line-height:1.2">208 of 300 h</p></div>
-</div>
-<div style="display:flex; align-items:center; gap:24px; background:#FFFFFF; padding:11px 26px; border-radius:14px; border-left:6px solid #2E7D6B">
-<p style="width:330px; font-size:24px; font-weight:700; color:#1F6B59">One budget, two branches</p>
-<p style="flex:1; font-size:24px; line-height:1.3; color:#1C2B33">This option spends <b>130 hours</b>. Qurain already spends <b>78</b> of the same <b>300-hour</b> allowance, so the pair lands at <b>208</b> and leaves <b>92 hours</b> for both supervisors to deploy between them.
- <b>Over the four-week cycle every man carries between 26 and 39 hours</b> &mdash; the double moves down the list each week instead of sitting on the same man.</p>
-</div>
-<p style="position:absolute; left:128px; bottom:56px; width:1664px; font-size:23px; line-height:1.28; color:#77808A">&#9733; one on the opening and one on the closing every day; no two supervisors share a pair, so no shift is left without one. The week is written by hand because the joker belongs to another branch. Overtime is shared by every man, supervisors included, least-burdened first, on a four-week cycle so the double never sits on the same man. Mahboula and Qurain draw on one 300-hour allowance between them, not 300 each; no man works both sites. Peak strength is the floor the branch must hold through the rush: 3 every day. One joker every day instead of only on rest days. Four bodies on the four days nobody rests, three on the three days a man is off, so ten doubles a week instead of fourteen. Three through the rush and three at closedown, every day.</p>
-</section>
-</div>
-
-<div class="slide" data-id="jahra">
-<section id="jahra" data-transition="fade" style="background:#1C2B33; color:#FAF7F2; font-family:'Public Sans', Verdana, sans-serif; padding:34px 128px 150px; display:flex; flex-direction:column; gap:9px">
-<div style="display:flex; flex-direction:column; gap:4px">
-<p style="font-size:22px; letter-spacing:2px; color:#E09A6A">PROJECTION &nbsp;&middot;&nbsp; 6-MAN TEAM &nbsp;&middot;&nbsp; TALABAT ORDERS ONLY</p>
-<h2 style="font-family:'Libre Baskerville', Georgia, serif; font-size:44px; font-weight:400; line-height:1.1; color:#FAF7F2">Jahra &mdash; 6 men</h2>
-<p style="font-size:24px; line-height:1.3; color:#C9D4DA">On site <b>12:30</b>, opens <b>13:30</b> &mdash; an hour of buffer. &nbsp;&middot;&nbsp; <b>First 12:30&ndash;21:30</b> &times;3  &nbsp;&middot;&nbsp; <b>Peak 14:30&ndash;23:30</b> &nbsp;&middot;&nbsp; <b>Second 18:30&ndash;03:30</b> &times;3 &nbsp;&middot;&nbsp; <b style="color:#E09A6A">DOUBLE 12:30&ndash;03:30</b> (+6 h, only the day after a rest day) &nbsp;&middot;&nbsp; <b style="color:#E09A6A">First +2h</b> where the floor needs it</p>
-</div>
-<table style="width:1664px; font-size:23px; color:#FAF7F2; border-collapse:collapse">
-<tr style="background:#0F1C23"><th style="width:19%; text-align:left; color:#FAF7F2; font-size:23px; padding:6px 16px">Employee</th>
-<th style="width:4%; text-align:center; color:#8FA3AE">Pair</th>
-<th style="width:8.7%; text-align:center; color:#FAF7F2">Sun</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Mon</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Tue</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Wed</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Thu</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Fri</th><th style="width:8.7%; text-align:center; color:#FAF7F2">Sat</th>
-<th style="width:7%; text-align:right; color:#8FA3AE">Extra</th>
-<th style="width:9%; text-align:right; color:#8FA3AE; padding-right:16px">Min rest</th></tr>
-<tr><td style="padding:3px 16px">Employee 1 <span style="color:#4FA391">&#9733;</span> <span style="font-size:20px; color:#8FA3AE">supervisor</span></td><td style="text-align:center; color:#8FA3AE">1</td><td style="text-align:center; color:#8FA3AE">DAY OFF</td><td style="text-align:center; color:#E09A6A"><b>DOUBLE</b></td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:right; padding-right:16px; color:#E09A6A"><b>6 h</b></td><td style="text-align:right; padding-right:16px; color:#8FA3AE">15 h</td></tr>
-<tr style="background:#263A45"><td style="padding:3px 16px">Employee 2 <span style="color:#4FA391">&#9733;</span> <span style="font-size:20px; color:#8FA3AE">assistant supervisor</span></td><td style="text-align:center; color:#8FA3AE">3</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center; color:#8FA3AE">DAY OFF</td><td style="text-align:center; color:#E09A6A"><b>First +2h</b></td><td style="text-align:center; color:#E09A6A"><b>First +2h</b></td><td style="text-align:center; color:#E09A6A"><b>First +2h</b></td><td style="text-align:center">First</td><td style="text-align:right; padding-right:16px; color:#E09A6A"><b>6 h</b></td><td style="text-align:right; padding-right:16px; color:#8FA3AE">13 h</td></tr>
-<tr><td style="padding:3px 16px">Employee 3 <span style="color:#4FA391">&#9733;</span> <span style="font-size:20px; color:#8FA3AE">acting</span></td><td style="text-align:center; color:#8FA3AE">5</td><td style="text-align:center">First</td><td style="text-align:center; color:#E09A6A"><b>First +2h</b></td><td style="text-align:center">First</td><td style="text-align:center">Second</td><td style="text-align:center; color:#8FA3AE">DAY OFF</td><td style="text-align:center; color:#E09A6A"><b>First +2h</b></td><td style="text-align:center; color:#E09A6A"><b>First +2h</b></td><td style="text-align:right; padding-right:16px; color:#E09A6A"><b>6 h</b></td><td style="text-align:right; padding-right:16px; color:#8FA3AE">13 h</td></tr>
-<tr style="background:#263A45"><td style="padding:3px 16px">Employee 4</td><td style="text-align:center; color:#8FA3AE">2</td><td style="text-align:center">Second</td><td style="text-align:center; color:#8FA3AE">DAY OFF</td><td style="text-align:center; color:#E09A6A"><b>DOUBLE</b></td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:right; padding-right:16px; color:#E09A6A"><b>6 h</b></td><td style="text-align:right; padding-right:16px; color:#8FA3AE">15 h</td></tr>
-<tr><td style="padding:3px 16px">Employee 5</td><td style="text-align:center; color:#8FA3AE">4</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:center; color:#8FA3AE">DAY OFF</td><td style="text-align:center; color:#E09A6A"><b>DOUBLE</b></td><td style="text-align:center">Second</td><td style="text-align:center">Second</td><td style="text-align:right; padding-right:16px; color:#E09A6A"><b>6 h</b></td><td style="text-align:right; padding-right:16px; color:#8FA3AE">15 h</td></tr>
-<tr style="background:#263A45"><td style="padding:3px 16px">Employee 6</td><td style="text-align:center; color:#8FA3AE">6</td><td style="text-align:center; color:#E09A6A"><b>First +2h</b></td><td style="text-align:center">First</td><td style="text-align:center; color:#E09A6A"><b>First +2h</b></td><td style="text-align:center">First</td><td style="text-align:center; color:#E09A6A"><b>First +2h</b></td><td style="text-align:center; color:#8FA3AE">DAY OFF</td><td style="text-align:center">First</td><td style="text-align:right; padding-right:16px; color:#E09A6A"><b>6 h</b></td><td style="text-align:right; padding-right:16px; color:#8FA3AE">13 h</td></tr>
-<tr style="background:#0F1C23; color:#FAF7F2"><td style="padding:5px 16px"><b>Through the rush</b></td><td></td>
-<td style="text-align:center; color:#4FA391"><b>4</b></td><td style="text-align:center; color:#4FA391"><b>4</b></td><td style="text-align:center; color:#4FA391"><b>4</b></td><td style="text-align:center; color:#4FA391"><b>4</b></td><td style="text-align:center; color:#4FA391"><b>5</b></td><td style="text-align:center; color:#4FA391"><b>5</b></td><td style="text-align:center; color:#4FA391"><b>4</b></td>
-<td style="text-align:center; color:#8FA3AE">want 4/4/4/4/5/5/4</td><td></td></tr>
-
-<tr style="background:#0F1C23; color:#FAF7F2"><td style="padding:5px 16px"><b>Overtime hours</b></td><td></td>
-<td style="text-align:center; color:#E09A6A"><b>2</b></td><td style="text-align:center; color:#E09A6A"><b>8</b></td><td style="text-align:center; color:#E09A6A"><b>8</b></td><td style="text-align:center; color:#E09A6A"><b>2</b></td><td style="text-align:center; color:#E09A6A"><b>10</b></td><td style="text-align:center; color:#E09A6A"><b>4</b></td><td style="text-align:center; color:#E09A6A"><b>2</b></td>
-<td style="text-align:right; color:#E09A6A"><b>36 h</b></td>
-<td style="text-align:right; padding-right:16px; color:#4FA391"><b>13 h min</b></td></tr>
-</table>
-<div style="display:flex; gap:14px">
-
-<div style="flex:1; background:#263A45; padding:10px 22px; border-radius:14px; border-top:5px solid #4FA391"><p style="font-size:23px; color:#C9D4DA">On this roster</p><p style="font-size:30px; font-weight:700; color:#4FA391; line-height:1.2">156 h &middot; 101 KD</p></div>
-<div style="flex:1; background:#263A45; padding:10px 22px; border-radius:14px; border-top:5px solid #E09A6A"><p style="font-size:23px; color:#C9D4DA">Short of peak strength</p><p style="font-size:30px; font-weight:700; color:#E09A6A; line-height:1.2">0 man-days a week</p></div>
-<div style="flex:1; background:#263A45; padding:10px 22px; border-radius:14px; border-top:5px solid #4FA391"><p style="font-size:23px; color:#C9D4DA">Budget used</p><p style="font-size:30px; font-weight:700; color:#4FA391; line-height:1.2">78% of 200 h</p></div>
-<div style="flex:1; background:#263A45; padding:10px 22px; border-radius:14px; border-top:5px solid #4FA391"><p style="font-size:23px; color:#C9D4DA">Supervisor's headroom</p><p style="font-size:30px; font-weight:700; color:#4FA391; line-height:1.2">44 of 200 h</p></div>
-</div>
-<table style="width:1664px; font-size:23px; color:#FAF7F2; border-collapse:collapse">
-<tr style="background:#0F1C23"><th style="width:15%; text-align:left; color:#FAF7F2; font-size:23px; padding:6px 16px">Headcount</th>
-<th style="width:17%; text-align:right; color:#FAF7F2; font-size:23px">Overtime a month</th>
-<th style="width:17%; text-align:center; color:#8FA3AE; font-size:23px">Through the peak, Sun&ndash;Sat</th>
-<th style="width:18%; text-align:center; color:#8FA3AE; font-size:23px">Against the strength wanted</th>
-<th style="width:33%; text-align:left; color:#8FA3AE; font-size:23px; padding-left:24px">&nbsp;</th></tr>
-<tr style="background:#263A45"><td style="padding:6px 16px"><b>6 men</b> <span style="color:#8FA3AE">&middot; as planned</span></td><td style="text-align:right; color:#FAF7F2">156 h &middot; 101 KD</td><td style="text-align:center; color:#8FA3AE">4 4 4 4 5 5 4</td><td style="text-align:center; color:#4FA391"><b>meets every day</b></td><td style="padding-left:24px; color:#FAF7F2"><b>What we ask for &mdash; meets every day on 156 hours</b></td></tr><tr><td style="padding:6px 16px"><b>7 men</b></td><td style="text-align:right; color:#FAF7F2">78 h &middot; 51 KD</td><td style="text-align:center; color:#8FA3AE">4 4 4 4 5 5 4</td><td style="text-align:center; color:#4FA391"><b>meets every day</b></td><td style="padding-left:24px; color:#8FA3AE">Meets every day, but more men than the trade justifies</td></tr><tr><td style="padding:6px 16px"><b>8 men</b></td><td style="text-align:right; color:#FAF7F2">26 h &middot; 17 KD</td><td style="text-align:center; color:#8FA3AE">4 4 4 4 5 5 4</td><td style="text-align:center; color:#4FA391"><b>meets every day</b></td><td style="padding-left:24px; color:#8FA3AE">Meets every day, but more men than the trade justifies</td></tr></table>
-<p style="position:absolute; left:128px; bottom:56px; width:1664px; font-size:23px; line-height:1.28; color:#8FA3AE">&#9733; one on the opening and one on the closing every day; no two supervisors share a pair, so no shift is left without one. The Peak band is a full nine hours and carries no overtime &mdash; it is what replaced holding the opening crew late. A double only ever follows a rest day, and the man is on Second from the next day on, so nobody closes at 03:30 and opens the next morning. One man rests each day rather than a whole pair, so the branch keeps its full strength every day of the week. Overtime is shared by every man, supervisors included, least-burdened first, on a four-week cycle so the double never sits on the same man. Jahra runs Talabat orders only, so it is rostered on the Qurain pattern: one man off a day and the smaller floor a cloud kitchen needs.</p>
-</section>
-</div>
-
-<div class="slide" data-id="kpi">
-<section id="kpi" data-transition="fade" style="background:#FAF7F2; color:#1C2B33; font-family:'Public Sans', Verdana, sans-serif; padding:58px 128px 150px; display:flex; flex-direction:column; gap:15px">
-<div style="display:flex; flex-direction:column; gap:6px">
-<h2 style="font-family:'Libre Baskerville', Georgia, serif; font-size:50px; font-weight:400; line-height:1.14">The 300 hours become the supervisor's KPI</h2>
-<p style="font-size:27px; line-height:1.35; color:#4A5568">The roster hands each branch a budget instead of a rule. How he spends it is the measure &mdash; and it is the same measure that decides who moves up a band.</p>
-</div>
-<table style="width:1664px; font-size:25px; color:#1C2B33; border-collapse:collapse">
-<tr style="background:#1C2B33"><th style="width:26%; text-align:left; color:#FAF7F2; padding:10px 16px">Measure</th>
-<th style="width:30%; text-align:left; color:#FAF7F2">What good looks like</th>
-<th style="width:44%; text-align:left; color:#FAF7F2; padding-left:24px">Where the number comes from</th></tr>
-<tr><td style="padding:8px 16px"><b>Overtime against budget</b></td><td>At or under 300 hours a month</td><td style="padding-left:24px; color:#4A5568">OT_Entries on HR Maya, by branch, already collected</td></tr>
-<tr style="background:#F3F0EA"><td style="padding:8px 16px"><b>Peak manned</b></td><td>Floor met on every trading day</td><td style="padding-left:24px; color:#4A5568">Roster against kiosk punches &mdash; Attendance_Daily</td></tr>
-<tr><td style="padding:8px 16px"><b>Rest days given</b></td><td>Every man, every week, Sat&ndash;Wed</td><td style="padding-left:24px; color:#4A5568">Roster tab, Planned Status = Day Off</td></tr>
-<tr style="background:#F3F0EA"><td style="padding:8px 16px"><b>Roster published on time</b></td><td>Before the week starts, no late amendments</td><td style="padding-left:24px; color:#4A5568">Published On and Last Amended On, already stamped</td></tr>
-<tr><td style="padding:8px 16px"><b>Attendance discipline</b></td><td>No unauthorised absence; late arrivals under control</td><td style="padding-left:24px; color:#4A5568">Attendance_Daily and Attendance_Audit</td></tr>
-<tr style="background:#F3F0EA"><td style="padding:8px 16px"><b>Documents valid</b></td><td>Nobody working on an expired civil ID</td><td style="padding-left:24px; color:#4A5568">Doc_Expiry_Log</td></tr>
-</table>
-<div style="display:flex; gap:20px">
-<div style="flex:1; background:#FFFFFF; padding:16px 26px; border-radius:14px; border-left:6px solid #2E7D6B">
-<p style="font-size:24px; font-weight:700; letter-spacing:1px; color:#1F6B59">WHY IT MATTERS FOR THE BANDS</p>
-<p style="font-size:25px; line-height:1.35; color:#1C2B33">The grade bands are drawn but the promotion conditions have no scores behind them. <b>Five of these six measures already exist in HR Maya</b> &mdash; nothing new to collect. They are what turns &ldquo;twelve months in band&rdquo; into an actual decision.</p></div>
-<div style="flex:1; background:#FFFFFF; padding:16px 26px; border-radius:14px; border-left:6px solid #C4622D">
-<p style="font-size:24px; font-weight:700; letter-spacing:1px; color:#B04A1E">WHAT IS STILL MISSING</p>
-<p style="font-size:25px; line-height:1.35; color:#1C2B33">A skills checklist per band, signed by the supervisor. It is the only promotion condition that cannot be read out of the system, and it has to be written with the kitchen supervisors, not for them.</p></div>
-</div>
-<p style="position:absolute; left:128px; bottom:56px; width:1664px; font-size:24px; line-height:1.3; color:#77808A">Scores would be reviewed every January and July, alongside the band review. A supervisor who holds his branch inside the budget while meeting the peak floor and giving every rest day is doing the job the roster asks of him &mdash; and that is the case for his own promotion.</p></section>
-</div>
-</div>
-<div id="menu" role="menu" aria-label="Go to slide"></div>
-<div id="nav">
-  <button id="prev" type="button" title="Previous slide" aria-label="Previous slide">&#8592;</button>
-  <span id="count" aria-live="polite"></span>
-  <button id="next" type="button" title="Next slide" aria-label="Next slide">&#8594;</button>
-  <button id="toc" type="button" title="All slides" aria-label="All slides" aria-expanded="false">&#9776;</button>
-</div>
-<div id="hint">← → or the buttons · N for notes · F for full screen</div>
-<div id="notes"><h4>Speaker notes</h4><p id="notesBody"></p></div>
-
-<script>
-(function () {
-  var NOTES = ["Open on the last box, not the table. The argument is not that we found 1236 KD — it is that the branches can run at this strength, which is what the supervisors dispute. The money is what management takes away.","Two pictures, one argument. Left: the bill falls by four fifths. Right: and the floor is fuller at peak than it is today, not thinner — the orange band is the rush and every line sits above the dashed six. If a supervisor says the pattern leaves him short, this is the chart that answers him. The flat stretch from noon to half past six is deliberate: that is the quiet trade, and it is where the hours were being wasted.","Lead with the cut and the headroom, not the roster. The point of this page is that the branch performs at today's strength and the supervisor is handed a budget he controls. If he says he is understaffed, the answer is on the peak row: the floor is manned to the number operations set, every day.","Lead with the cut and the headroom, not the roster. The point of this page is that the branch performs at today's strength and the supervisor is handed a budget he controls. If he says he is understaffed, the answer is on the peak row: the floor is manned to the number operations set, every day.","Lead with the cut and the headroom, not the roster. The point of this page is that the branch performs at today's strength and the supervisor is handed a budget he controls. If he says he is understaffed, the answer is on the peak row: the floor is manned to the number operations set, every day.","Lead with the cut and the headroom, not the roster. The point of this page is that the branch performs at today's strength and the supervisor is handed a budget he controls. If he says he is understaffed, the answer is on the peak row: the floor is manned to the number operations set, every day.","Lead with the cut and the headroom, not the roster. The point of this page is that the branch performs at today's strength and the supervisor is handed a budget he controls. If he says he is understaffed, the answer is on the peak row: the floor is manned to the number operations set, every day.","Lead with the cut and the headroom, not the roster. The point of this page is that the branch performs at today's strength and the supervisor is handed a budget he controls. If he says he is understaffed, the answer is on the peak row: the floor is manned to the number operations set, every day.","Lead with the cut and the headroom, not the roster. The point of this page is that the branch performs at today's strength and the supervisor is handed a budget he controls. If he says he is understaffed, the answer is on the peak row: the floor is manned to the number operations set, every day.","Do not present this as a finished roster &mdash; present it as the arithmetic of the headcount request. A 6-man team can be rostered and every man still gets a rest day, but it stands short of peak strength and spends 156 hours of overtime a month against a 200-hour budget. One more man takes it to <b>78 hours</b> with the floor met every day. That is the ask. The honest caveat belongs in the room: this measures a Talabat-only kitchen against the dine-in peak strength, because no order curve exists yet. If the orders come in lighter the floor target falls and so does the ask &mdash; so commit to reviewing it two weeks after opening rather than defending the number now.","This is the slide that answers \"they will always say they are understaffed\". Hand them a budget and a measure instead of an argument. Be honest that the skills checklist is the piece still missing and that it needs the supervisors in the room — otherwise the band system has no teeth."];
-  var TITLES = ["Four branches, today's men,and a budget the supervisor owns","What the branch gets, and what it costs","Ardiya — 9 men","Jabriya — 9 men","Kaifan — 8 men","Qurain — 7 men","Mahboula — Option 1: three at closedown — 3 men","Mahboula — Option 2: close with two — 3 men","Mahboula — Option 3: joker every day — 3 men","Jahra — 6 men","The 300 hours become the supervisor's KPI"];
-  var slides = Array.prototype.slice.call(document.querySelectorAll('#stage > .slide'));
-  var stage = document.getElementById('stage');
-  var bar = document.getElementById('bar');
-  var count = document.getElementById('count');
-  var notes = document.getElementById('notes');
-  var notesBody = document.getElementById('notesBody');
-  var nav = document.getElementById('nav');
-  var menu = document.getElementById('menu');
-  var prevBtn = document.getElementById('prev');
-  var nextBtn = document.getElementById('next');
-  var tocBtn = document.getElementById('toc');
-  var i = 0;
-
-  slides.forEach(function (s, k) {
-    var b = document.createElement('button');
-    b.type = 'button';
-    b.setAttribute('role', 'menuitem');
-    b.innerHTML = '<span class="num">' + (k + 1) + '</span><span></span>';
-    b.lastChild.textContent = TITLES[k] || s.dataset.id;
-    b.addEventListener('click', function () { show(k); closeMenu(); });
-    menu.appendChild(b);
-  });
-  var menuItems = Array.prototype.slice.call(menu.children);
-
-  function closeMenu() {
-    menu.classList.remove('open');
-    tocBtn.setAttribute('aria-expanded', 'false');
-  }
-
-  function fit() {
-    var s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
-    stage.style.transform = 'translate(-50%, -50%) scale(' + s + ')';
-  }
-
-  function show(n) {
-    i = Math.max(0, Math.min(slides.length - 1, n));
-    slides.forEach(function (s, k) { s.classList.toggle('live', k === i); });
-    bar.style.width = ((i + 1) / slides.length * 100) + '%';
-    count.textContent = (i + 1) + ' / ' + slides.length;
-    notesBody.textContent = NOTES[i] || 'No notes for this slide.';
-    prevBtn.disabled = (i === 0);
-    nextBtn.disabled = (i === slides.length - 1);
-    menuItems.forEach(function (b, k) { b.setAttribute('aria-current', k === i ? 'true' : 'false'); });
-    if (history.replaceState) history.replaceState(null, '', '#' + slides[i].dataset.id);
-  }
-
-  function fromHash() {
-    var id = (location.hash || '').replace('#', '');
-    var k = slides.findIndex(function (s) { return s.dataset.id === id; });
-    show(k >= 0 ? k : 0);
-  }
-
-  document.addEventListener('keydown', function (e) {
-    var typing = e.target && e.target.classList && e.target.classList.contains('salesIn');
-    if (typing && e.key !== 'Escape') return;
-    switch (e.key) {
-      case 'ArrowRight': case 'PageDown': case ' ': show(i + 1); e.preventDefault(); break;
-      case 'ArrowLeft': case 'PageUp': show(i - 1); e.preventDefault(); break;
-      case 'Home': show(0); break;
-      case 'End': show(slides.length - 1); break;
-      case 'n': case 'N': notes.classList.toggle('open'); break;
-      case 'g': case 'G': tocBtn.click(); break;
-      case 'f': case 'F':
-        if (document.fullscreenElement) { document.exitFullscreen(); }
-        else if (document.documentElement.requestFullscreen) { document.documentElement.requestFullscreen(); }
-        break;
-      case 'Escape': closeMenu(); if (e.target.blur) e.target.blur(); break;
-    }
-  });
-
-  prevBtn.addEventListener('click', function () { show(i - 1); });
-  nextBtn.addEventListener('click', function () { show(i + 1); });
-  tocBtn.addEventListener('click', function () {
-    var open = menu.classList.toggle('open');
-    tocBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-    if (open) {
-      var current = menuItems[i];
-      if (current && current.scrollIntoView) current.scrollIntoView({ block: 'nearest' });
-    }
-  });
-
-  // Clicking the slide itself still advances; the chrome and the inputs do not.
-  document.addEventListener('click', function (e) {
-    if (e.target.closest('#nav') || e.target.closest('#menu') ||
-        e.target.closest('#notes') || e.target.closest('input')) return;
-    closeMenu();
-    show(e.clientX < window.innerWidth / 2 ? i - 1 : i + 1);
-  });
-
-  window.addEventListener('resize', fit);
-  window.addEventListener('hashchange', fromHash);
-  fit();
-  fromHash();
-
-  /* ---------- the sales slide ---------- */
-  var BR = [
-    { id: 'ardiya',  cost: 510, cap: 176 },
-    { id: 'jabriya', cost: 485, cap: 184 },
-    { id: 'qurain',  cost: 438, cap: 162 },
-    { id: 'kaifan',  cost: 365, cap: 182 }
-  ];
-  var TOTAL_COST = 1798, TOTAL_CAP = 704, STORE = 'mayatex.sales.v1';
-  var sales = {};
-
-  try {
-    var raw = localStorage.getItem(STORE);
-    if (raw) {
-      var saved = JSON.parse(raw);
-      BR.forEach(function (b) {
-        if (typeof saved[b.id] === 'number' && isFinite(saved[b.id])) sales[b.id] = saved[b.id];
-      });
-    }
-  } catch (err) { /* private window or blocked storage: start empty */ }
-
-  function cell(key) { return document.querySelector('[data-cell="' + key + '"]'); }
-  function group(n) { return n.toLocaleString('en-US'); }
-  function share(part, whole) { return (!whole || whole <= 0) ? null : (part / whole) * 100; }
-  function pc(v) { return v === null ? '—' : v.toFixed(1) + '%'; }
-
-  var salesSlide = document.getElementById('sales');
-  if (salesSlide) {
-    BR.forEach(function (b) {
-      var host = cell('in-' + b.id);
-      if (!host) return;
-      var input = document.createElement('input');
-      input.type = 'text';
-      input.inputMode = 'numeric';
-      input.className = 'salesIn';
-      input.id = 'salesIn-' + b.id;
-      input.placeholder = '0';
-      input.setAttribute('aria-label', b.id + ' monthly sales in Kuwaiti Dinar');
-      input.value = sales[b.id] ? group(sales[b.id]) : '';
-      input.addEventListener('input', function () {
-        var digits = input.value.replace(/[^0-9]/g, '');
-        sales[b.id] = digits ? parseInt(digits, 10) : 0;
-        paint();
-        try { localStorage.setItem(STORE, JSON.stringify(sales)); } catch (err) {}
-      });
-      input.addEventListener('blur', function () {
-        input.value = sales[b.id] ? group(sales[b.id]) : '';
-      });
-      host.textContent = '';
-      host.appendChild(input);
-    });
-
-    function paint() {
-      var total = 0;
-      BR.forEach(function (b) {
-        var s = sales[b.id] || 0;
-        total += s;
-        cell('now-' + b.id).textContent = pc(share(b.cost, s));
-        cell('cap-' + b.id).textContent = pc(share(b.cap, s));
-      });
-      cell('t-sales').innerHTML = '<b>' + (total ? group(total) : '—') + '</b>';
-      cell('t-now').innerHTML = '<b>' + pc(share(TOTAL_COST, total)) + '</b>';
-      cell('t-cap').innerHTML = '<b>' + pc(share(TOTAL_CAP, total)) + '</b>';
-    }
-    paint();
-  }
-})();
-</script>
+<script src="config.js"></script>
+<script src="roster.js"></script>
 </body>
 </html>
