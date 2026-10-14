@@ -8,8 +8,9 @@
 html,body{margin:0;padding:0;height:100%}
 body{background:#0B1317;overflow:hidden;font-family:'Public Sans',Verdana,sans-serif;-webkit-font-smoothing:antialiased}
 #stage{position:absolute;top:50%;left:50%;width:1920px;height:1080px;transform-origin:center center;box-shadow:0 24px 80px rgba(0,0,0,.55)}
-#stage>section{position:absolute;inset:0;width:1920px;height:1080px;overflow:hidden;display:none}
-#stage>section.live{display:flex}
+.slide{position:absolute;inset:0;width:1920px;height:1080px;overflow:hidden;display:none}
+.slide.live{display:block}
+.slide>section{position:absolute;inset:0;width:1920px;height:1080px;overflow:hidden}
 section h1,section h2,section h3,section p,section ul,section ol,section table{margin:0}
 section h1{font-size:96px;font-weight:600;line-height:1.1}
 section h2{font-size:64px;font-weight:600;line-height:1.15}
@@ -52,7 +53,7 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
  @page{size:1920px 1080px;margin:0}
  body{background:#fff;overflow:visible}
  #stage{position:static;width:auto;height:auto;transform:none!important;box-shadow:none}
- #stage>section{position:relative;display:flex!important;break-after:page}
+ .slide{position:relative;display:block!important;width:1920px;height:1080px;break-after:page}
  #bar,#nav,#menu,#notes,#hint,#proto{display:none!important}
 }
 
@@ -67,7 +68,7 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <body>
 <div id="bar"></div>
 <div id="stage">
-<section id="cover" data-transition="fade" style="background:#1E2B26;color:#F6F1E8;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;justify-content:center;gap:40px">
+<div class="slide" data-id="cover"><section id="cover" data-transition="fade" style="background:#1E2B26;color:#F6F1E8;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;justify-content:center;gap:40px">
 <div style="position:absolute;left:0;top:0;width:24px;height:1080px;background:#B5482F"></div>
 <p style="font-size:26px;font-weight:600;letter-spacing:4px;text-transform:uppercase;color:#D9A441">Proposal to management · October 2026</p>
 <h1 style="font-family:'Libre Baskerville', Georgia, serif;font-size:120px;font-weight:700;line-height:1.1;color:#F6F1E8;width:1500px">One system, from purchase to plate</h1>
@@ -75,7 +76,8 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#9DAAA3">Prepared by Shakeel · Maya Tex Restaurants Company</p>
 <aside>Open by saying this is about control, not about swapping one till for another. The POS we use today does its job at the counter; what we are missing is everything behind the counter being tied to it.</aside>
 </section>
-<section id="today" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:48px">
+</div>
+<div class="slide" data-id="today"><section id="today" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:48px">
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#B5482F">Where we are</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:72px;font-weight:700;line-height:1.15;color:#1E2B26">Foodics rings the sale. Everything behind the counter lives elsewhere.</h2>
 <div style="display:flex;gap:32px">
@@ -101,7 +103,8 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#7A857F">Maya Restaurant System · 2</p>
 <aside>The POS does its job at the counter. The problem is that the left box and the right box never talk to each other, so nobody can connect what we sold with what we bought and used.</aside>
 </section>
-<section id="gap" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+</div>
+<div class="slide" data-id="gap"><section id="gap" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#B5482F">The cost of the gap</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:72px;font-weight:700;line-height:1.15;color:#1E2B26">What a POS-only setup hides from us</h2>
 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:32px">
@@ -133,7 +136,8 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#7A857F">Maya Restaurant System · 3</p>
 <aside>Each of these is a question management cannot answer today from the POS: what does a plate cost, where did the stock go, what did the kitchen send, what happened to margin when chicken went up.</aside>
 </section>
-<section id="flow" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:48px">
+</div>
+<div class="slide" data-id="flow"><section id="flow" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:48px">
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#B5482F">The proposal</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:72px;font-weight:700;line-height:1.15;color:#1E2B26">One record, from supplier to guest</h2>
 <div style="display:flex;align-items:center;gap:16px">
@@ -173,7 +177,8 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#7A857F">Maya Restaurant System · 4</p>
 <aside>Walk the chain left to right. Today only step 5 is in a system. With this proposal all five are one database, so a kilo of chicken can be followed from the supplier's invoice to the plate that was sold.</aside>
 </section>
-<section id="modules" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+</div>
+<div class="slide" data-id="modules"><section id="modules" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#B5482F">What it includes</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:72px;font-weight:700;line-height:1.15;color:#1E2B26">Six modules, one independent system</h2>
 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:32px">
@@ -211,7 +216,8 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#7A857F">Maya Restaurant System · 5</p>
 <aside>This is not a POS with add-ons. It is one system where the till, the kitchen, the store and the accounts share the same data. The next slides take each part in turn.</aside>
 </section>
-<section id="recipes" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:48px">
+</div>
+<div class="slide" data-id="recipes"><section id="recipes" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:48px">
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#B5482F">Recipe management</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:72px;font-weight:700;line-height:1.15;color:#1E2B26">Recipes set the cost of every plate</h2>
 <div style="display:flex;gap:64px;align-items:center">
@@ -243,7 +249,8 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#7A857F">Maya Restaurant System · 6</p>
 <aside>The arrows run upward on purpose: a supplier price change on one ingredient flows up through every sub-recipe and every plate that uses it, so the cost per plate is always current.</aside>
 </section>
-<section id="s-recipe" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:24px">
+</div>
+<div class="slide" data-id="s-recipe"><section id="s-recipe" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:24px">
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#B5482F">On screen · recipe card</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:56px;font-weight:700;line-height:1.15;color:#1E2B26">Mexican Chicken Burrito, costed to the fils</h2>
 <div style="flex:1;display:flex;gap:24px;background:#FFFDF8;border:2px solid #1E2B26;border-radius:20px;padding:24px">
@@ -272,7 +279,8 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;right:128px;bottom:64px;width:600px;text-align:right;font-size:24px;font-weight:600"><a href="#" data-proto="recipes">Try it live: open the screen</a></p>
 <aside>In the prototype there is a slider for the chicken purchase price: move it and the cost of every chicken plate updates at once. That is the whole point of recipes tied to purchasing.</aside>
 </section>
-<section id="stock" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:48px">
+</div>
+<div class="slide" data-id="stock"><section id="stock" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:48px">
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#B5482F">Stock and purchasing</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:72px;font-weight:700;line-height:1.15;color:#1E2B26">Every stock move is recorded where it happens</h2>
 <table style="font-family:'Public Sans', Arial, sans-serif;font-size:28px;color:#1E2B26;background:#FFFDF8;border:1px solid #E4DCCD;border-radius:16px">
@@ -287,7 +295,8 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#7A857F">Maya Restaurant System · 8</p>
 <aside>The key line is Count: because sales already deducted the recipe, the system knows what should be on the shelf. The difference with the physical count is the variance, and it is visible per item and per branch, not only at month-end.</aside>
 </section>
-<section id="s-stock" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:24px">
+</div>
+<div class="slide" data-id="s-stock"><section id="s-stock" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:24px">
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#B5482F">On screen · stock count</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:56px;font-weight:700;line-height:1.15;color:#1E2B26">The system knows what should be on the shelf</h2>
 <div style="flex:1;display:flex;gap:24px;background:#FFFDF8;border:2px solid #1E2B26;border-radius:20px;padding:24px">
@@ -313,7 +322,8 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;right:128px;bottom:64px;width:600px;text-align:right;font-size:24px;font-weight:600"><a href="#" data-proto="stock">Try it live: open the screen</a></p>
 <aside>Because every sale deducts its recipe, the system column is what should be there. The count shows the gap on the day, item by item, instead of a single number at month-end. In the prototype you can type counts and receive purchase orders and transfers.</aside>
 </section>
-<section id="accounts" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:48px">
+</div>
+<div class="slide" data-id="accounts"><section id="accounts" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:48px">
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#B5482F">Accounting</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:72px;font-weight:700;line-height:1.15;color:#1E2B26">Accounts built in, not bolted on</h2>
 <div style="display:flex;gap:48px">
@@ -339,7 +349,8 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#7A857F">Maya Restaurant System · 10</p>
 <aside>Accounting is part of the same system, not an export to a separate package. Because stock, sales and payroll all post automatically, the accounts team checks and approves rather than re-keys.</aside>
 </section>
-<section id="s-acct" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:24px">
+</div>
+<div class="slide" data-id="s-acct"><section id="s-acct" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:24px">
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#B5482F">On screen · accounting</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:56px;font-weight:700;line-height:1.15;color:#1E2B26">The ledger fills itself as the day runs</h2>
 <div style="flex:1;display:flex;gap:24px;background:#FFFDF8;border:2px solid #1E2B26;border-radius:20px;padding:24px">
@@ -368,7 +379,8 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;right:128px;bottom:64px;width:600px;text-align:right;font-size:24px;font-weight:600"><a href="#" data-proto="accounts">Try it live: open the screen</a></p>
 <aside>Make a sale or log wastage in the prototype and the entries appear on the accounting screen straight away. The branch P&amp;L and supplier balances are on the other tabs.</aside>
 </section>
-<section id="pos" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:48px">
+</div>
+<div class="slide" data-id="pos"><section id="pos" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:48px">
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#B5482F">Point of sale · the basics</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:72px;font-weight:700;line-height:1.15;color:#1E2B26">Everything the counter has today</h2>
 <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:24px">
@@ -385,7 +397,8 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#7A857F">Maya Restaurant System · 12</p>
 <aside>This slide is the reassurance for branch supervisors and cashiers: the day-to-day at the till stays familiar. The next slide is where our own system goes further.</aside>
 </section>
-<section id="posplus" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:36px">
+</div>
+<div class="slide" data-id="posplus"><section id="posplus" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:36px">
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#B5482F">Point of sale · beyond Foodics</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:72px;font-weight:700;line-height:1.15;color:#1E2B26">What only our own POS can do</h2>
 <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:20px">
@@ -405,7 +418,8 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#7A857F">Maya Restaurant System · 13</p>
 <aside>Be fair if asked: Foodics is a capable POS and sells some of these as paid modules or marketplace add-ons. What it cannot do is tie them to our HR Maya staff records, our recipes and our own accounts, or change on our timetable. Talabat integration depends on Talabat granting API access, so confirm that before promising a date.</aside>
 </section>
-<section id="s-pos" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:24px">
+</div>
+<div class="slide" data-id="s-pos"><section id="s-pos" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:24px">
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#B5482F">On screen · the till</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:56px;font-weight:700;line-height:1.15;color:#1E2B26">Maya and 10C on one till, with the real Maya menu</h2>
 <div style="flex:1;display:flex;flex-direction:column;background:#FFFDF8;border:2px solid #1E2B26;border-radius:20px;overflow:hidden">
@@ -451,7 +465,8 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;right:128px;bottom:64px;width:600px;text-align:right;font-size:24px;font-weight:600"><a href="#" data-proto="pos">Try it live: open the screen</a></p>
 <aside>Maya's items and prices are the real menu as listed on Deliveroo Kuwait. Point out three things: the customer is recognised by phone and the till suggests what she usually adds; Volcano Nachos greys out on its own because this branch ran out of jalapeños; and the same till sells both brands. Click the link to show it live.</aside>
 </section>
-<section id="s-pos2" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:24px">
+</div>
+<div class="slide" data-id="s-pos2"><section id="s-pos2" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:24px">
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#B5482F">On screen · control at the till</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:56px;font-weight:700;line-height:1.15;color:#1E2B26">Approvals, staff meals, and a sale that posts itself</h2>
 <div style="flex:1;display:flex;gap:24px">
@@ -485,7 +500,8 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;right:128px;bottom:64px;width:600px;text-align:right;font-size:24px;font-weight:600"><a href="#" data-proto="pos">Try it live: open the screen</a></p>
 <aside>In the prototype, the Discount and void buttons open the PIN pad, Staff meal picks an employee, and Pay walks through KNET, card, cash or split. The last panel is the point to land: one tap at the till updates the kitchen, stock, accounts, loyalty and the customer's WhatsApp.</aside>
 </section>
-<section id="s-kds" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:24px">
+</div>
+<div class="slide" data-id="s-kds"><section id="s-kds" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:24px">
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#B5482F">On screen · kitchen</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:56px;font-weight:700;line-height:1.15;color:#1E2B26">Every order, every channel, one kitchen screen</h2>
 <div style="flex:1;display:flex;gap:20px;background:#1E2B26;border-radius:20px;padding:24px">
@@ -509,7 +525,8 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;right:128px;bottom:64px;width:600px;text-align:right;font-size:24px;font-weight:600"><a href="#" data-proto="kds">Try it live: open the screen</a></p>
 <aside>Delivery-app orders land on the same screen as dine-in, so there is no separate tablet per app. In the prototype you can simulate Talabat, Keeta and Jahez orders and move tickets from New to Ready.</aside>
 </section>
-<section id="compare" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+</div>
+<div class="slide" data-id="compare"><section id="compare" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#B5482F">Why own it</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:72px;font-weight:700;line-height:1.15;color:#1E2B26">Today versus our own system</h2>
 <table style="font-family:'Public Sans', Arial, sans-serif;font-size:26px;color:#1E2B26;background:#FFFDF8;border:1px solid #E4DCCD">
@@ -526,7 +543,8 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#7A857F">Maya Restaurant System · 17</p>
 <aside>The left column describes how we use Foodics today, not everything Foodics sells. If asked: Foodics does offer inventory and recipe modules and marketplace add-ons, each at extra cost per branch, and still separate from our accounts and HR Maya. Our own system is not free to run either: there is a server, hardware and in-house support time, but no per-branch licence growing as we open Jahra and the next branches.</aside>
 </section>
-<section id="stack" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:44px">
+</div>
+<div class="slide" data-id="stack"><section id="stack" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:44px">
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#B5482F">How it is built</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:72px;font-weight:700;line-height:1.15;color:#1E2B26">Built from scratch, on a proven model</h2>
 <div style="display:flex;gap:40px">
@@ -553,7 +571,8 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#7A857F">Maya Restaurant System · 18</p>
 <aside>Point to make: borrowing a proven design lowers the risk of building from scratch, because the hard accounting and stock rules are already well understood. Building our own keeps it simple for restaurant staff and free of anything we do not use.</aside>
 </section>
-<section id="integrations" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:44px">
+</div>
+<div class="slide" data-id="integrations"><section id="integrations" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:44px">
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#B5482F">Integrations</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:72px;font-weight:700;line-height:1.15;color:#1E2B26">Any service with an API plugs straight in</h2>
 <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:24px">
@@ -581,7 +600,8 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#7A857F">Maya Restaurant System · 19</p>
 <aside>The point for management: with a vendor POS we can only use the integrations the vendor has chosen to build, often at extra cost. With our own system, any new delivery app or payment provider that opens an API can be connected by us, on our timetable. The only dependency is the provider granting access.</aside>
 </section>
-<section id="s-integ" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:24px">
+</div>
+<div class="slide" data-id="s-integ"><section id="s-integ" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:24px">
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#B5482F">On screen · integrations</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:56px;font-weight:700;line-height:1.15;color:#1E2B26">Every connection, and its status, on one page</h2>
 <div style="flex:1;display:flex;flex-direction:column;gap:20px;background:#FFFDF8;border:2px solid #1E2B26;border-radius:20px;padding:24px">
@@ -606,7 +626,8 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;right:128px;bottom:64px;width:600px;text-align:right;font-size:24px;font-weight:600"><a href="#" data-proto="integrations">Try it live: open the screen</a></p>
 <aside>In the prototype each delivery app has a Simulate an order button; the order appears on the kitchen screen within a second. That is exactly what happens for real once the provider gives us API access.</aside>
 </section>
-<section id="datakey" data-transition="fade" style="background:#1E2B26;color:#F6F1E8;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;justify-content:center;gap:44px">
+</div>
+<div class="slide" data-id="datakey"><section id="datakey" data-transition="fade" style="background:#1E2B26;color:#F6F1E8;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;justify-content:center;gap:44px">
 <div style="position:absolute;left:0;top:0;width:24px;height:1080px;background:#D9A441"></div>
 <p style="font-size:26px;font-weight:600;letter-spacing:4px;text-transform:uppercase;color:#D9A441">Data is the king</p>
 <h1 style="font-family:'Libre Baskerville', Georgia, serif;font-size:96px;font-weight:700;line-height:1.12;color:#F6F1E8;width:1600px">Every order tells us something. Today, someone else keeps it.</h1>
@@ -614,7 +635,8 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#9DAAA3">Maya Restaurant System · 21</p>
 <aside>This is the heart of the proposal. A POS is replaceable; years of customer and sales history are not. Whoever holds the data holds the ability to market, to price, to plan and to open the next branch in the right place. The next four slides show what we keep and every way we can use it.</aside>
 </section>
-<section id="dataown" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+</div>
+<div class="slide" data-id="dataown"><section id="dataown" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#B5482F">Data is the king · what we keep</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:72px;font-weight:700;line-height:1.15;color:#1E2B26">Everything we capture, owned by Maya</h2>
 <table style="font-family:'Public Sans', Arial, sans-serif;font-size:26px;color:#1E2B26;background:#FFFDF8;border:1px solid #E4DCCD">
@@ -631,7 +653,8 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#7A857F">Maya Restaurant System · 22</p>
 <aside>Note on delivery apps: Talabat and similar apps usually share the order but not the customer's phone number or full details. That customer belongs to the app, not to us. This is one of the strongest reasons to build our own ordering channel later in this section.</aside>
 </section>
-<section id="datagrow" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:36px">
+</div>
+<div class="slide" data-id="datagrow"><section id="datagrow" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:36px">
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#B5482F">Data is the king · grow sales</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:72px;font-weight:700;line-height:1.15;color:#1E2B26">Turning orders into repeat customers</h2>
 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px">
@@ -648,7 +671,8 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#7A857F">Maya Restaurant System · 23</p>
 <aside>All of this runs on data we hold ourselves and on our own WhatsApp number. None of it is possible while the customer list lives with the POS vendor or the delivery apps. Marketing messages go only to customers who agreed, with an easy way to stop them.</aside>
 </section>
-<section id="s-crm" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:24px">
+</div>
+<div class="slide" data-id="s-crm"><section id="s-crm" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:24px">
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#B5482F">On screen · customers and offers</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:56px;font-weight:700;line-height:1.15;color:#1E2B26">Know each guest, then bring them back</h2>
 <div style="flex:1;display:flex;gap:24px;background:#FFFDF8;border:2px solid #1E2B26;border-radius:20px;padding:24px">
@@ -673,7 +697,8 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;right:128px;bottom:64px;width:600px;text-align:right;font-size:24px;font-weight:600"><a href="#" data-proto="customers">Try it live: open the screen</a></p>
 <aside>The prototype lets you filter customers by segment (VIP, regular, lapsed, birthday this week), open a profile, and build an offer with a live preview of the WhatsApp message. Past offers show what they brought back.</aside>
 </section>
-<section id="datarun" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:36px">
+</div>
+<div class="slide" data-id="datarun"><section id="datarun" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:36px">
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#B5482F">Data is the king · run better</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:72px;font-weight:700;line-height:1.15;color:#1E2B26">Decisions on facts, not feelings</h2>
 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px">
@@ -690,7 +715,8 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#7A857F">Maya Restaurant System · 25</p>
 <aside>The rostering card connects directly to the overtime work already under way: with hourly sales from our own system we can place staff on the real peaks per branch. The last card matters for growth: the Jahra cloud kitchen and any next branch can be sited on our own order data.</aside>
 </section>
-<section id="s-report" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:24px">
+</div>
+<div class="slide" data-id="s-report"><section id="s-report" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:24px">
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#B5482F">On screen · reports</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:56px;font-weight:700;line-height:1.15;color:#1E2B26">The day at Ardiya, at a glance</h2>
 <div style="flex:1;display:flex;flex-direction:column;gap:18px;background:#FFFDF8;border:2px solid #1E2B26;border-radius:20px;padding:24px">
@@ -721,7 +747,8 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;right:128px;bottom:64px;width:600px;text-align:right;font-size:24px;font-weight:600"><a href="#" data-proto="reports">Try it live: open the screen</a></p>
 <aside>The peak between 20:00 and 23:00 matches what we already know about the branches, which is why this report feeds rostering. The prototype also has the menu engineering chart and a profit-by-channel table where you type each delivery app's real commission.</aside>
 </section>
-<section id="dataapp" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:44px">
+</div>
+<div class="slide" data-id="dataapp"><section id="dataapp" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:44px">
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#B5482F">Data is the king · next step</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:72px;font-weight:700;line-height:1.15;color:#1E2B26">Our own ordering portal and app</h2>
 <div style="display:flex;gap:48px">
@@ -756,7 +783,8 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#7A857F">Maya Restaurant System · 27</p>
 <aside>This is the future step, not part of the first build, but it is only possible because the core system is ours. The portal and app plug into the same menu, recipes, stock and accounts, so there is no new back office to build. Every direct order is one less commission and one more customer whose data we keep.</aside>
 </section>
-<section id="s-app" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:24px">
+</div>
+<div class="slide" data-id="s-app"><section id="s-app" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:24px">
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#B5482F">On screen · ordering app</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:56px;font-weight:700;line-height:1.15;color:#1E2B26">Maya and 10C in the guest's pocket</h2>
 <div style="flex:1;display:flex;gap:64px;align-items:center">
@@ -778,7 +806,8 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;right:128px;bottom:64px;width:600px;text-align:right;font-size:24px;font-weight:600"><a href="#" data-proto="app">Try it live: open the screen</a></p>
 <aside>A future step, shown so management can picture it. In the prototype you can switch brands, add items, pay, and watch the order appear on the kitchen screen as an Own app ticket.</aside>
 </section>
-<section id="rollout" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:48px">
+</div>
+<div class="slide" data-id="rollout"><section id="rollout" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:48px">
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#B5482F">Rollout</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:72px;font-weight:700;line-height:1.15;color:#1E2B26">Four phases, no big-bang switch</h2>
 <div style="display:flex;gap:24px">
@@ -806,7 +835,8 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#7A857F">Maya Restaurant System · 29</p>
 <aside>The pilot runs both systems side by side, so if anything goes wrong the branch simply carries on in Foodics. We only cancel Foodics once every branch has run cleanly.</aside>
 </section>
-<section id="risks" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:44px">
+</div>
+<div class="slide" data-id="risks"><section id="risks" data-transition="fade" style="background:#F6F1E8;color:#1E2B26;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:44px">
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#B5482F">Risks</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:72px;font-weight:700;line-height:1.15;color:#1E2B26">What could go wrong, and our answer</h2>
 <table style="font-family:'Public Sans', Arial, sans-serif;font-size:26px;color:#1E2B26;background:#FFFDF8;border:1px solid #E4DCCD">
@@ -821,7 +851,8 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#7A857F">Maya Restaurant System · 30</p>
 <aside>Name these before management does. The two that matter most are data history, which we solve by exporting everything before cancelling, and the till going down, which offline selling covers.</aside>
 </section>
-<section id="ask" data-transition="fade" style="background:#1E2B26;color:#F6F1E8;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;justify-content:center;gap:48px">
+</div>
+<div class="slide" data-id="ask"><section id="ask" data-transition="fade" style="background:#1E2B26;color:#F6F1E8;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;justify-content:center;gap:48px">
 <div style="position:absolute;left:0;top:0;width:24px;height:1080px;background:#B5482F"></div>
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#D9A441">The decision</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:72px;font-weight:700;line-height:1.15;color:#F6F1E8">What we need from management</h2>
@@ -834,7 +865,8 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#9DAAA3">Maya Restaurant System · 31</p>
 <aside>Close on the first item. A pilot at one branch is a small, reversible step; everything after it depends on what the pilot shows.</aside>
 </section>
-<section id="cc-cover" data-transition="fade" style="background:#2A1B12;color:#F7F0E4;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;justify-content:center;gap:32px">
+</div>
+<div class="slide" data-id="cc-cover"><section id="cc-cover" data-transition="fade" style="background:#2A1B12;color:#F7F0E4;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;justify-content:center;gap:32px">
 
 <div style="position:absolute;left:0;top:0;width:24px;height:1080px;background:#D99A2B"></div>
 <p style="font-size:26px;font-weight:600;letter-spacing:4px;text-transform:uppercase;color:#D99A2B">New concept · business plan</p>
@@ -844,7 +876,8 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#CDBBA6">Chai &amp; Chappati · 32</p>
 <aside>This is a new brand for Maya Tex. Everything in this section is a plan: menu prices are set against real Kuwait and UAE benchmarks, while costs, rents and volumes are planning assumptions to confirm before we commit.</aside>
 </section>
-<section id="cc-idea" data-transition="fade" style="background:#F7F0E4;color:#2A1B12;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+</div>
+<div class="slide" data-id="cc-idea"><section id="cc-idea" data-transition="fade" style="background:#F7F0E4;color:#2A1B12;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#9C4A1A">The concept</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:64px;font-weight:700;line-height:1.15;color:#2A1B12">A tea counter Kuwait already understands</h2>
 <div style="display:flex;gap:28px">
@@ -857,7 +890,8 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#8A7867">Chai &amp; Chappati · 33</p>
 <aside>Three product lines, one counter. Tea carries the traffic and the margin; rolls lift the average bill; bun maska is the add-on with every chai.</aside>
 </section>
-<section id="cc-market" data-transition="fade" style="background:#F7F0E4;color:#2A1B12;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+</div>
+<div class="slide" data-id="cc-market"><section id="cc-market" data-transition="fade" style="background:#F7F0E4;color:#2A1B12;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#9C4A1A">The market</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:64px;font-weight:700;line-height:1.15;color:#2A1B12">Priced between the street and the premium café</h2><table style="font-family:'Public Sans', Arial, sans-serif;font-size:26px;color:#2A1B12;background:#FFFAF2;border:1px solid #E6D8C2">
 <tr style="background:#2A1B12"><th style="width:18%;color:#F7F0E4;text-align:left">KD per item</th><th style="width:26%;color:#F7F0E4;text-align:left">Street: Chapati Rashid, Ardiya</th><th style="width:24%;color:#F7F0E4;text-align:left">Chai &amp; Chappati</th><th style="width:32%;color:#F7F0E4;text-align:left">Premium: FiLLi Cafe, UAE</th></tr>
@@ -871,20 +905,23 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#8A7867">Chai &amp; Chappati · 34</p>
 <aside>Sources: Chapati Rashid Ardiya menu on Deliveroo Kuwait; FiLLi Cafe menu (UAE, in dirhams); Karak Gholam franchise page. Our karak matches street price so nobody feels overcharged on the hero drink; the margin comes from rolls, specials and add-ons.</aside>
 </section>
-<section id="cc-guest" data-transition="fade" style="background:#F7F0E4;color:#2A1B12;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+</div>
+<div class="slide" data-id="cc-guest"><section id="cc-guest" data-transition="fade" style="background:#F7F0E4;color:#2A1B12;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#9C4A1A">Who buys, and when</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:64px;font-weight:700;line-height:1.15;color:#2A1B12">Five moments we sell into</h2><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px"><div style="display:flex;flex-direction:column;gap:10px;background:#FFFAF2;padding:28px;border-top:5px solid #9C4A1A;border-radius:12px"><h3 style="font-size:30px;font-weight:700">Morning commute</h3><p style="font-size:26px;line-height:1.4;color:#5E4B3E">Karak and bun maska in under two minutes, from the counter or the car.</p></div><div style="display:flex;flex-direction:column;gap:10px;background:#FFFAF2;padding:28px;border-top:5px solid #9C4A1A;border-radius:12px"><h3 style="font-size:30px;font-weight:700">Office break</h3><p style="font-size:26px;line-height:1.4;color:#5E4B3E">Karak Thermos and the Office Box, ordered for the whole team.</p></div><div style="display:flex;flex-direction:column;gap:10px;background:#FFFAF2;padding:28px;border-top:5px solid #9C4A1A;border-radius:12px"><h3 style="font-size:30px;font-weight:700">Lunch</h3><p style="font-size:26px;line-height:1.4;color:#5E4B3E">Chicken tikka or keema chappati with a masala chai.</p></div><div style="display:flex;flex-direction:column;gap:10px;background:#FFFAF2;padding:28px;border-top:5px solid #9C4A1A;border-radius:12px"><h3 style="font-size:30px;font-weight:700">Late night</h3><p style="font-size:26px;line-height:1.4;color:#5E4B3E">Open past midnight like our branches, with sweet rolls and iced karak.</p></div><div style="display:flex;flex-direction:column;gap:10px;background:#FFFAF2;padding:28px;border-top:5px solid #9C4A1A;border-radius:12px"><h3 style="font-size:30px;font-weight:700">Diwaniya and gatherings</h3><p style="font-size:26px;line-height:1.4;color:#5E4B3E">Thermos and boxes by delivery, for six people or sixty.</p></div><div style="display:flex;flex-direction:column;justify-content:center;background:#2A1B12;padding:28px;border-radius:12px"><p style="font-size:30px;line-height:1.4;color:#D99A2B;font-weight:700">Tea is bought daily. That habit is the business.</p></div></div>
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#8A7867">Chai &amp; Chappati · 35</p>
 <aside>Each moment has its own hero product. The office moment matters most for average bill: one Office Box is worth about a dozen single karaks.</aside>
 </section>
-<section id="cc-menu" data-transition="fade" style="background:#2A1B12;color:#F7F0E4;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+</div>
+<div class="slide" data-id="cc-menu"><section id="cc-menu" data-transition="fade" style="background:#2A1B12;color:#F7F0E4;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#D99A2B">The menu · 29 items · KD</p>
 <div style="display:flex;gap:48px"><div style="flex:1;display:flex;flex-direction:column;gap:8px"><h3 style="font-family:'Libre Baskerville', Georgia, serif;font-size:32px;font-weight:700;color:#D99A2B;padding-bottom:6px;border-bottom:1px solid #5A4130">Chai</h3><div style="display:flex;justify-content:space-between;gap:16px"><p style="font-size:24px;color:#F7F0E4">Karak Chai <span style="color:#D99A2B">★</span></p><p style="font-size:24px;color:#D99A2B;white-space:nowrap">0.350</p></div><div style="display:flex;justify-content:space-between;gap:16px"><p style="font-size:24px;color:#F7F0E4">Masala Chai <span style="color:#D99A2B">★</span></p><p style="font-size:24px;color:#D99A2B;white-space:nowrap">0.450</p></div><div style="display:flex;justify-content:space-between;gap:16px"><p style="font-size:24px;color:#F7F0E4">Zafran Karak</p><p style="font-size:24px;color:#D99A2B;white-space:nowrap">0.650</p></div><div style="display:flex;justify-content:space-between;gap:16px"><p style="font-size:24px;color:#F7F0E4">Elaichi Chai</p><p style="font-size:24px;color:#D99A2B;white-space:nowrap">0.450</p></div><div style="display:flex;justify-content:space-between;gap:16px"><p style="font-size:24px;color:#F7F0E4">Adrak Chai</p><p style="font-size:24px;color:#D99A2B;white-space:nowrap">0.450</p></div><div style="display:flex;justify-content:space-between;gap:16px"><p style="font-size:24px;color:#F7F0E4">Kashmiri Pink Chai</p><p style="font-size:24px;color:#D99A2B;white-space:nowrap">0.750</p></div><div style="display:flex;justify-content:space-between;gap:16px"><p style="font-size:24px;color:#F7F0E4">Sulaimani</p><p style="font-size:24px;color:#D99A2B;white-space:nowrap">0.300</p></div><div style="display:flex;justify-content:space-between;gap:16px"><p style="font-size:24px;color:#F7F0E4">Iced Karak</p><p style="font-size:24px;color:#D99A2B;white-space:nowrap">0.750</p></div><div style="display:flex;justify-content:space-between;gap:16px"><p style="font-size:24px;color:#F7F0E4">Karak Thermos (1 L)</p><p style="font-size:24px;color:#D99A2B;white-space:nowrap">2.250</p></div></div><div style="flex:1;display:flex;flex-direction:column;gap:8px"><h3 style="font-family:'Libre Baskerville', Georgia, serif;font-size:32px;font-weight:700;color:#D99A2B;padding-bottom:6px;border-bottom:1px solid #5A4130">Chappati</h3><div style="display:flex;justify-content:space-between;gap:16px"><p style="font-size:24px;color:#F7F0E4">Egg &amp; Cheese Chappati</p><p style="font-size:24px;color:#D99A2B;white-space:nowrap">0.600</p></div><div style="display:flex;justify-content:space-between;gap:16px"><p style="font-size:24px;color:#F7F0E4">Chicken Tikka Chappati <span style="color:#D99A2B">★</span></p><p style="font-size:24px;color:#D99A2B;white-space:nowrap">1.250</p></div><div style="display:flex;justify-content:space-between;gap:16px"><p style="font-size:24px;color:#F7F0E4">Chicken 65 Chappati</p><p style="font-size:24px;color:#D99A2B;white-space:nowrap">1.250</p></div><div style="display:flex;justify-content:space-between;gap:16px"><p style="font-size:24px;color:#F7F0E4">Keema Chappati</p><p style="font-size:24px;color:#D99A2B;white-space:nowrap">1.350</p></div><div style="display:flex;justify-content:space-between;gap:16px"><p style="font-size:24px;color:#F7F0E4">Paneer Tikka Chappati</p><p style="font-size:24px;color:#D99A2B;white-space:nowrap">1.150</p></div><div style="display:flex;justify-content:space-between;gap:16px"><p style="font-size:24px;color:#F7F0E4">Aloo Masala Chappati</p><p style="font-size:24px;color:#D99A2B;white-space:nowrap">0.500</p></div><div style="display:flex;justify-content:space-between;gap:16px"><p style="font-size:24px;color:#F7F0E4">Zaatar &amp; Labneh Chappati</p><p style="font-size:24px;color:#D99A2B;white-space:nowrap">0.550</p></div><div style="display:flex;justify-content:space-between;gap:16px"><p style="font-size:24px;color:#F7F0E4">Halloumi Chappati</p><p style="font-size:24px;color:#D99A2B;white-space:nowrap">0.850</p></div><div style="display:flex;justify-content:space-between;gap:16px"><p style="font-size:24px;color:#F7F0E4">Crisps &amp; Cheese Chappati</p><p style="font-size:24px;color:#D99A2B;white-space:nowrap">0.550</p></div><div style="display:flex;justify-content:space-between;gap:16px"><p style="font-size:24px;color:#F7F0E4">Shakshuka Chappati</p><p style="font-size:24px;color:#D99A2B;white-space:nowrap">0.650</p></div><div style="display:flex;justify-content:space-between;gap:16px"><p style="font-size:24px;color:#F7F0E4">Nutella Banana Chappati</p><p style="font-size:24px;color:#D99A2B;white-space:nowrap">0.850</p></div></div><div style="flex:1;display:flex;flex-direction:column;gap:28px"><div style="flex:1;display:flex;flex-direction:column;gap:8px"><h3 style="font-family:'Libre Baskerville', Georgia, serif;font-size:32px;font-weight:700;color:#D99A2B;padding-bottom:6px;border-bottom:1px solid #5A4130">Bun maska</h3><div style="display:flex;justify-content:space-between;gap:16px"><p style="font-size:24px;color:#F7F0E4">Classic Bun Maska <span style="color:#D99A2B">★</span></p><p style="font-size:24px;color:#D99A2B;white-space:nowrap">0.400</p></div><div style="display:flex;justify-content:space-between;gap:16px"><p style="font-size:24px;color:#F7F0E4">Honey Bun Maska</p><p style="font-size:24px;color:#D99A2B;white-space:nowrap">0.500</p></div><div style="display:flex;justify-content:space-between;gap:16px"><p style="font-size:24px;color:#F7F0E4">Cheese Bun Maska</p><p style="font-size:24px;color:#D99A2B;white-space:nowrap">0.550</p></div><div style="display:flex;justify-content:space-between;gap:16px"><p style="font-size:24px;color:#F7F0E4">Nutella Bun Maska</p><p style="font-size:24px;color:#D99A2B;white-space:nowrap">0.750</p></div><div style="display:flex;justify-content:space-between;gap:16px"><p style="font-size:24px;color:#F7F0E4">Bun Omelette</p><p style="font-size:24px;color:#D99A2B;white-space:nowrap">0.650</p></div></div><div style="flex:1;display:flex;flex-direction:column;gap:8px"><h3 style="font-family:'Libre Baskerville', Georgia, serif;font-size:32px;font-weight:700;color:#D99A2B;padding-bottom:6px;border-bottom:1px solid #5A4130">Sides and sets</h3><div style="display:flex;justify-content:space-between;gap:16px"><p style="font-size:24px;color:#F7F0E4">Punjabi Samosa (2 pcs)</p><p style="font-size:24px;color:#D99A2B;white-space:nowrap">0.500</p></div><div style="display:flex;justify-content:space-between;gap:16px"><p style="font-size:24px;color:#F7F0E4">Masala Fries</p><p style="font-size:24px;color:#D99A2B;white-space:nowrap">0.650</p></div><div style="display:flex;justify-content:space-between;gap:16px"><p style="font-size:24px;color:#F7F0E4">Chai &amp; Bun Set</p><p style="font-size:24px;color:#D99A2B;white-space:nowrap">0.650</p></div><div style="display:flex;justify-content:space-between;gap:16px"><p style="font-size:24px;color:#F7F0E4">Office Box</p><p style="font-size:24px;color:#D99A2B;white-space:nowrap">4.500</p></div></div></div></div>
 <p style="font-size:24px;color:#CDBBA6">★ hero items. Large chai +0.150.</p>
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#CDBBA6">Chai &amp; Chappati · 36</p>
 <aside>The full menu as the guest would see it. 29 items across four groups, with karak, masala chai, chicken tikka chappati and classic bun maska as the heroes.</aside>
 </section>
-<section id="cc-cost-tea" data-transition="fade" style="background:#F7F0E4;color:#2A1B12;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+</div>
+<div class="slide" data-id="cc-cost-tea"><section id="cc-cost-tea" data-transition="fade" style="background:#F7F0E4;color:#2A1B12;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#9C4A1A">Costing · teas</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:56px;font-weight:700;line-height:1.15;color:#2A1B12">Tea carries the traffic and the margin</h2><div style="display:flex;gap:28px"><div style="flex:1"><table style="font-family:'Public Sans', Arial, sans-serif;font-size:24px;color:#2A1B12;background:#FFFAF2;border:1px solid #E6D8C2">
 <tr style="background:#2A1B12"><th style="width:40%;color:#F7F0E4;text-align:left">Item</th><th style="width:15%;color:#F7F0E4;text-align:right">Cost</th><th style="width:15%;color:#F7F0E4;text-align:right">Price</th><th style="width:16%;color:#F7F0E4;text-align:right">Gross profit</th><th style="width:14%;color:#F7F0E4;text-align:right">Food cost</th></tr>
@@ -904,7 +941,8 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#8A7867">Chai &amp; Chappati · 37</p>
 <aside>Karak is held at the street price of KD 0.350 to win the daily habit, so its food cost is the highest of the teas at about 28%. Every other tea earns more per cup.</aside>
 </section>
-<section id="cc-cost-rolls" data-transition="fade" style="background:#F7F0E4;color:#2A1B12;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+</div>
+<div class="slide" data-id="cc-cost-rolls"><section id="cc-cost-rolls" data-transition="fade" style="background:#F7F0E4;color:#2A1B12;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#9C4A1A">Costing · chappati rolls</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:56px;font-weight:700;line-height:1.15;color:#2A1B12">Rolls lift the average bill</h2><div style="display:flex;gap:28px"><div style="flex:1"><table style="font-family:'Public Sans', Arial, sans-serif;font-size:22px;color:#2A1B12;background:#FFFAF2;border:1px solid #E6D8C2">
 <tr style="background:#2A1B12"><th style="width:40%;color:#F7F0E4;text-align:left">Item</th><th style="width:15%;color:#F7F0E4;text-align:right">Cost</th><th style="width:15%;color:#F7F0E4;text-align:right">Price</th><th style="width:16%;color:#F7F0E4;text-align:right">Gross profit</th><th style="width:14%;color:#F7F0E4;text-align:right">Food cost</th></tr>
@@ -926,7 +964,8 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#8A7867">Chai &amp; Chappati · 38</p>
 <aside>Chicken and keema rolls bring the most profit per sale. Egg and cheese is the cheapest entry roll and runs at a higher food cost on purpose.</aside>
 </section>
-<section id="cc-cost-bun" data-transition="fade" style="background:#F7F0E4;color:#2A1B12;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+</div>
+<div class="slide" data-id="cc-cost-bun"><section id="cc-cost-bun" data-transition="fade" style="background:#F7F0E4;color:#2A1B12;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#9C4A1A">Costing · bun maska, sides and sets</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:56px;font-weight:700;line-height:1.15;color:#2A1B12">The add-on with every chai</h2><div style="display:flex;gap:28px"><div style="flex:1"><table style="font-family:'Public Sans', Arial, sans-serif;font-size:22px;color:#2A1B12;background:#FFFAF2;border:1px solid #E6D8C2">
 <tr style="background:#2A1B12"><th style="width:40%;color:#F7F0E4;text-align:left">Item</th><th style="width:15%;color:#F7F0E4;text-align:right">Cost</th><th style="width:15%;color:#F7F0E4;text-align:right">Price</th><th style="width:16%;color:#F7F0E4;text-align:right">Gross profit</th><th style="width:14%;color:#F7F0E4;text-align:right">Food cost</th></tr>
@@ -943,7 +982,8 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#8A7867">Chai &amp; Chappati · 39</p>
 <aside>The weighted figure assumes karak is about a fifth of everything sold. Sets bundle a karak with a bun maska to lift the average bill without discounting the hero.</aside>
 </section>
-<section id="cc-recipe" data-transition="fade" style="background:#F7F0E4;color:#2A1B12;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+</div>
+<div class="slide" data-id="cc-recipe"><section id="cc-recipe" data-transition="fade" style="background:#F7F0E4;color:#2A1B12;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#9C4A1A">Costing · the two heroes</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:56px;font-weight:700;line-height:1.15;color:#2A1B12">What goes into a karak and a tikka roll</h2><div style="display:flex;gap:40px"><div style="flex:1;display:flex;flex-direction:column;gap:14px"><div style="display:flex;justify-content:space-between;align-items:baseline"><h3 style="font-size:34px;font-weight:700">Karak Chai</h3><p style="font-size:26px;color:#9C4A1A;font-weight:700">KD 0.350 · 27.7%</p></div><table style="font-family:'Public Sans', Arial, sans-serif;font-size:24px;color:#2A1B12;background:#FFFAF2;border:1px solid #E6D8C2">
 <tr style="background:#2A1B12"><th style="width:52%;color:#F7F0E4;text-align:left">Ingredient</th><th style="width:24%;color:#F7F0E4;text-align:right">Qty</th><th style="width:24%;color:#F7F0E4;text-align:right">KD</th></tr>
@@ -967,7 +1007,8 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#8A7867">Chai &amp; Chappati · 40</p>
 <aside>These recipe cards will live in the restaurant system, so when milk or chicken prices move, the cost of every cup and roll updates on its own.</aside>
 </section>
-<section id="cc-formats" data-transition="fade" style="background:#F7F0E4;color:#2A1B12;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+</div>
+<div class="slide" data-id="cc-formats"><section id="cc-formats" data-transition="fade" style="background:#F7F0E4;color:#2A1B12;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#9C4A1A">Four ways to open</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:56px;font-weight:700;line-height:1.15;color:#2A1B12">Every format pays back inside a year and a half</h2><table style="font-family:'Public Sans', Arial, sans-serif;font-size:24px;color:#2A1B12;background:#FFFAF2;border:1px solid #E6D8C2">
 <tr style="background:#2A1B12"><th style="width:27%;color:#F7F0E4;text-align:left">Format</th><th style="width:11%;color:#F7F0E4;text-align:right">Setup KD</th><th style="width:17%;color:#F7F0E4;text-align:right">Orders/day × ticket</th><th style="width:12%;color:#F7F0E4;text-align:right">Sales/month</th><th style="width:12%;color:#F7F0E4;text-align:right">Profit/month</th><th style="width:10%;color:#F7F0E4;text-align:right">Payback</th><th style="width:11%;color:#F7F0E4;text-align:right">If 30% fewer orders</th></tr>
@@ -979,7 +1020,8 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#8A7867">Chai &amp; Chappati · 41</p>
 <aside>The cloud kitchen is cheapest to open and fastest to pay back but gives a quarter of its sales to delivery apps. The kiosk earns the highest margin. The café makes the most profit in KD but takes the longest to pay back and is the most exposed if volumes disappoint.</aside>
 </section>
-<section id="cc-pnl" data-transition="fade" style="background:#F7F0E4;color:#2A1B12;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+</div>
+<div class="slide" data-id="cc-pnl"><section id="cc-pnl" data-transition="fade" style="background:#F7F0E4;color:#2A1B12;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#9C4A1A">Monthly P&amp;L · the two formats we start with</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:56px;font-weight:700;line-height:1.15;color:#2A1B12">Small fixed costs, quick break-even</h2><div style="display:flex;gap:40px"><div style="flex:1;display:flex;flex-direction:column;gap:14px"><h3 style="font-size:32px;font-weight:700">Cloud kitchen, delivery only</h3><table style="font-family:'Public Sans', Arial, sans-serif;font-size:24px;color:#2A1B12;background:#FFFAF2;border:1px solid #E6D8C2">
 <tr style="background:#2A1B12"><th style="width:64%;color:#F7F0E4;text-align:left">KD per month</th><th style="width:36%;color:#F7F0E4;text-align:right">Base case</th></tr>
@@ -1005,7 +1047,8 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#8A7867">Chai &amp; Chappati · 42</p>
 <aside>Both formats break even at a fraction of planned sales, which is what makes them safe first steps. The café and truck P&amp;Ls follow the same model and are in the formats slide.</aside>
 </section>
-<section id="cc-setup" data-transition="fade" style="background:#F7F0E4;color:#2A1B12;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+</div>
+<div class="slide" data-id="cc-setup"><section id="cc-setup" data-transition="fade" style="background:#F7F0E4;color:#2A1B12;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#9C4A1A">Setup cost</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:56px;font-weight:700;line-height:1.15;color:#2A1B12">What it takes to open each format, in KD</h2><table style="font-family:'Public Sans', Arial, sans-serif;font-size:24px;color:#2A1B12;background:#FFFAF2;border:1px solid #E6D8C2">
 <tr style="background:#2A1B12"><th style="width:32%;color:#F7F0E4;text-align:left">Item</th><th style="width:17%;color:#F7F0E4;text-align:right">Kiosk</th><th style="width:17%;color:#F7F0E4;text-align:right">Café</th><th style="width:17%;color:#F7F0E4;text-align:right">Cloud kitchen</th><th style="width:17%;color:#F7F0E4;text-align:right">Food truck</th></tr>
@@ -1022,19 +1065,22 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#8A7867">Chai &amp; Chappati · 43</p>
 <aside>Every number here should be replaced by a real quote before the decision: fit-out from a contractor, equipment from a kitchen supplier, and rent from the actual site.</aside>
 </section>
-<section id="cc-plan" data-transition="fade" style="background:#F7F0E4;color:#2A1B12;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+</div>
+<div class="slide" data-id="cc-plan"><section id="cc-plan" data-transition="fade" style="background:#F7F0E4;color:#2A1B12;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#9C4A1A">Recommendation</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:56px;font-weight:700;line-height:1.15;color:#2A1B12">Start small, let the data choose the site</h2><div style="display:flex;gap:20px"><div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#2A1B12;padding:28px;border:1px solid #E6D8C2;border-radius:16px"><p style="font-size:24px;font-weight:700;color:#D99A2B">Step 1 · months 1–3</p><h3 style="font-size:32px;font-weight:700;color:#F7F0E4">Cloud kitchen</h3><p style="font-size:24px;line-height:1.4;color:#CDBBA6">A Chai &amp; Chappati station inside the Jahra cloud kitchen or the Central Kitchen. Setup about KD 10,000. Tests the menu, prices and recipes on Talabat, Keeta and Jahez.</p></div><div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FFFAF2;padding:28px;border:1px solid #E6D8C2;border-radius:16px"><p style="font-size:24px;font-weight:700;color:#9C4A1A">Step 2 · months 4–6</p><h3 style="font-size:32px;font-weight:700;color:#2A1B12">Flagship kiosk</h3><p style="font-size:24px;line-height:1.4;color:#5E4B3E">One kiosk at a site chosen from where delivery orders come from. Setup about KD 14,300. Best margin of the four formats.</p></div><div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FFFAF2;padding:28px;border:1px solid #E6D8C2;border-radius:16px"><p style="font-size:24px;font-weight:700;color:#9C4A1A">Step 3 · from month 7</p><h3 style="font-size:32px;font-weight:700;color:#2A1B12">Café or more kiosks</h3><p style="font-size:24px;line-height:1.4;color:#5E4B3E">Only once the kiosk holds its planned volume. A café is the biggest prize and the biggest risk.</p></div><div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FFFAF2;padding:28px;border:1px solid #E6D8C2;border-radius:16px"><p style="font-size:24px;font-weight:700;color:#9C4A1A">Seasonal</p><h3 style="font-size:32px;font-weight:700;color:#2A1B12">Food truck</h3><p style="font-size:24px;line-height:1.4;color:#5E4B3E">For winter season, events and camps, once municipality rules and fees are confirmed.</p></div></div><p style="font-size:26px;line-height:1.45;color:#5E4B3E">Gate to step 2: the cloud kitchen holds at least <b style="color:#2A1B12">KD 185 of sales a day</b> (our low case; break-even is KD 94) by month three, with food cost at or under 30%.</p>
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#8A7867">Chai &amp; Chappati · 44</p>
 <aside>We recommend opening the lowest-risk format first. The cloud kitchen uses a kitchen we already pay for, and its delivery data tells us exactly where to put the kiosk.</aside>
 </section>
-<section id="cc-system" data-transition="fade" style="background:#F7F0E4;color:#2A1B12;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+</div>
+<div class="slide" data-id="cc-system"><section id="cc-system" data-transition="fade" style="background:#F7F0E4;color:#2A1B12;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#9C4A1A">Built on our own system</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:56px;font-weight:700;line-height:1.15;color:#2A1B12">The first Maya brand to launch on it from day one</h2><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px"><div style="display:flex;flex-direction:column;gap:8px;background:#FFFAF2;padding:24px 28px;border-top:4px solid #9C4A1A;border-radius:12px"><h3 style="font-size:28px;font-weight:700">Every recipe costed</h3><p style="font-size:24px;line-height:1.4;color:#5E4B3E">Each cup and roll has a recipe card; milk and chicken price changes flow straight into the cost.</p></div><div style="display:flex;flex-direction:column;gap:8px;background:#FFFAF2;padding:24px 28px;border-top:4px solid #9C4A1A;border-radius:12px"><h3 style="font-size:28px;font-weight:700">Karak loyalty</h3><p style="font-size:24px;line-height:1.4;color:#5E4B3E">Every tenth karak free, tracked by phone number at the till and in the app.</p></div><div style="display:flex;flex-direction:column;gap:8px;background:#FFFAF2;padding:24px 28px;border-top:4px solid #9C4A1A;border-radius:12px"><h3 style="font-size:28px;font-weight:700">Office accounts</h3><p style="font-size:24px;line-height:1.4;color:#5E4B3E">Companies order thermoses and boxes on account and get one invoice a month.</p></div><div style="display:flex;flex-direction:column;gap:8px;background:#FFFAF2;padding:24px 28px;border-top:4px solid #9C4A1A;border-radius:12px"><h3 style="font-size:28px;font-weight:700">Karak pass</h3><p style="font-size:24px;line-height:1.4;color:#5E4B3E">A monthly subscription for daily karak, paid upfront.</p></div><div style="display:flex;flex-direction:column;gap:8px;background:#FFFAF2;padding:24px 28px;border-top:4px solid #9C4A1A;border-radius:12px"><h3 style="font-size:28px;font-weight:700">Data from day one</h3><p style="font-size:24px;line-height:1.4;color:#5E4B3E">Which roll sells at which hour, in which area, to which customer.</p></div><div style="display:flex;flex-direction:column;gap:8px;background:#FFFAF2;padding:24px 28px;border-top:4px solid #9C4A1A;border-radius:12px"><h3 style="font-size:28px;font-weight:700">Same kitchen screen</h3><p style="font-size:24px;line-height:1.4;color:#5E4B3E">Delivery and counter orders on one screen, timed per item.</p></div></div>
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#8A7867">Chai &amp; Chappati · 45</p>
 <aside>This ties the two halves of the deck together. Chai &amp; Chappati needs no new software: it is one more brand on the system proposed earlier, with its own menu, recipes and loyalty.</aside>
 </section>
-<section id="cc-risks" data-transition="fade" style="background:#F7F0E4;color:#2A1B12;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+</div>
+<div class="slide" data-id="cc-risks"><section id="cc-risks" data-transition="fade" style="background:#F7F0E4;color:#2A1B12;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#9C4A1A">Risks</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:56px;font-weight:700;line-height:1.15;color:#2A1B12">What could go wrong, and our answer</h2><table style="font-family:'Public Sans', Arial, sans-serif;font-size:24px;color:#2A1B12;background:#FFFAF2;border:1px solid #E6D8C2">
 <tr style="background:#2A1B12"><th style="width:38%;color:#F7F0E4;text-align:left">Risk</th><th style="width:62%;color:#F7F0E4;text-align:left">How we handle it</th></tr>
@@ -1048,7 +1094,8 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#8A7867">Chai &amp; Chappati · 46</p>
 <aside>The volume line is the honest one: if we sell 30% less than planned, nothing loses money, but the café takes about a year and a half to pay back. That is why the café comes last.</aside>
 </section>
-<section id="cc-ask" data-transition="fade" style="background:#2A1B12;color:#F7F0E4;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;justify-content:center;gap:32px">
+</div>
+<div class="slide" data-id="cc-ask"><section id="cc-ask" data-transition="fade" style="background:#2A1B12;color:#F7F0E4;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;justify-content:center;gap:32px">
 <div style="position:absolute;left:0;top:0;width:24px;height:1080px;background:#D99A2B"></div>
 <p style="font-size:26px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#D99A2B">Chai &amp; Chappati · the decision</p>
 <h2 style="font-family:'Libre Baskerville', Georgia, serif;font-size:72px;font-weight:700;line-height:1.15;color:#F7F0E4">What we need to start</h2>
@@ -1061,6 +1108,7 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#CDBBA6">Chai &amp; Chappati · 47</p>
 <aside>Close on step 1. It is small, reversible, uses a kitchen we already have, and gives us real numbers to replace every planning assumption in this section.</aside>
 </section>
+</div>
 
 </div>
 <div id="menu" role="menu" aria-label="Go to slide"></div>
@@ -1711,7 +1759,7 @@ render();
 })();
 
 (function(){
-  var slides=Array.prototype.slice.call(document.querySelectorAll('#stage > section'));
+  var slides=Array.prototype.slice.call(document.querySelectorAll('#stage > .slide'));
   var stage=document.getElementById('stage'),bar=document.getElementById('bar'),count=document.getElementById('count');
   var notes=document.getElementById('notes'),notesBody=document.getElementById('notesBody'),menu=document.getElementById('menu');
   var prevBtn=document.getElementById('prev'),nextBtn=document.getElementById('next'),tocBtn=document.getElementById('toc');
@@ -1719,7 +1767,7 @@ render();
   slides.forEach(function(s,k){
     if(SECTIONS[k]){var h=document.createElement('div');h.className='sec';h.textContent=SECTIONS[k];menu.appendChild(h);}
     var b=document.createElement('button');b.type='button';b.setAttribute('role','menuitem');
-    b.innerHTML='<span class="num">'+(k+1)+'</span><span></span>';b.lastChild.textContent=TITLES[k]||s.id;
+    b.innerHTML='<span class="num">'+(k+1)+'</span><span></span>';b.lastChild.textContent=TITLES[k]||s.dataset.id;
     b.addEventListener('click',function(){show(k);closeMenu();});menu.appendChild(b);
   });
   var menuItems=Array.prototype.slice.call(menu.querySelectorAll('button'));
@@ -1733,10 +1781,10 @@ render();
     var a=slides[i].querySelector('aside');notesBody.textContent=a?a.textContent:'No notes for this slide.';
     prevBtn.disabled=(i===0);nextBtn.disabled=(i===slides.length-1);
     menuItems.forEach(function(b,k){b.setAttribute('aria-current',k===i?'true':'false');});
-    try{if(history.replaceState)history.replaceState(null,'','#'+slides[i].id);}catch(e){}
+    try{if(history.replaceState)history.replaceState(null,'','#'+slides[i].dataset.id);}catch(e){}
   }
   window.deckShow=show;
-  function fromHash(){var id=(location.hash||'').replace('#','');var k=slides.findIndex(function(s){return s.id===id;});show(k>=0?k:0);}
+  function fromHash(){var id=(location.hash||'').replace('#','');var k=slides.findIndex(function(s){return s.dataset.id===id;});show(k>=0?k:0);}
   document.addEventListener('keydown',function(e){
     if(window.deckBlocked&&window.deckBlocked())return;
     switch(e.key){
