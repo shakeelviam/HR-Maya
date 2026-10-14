@@ -1,21 +1,21 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Maya Restaurant System and Chai &amp; Chappati</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Public+Sans:wght@400;600;700&display=swap">
 <style>
-*{box-sizing:border-box}
-html,body{margin:0;height:100%;background:#111614;font-family:'Public Sans',Arial,sans-serif;-webkit-font-smoothing:antialiased}
-#viewport{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
-#stage{width:1920px;height:1080px;position:relative;transform-origin:center center;flex:none}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;height:100%}
+body{background:#0B1317;overflow:hidden;font-family:'Public Sans',Verdana,sans-serif;-webkit-font-smoothing:antialiased}
+#stage{position:absolute;top:50%;left:50%;width:1920px;height:1080px;transform-origin:center center;box-shadow:0 24px 80px rgba(0,0,0,.55)}
 #stage>section{position:absolute;inset:0;width:1920px;height:1080px;overflow:hidden;display:none}
-#stage>section.on{display:flex}
-section h1,section h2,section h3,section p,section ul,section ol{margin:0}
+#stage>section.live{display:flex}
+section h1,section h2,section h3,section p,section ul,section ol,section table{margin:0}
 section h1{font-size:96px;font-weight:600;line-height:1.1}
 section h2{font-size:64px;font-weight:600;line-height:1.15}
 section h3{font-size:44px;font-weight:600;line-height:1.2}
 section p{font-size:32px;line-height:1.4}
 section ul,section ol{padding-left:1.2em}
-section li{margin:0}
 section table{border-collapse:collapse;width:100%}
 section th,section td{padding:.35em .6em;border-bottom:1px solid rgba(0,0,0,.08);text-align:left;vertical-align:top}
 section th{font-weight:700}
@@ -25,38 +25,48 @@ x-shape{display:block;flex:none}
 x-shape[kind="arrow-right"]{clip-path:polygon(0 30%,60% 30%,60% 0,100% 50%,60% 100%,60% 70%,0 70%)}
 x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%,70% 40%,70% 100%)}
 .xi{display:block;flex:none}
-#bar{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);display:flex;gap:6px;align-items:center;background:rgba(20,26,23,.85);color:#E9E4DA;padding:6px 8px;border-radius:999px;font:500 14px 'Public Sans',Arial,sans-serif;z-index:5;transition:opacity .3s}
-#bar button{all:unset;cursor:pointer;padding:6px 12px;border-radius:999px}
-#bar button:hover,#bar button:focus-visible{background:rgba(255,255,255,.12)}
-#bar select{background:transparent;color:inherit;border:none;font:inherit;max-width:280px}
-#bar select option{color:#111}
-#notes{position:fixed;left:50%;bottom:64px;transform:translateX(-50%);width:min(900px,92vw);max-height:30vh;overflow:auto;background:#FFFDF8;color:#1E2B26;padding:16px 20px;border-radius:12px;font:16px/1.5 'Public Sans',Arial,sans-serif;box-shadow:0 10px 40px rgba(0,0,0,.4);z-index:6}
-.edge{position:fixed;top:50%;transform:translateY(-50%);width:64px;height:110px;border:none;border-radius:14px;background:rgba(20,26,23,.6);color:#fff;font:400 48px/1 Arial,sans-serif;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:7}
-.edge:hover,.edge:focus-visible{background:rgba(181,72,47,.9);outline:none}
-.edge:disabled{opacity:.25;cursor:default}
-#navL{left:12px}#navR{right:12px}
-#bar{z-index:7}
-#bar button{font-size:16px}
+/* Chrome: progress, counter, notes (same as the roster deck) */
+#bar{position:fixed;left:0;top:0;height:4px;background:#C4622D;width:0;transition:width 180ms ease;z-index:10}
+#nav{position:fixed;right:16px;bottom:14px;display:flex;align-items:center;gap:6px;background:rgba(17,29,36,.92);border:1px solid #2C3C46;border-radius:26px;padding:5px 7px;z-index:10}
+#nav button{appearance:none;-webkit-appearance:none;font:inherit;font-size:15px;line-height:1;color:#D7E2E9;background:#223139;border:1px solid #33454F;border-radius:18px;padding:9px 14px;min-width:42px;min-height:38px;cursor:pointer}
+#nav button:hover:not(:disabled){background:#C4622D;border-color:#C4622D;color:#FFF8F2}
+#nav button:focus-visible{outline:2px solid #D98E5F;outline-offset:2px}
+#nav button:disabled{opacity:.35;cursor:default}
+#count{font-size:13px;letter-spacing:.6px;color:#92A3AD;padding:0 8px;min-width:56px;text-align:center;font-variant-numeric:tabular-nums}
+#menu{position:fixed;right:16px;bottom:68px;width:340px;max-height:60vh;overflow-y:auto;background:#11242E;border:1px solid #2C3C46;border-radius:14px;padding:7px;display:none;z-index:10}
+#menu.open{display:block}
+#menu button{display:flex;align-items:baseline;gap:10px;width:100%;text-align:left;appearance:none;-webkit-appearance:none;font:inherit;font-size:14px;line-height:1.35;color:#D7E2E9;background:transparent;border:none;border-radius:9px;padding:9px 11px;cursor:pointer}
+#menu button:hover{background:#223139}
+#menu button:focus-visible{outline:2px solid #D98E5F;outline-offset:-2px}
+#menu button[aria-current="true"]{background:#C4622D;color:#FFF8F2}
+#menu .num{color:#7C8C97;font-variant-numeric:tabular-nums;min-width:18px}
+#menu button[aria-current="true"] .num{color:#FFD9C0}
+#menu .sec{padding:10px 11px 4px;font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:#7C8C97}
+#notes{position:fixed;left:0;right:0;bottom:0;max-height:42vh;overflow-y:auto;background:#FAF7F2;color:#1C2B33;border-top:4px solid #C4622D;padding:18px 24px 22px;font-size:16px;line-height:1.5;display:none;z-index:9}
+#notes.open{display:block}
+#notes h4{margin:0 0 7px;font-size:12px;letter-spacing:1.4px;text-transform:uppercase;color:#B0521F}
+#notes p{margin:0}
+#hint{position:fixed;left:18px;bottom:14px;font-size:13px;color:#7C8C97;background:rgba(11,19,23,.8);padding:5px 11px;border-radius:20px;z-index:10}
+@media (max-width:700px){#hint{display:none}}
 @media print{
  @page{size:1920px 1080px;margin:0}
- html,body{background:#fff}
- #viewport{position:static;display:block}
- #stage{transform:none!important}
- #stage>section{display:flex!important;position:relative;page-break-after:always;break-after:page}
- #bar,#notes{display:none!important}
+ body{background:#fff;overflow:visible}
+ #stage{position:static;width:auto;height:auto;transform:none!important;box-shadow:none}
+ #stage>section{position:relative;display:flex!important;break-after:page}
+ #bar,#nav,#menu,#notes,#hint,#proto{display:none!important}
 }
 
-#proto{position:fixed;inset:0;z-index:20;background:#111614;display:flex;flex-direction:column}
+#proto{position:fixed;inset:0;z-index:20;background:#0B1317;display:flex;flex-direction:column}
 #proto[hidden]{display:none}
-#proto header{display:flex;align-items:center;gap:12px;padding:8px 14px;background:#1E2B26;color:#E9E4DA;font:600 14px 'Public Sans',Arial,sans-serif}
+#proto header{display:flex;align-items:center;gap:12px;padding:8px 14px;background:#11242E;color:#D7E2E9;font:600 14px 'Public Sans',Verdana,sans-serif;border-bottom:1px solid #2C3C46}
 #proto header span{flex:1}
-#proto header button{all:unset;cursor:pointer;padding:6px 14px;border-radius:999px;background:#B5482F;color:#FFF8F2}
-#proto header button:focus-visible{outline:2px solid #D9A441}
+#proto header button{appearance:none;font:inherit;font-size:15px;color:#D7E2E9;background:#223139;border:1px solid #33454F;border-radius:18px;padding:9px 14px;cursor:pointer}
+#proto header button:hover{background:#C4622D;border-color:#C4622D;color:#FFF8F2}
 #proto iframe{flex:1;border:0;width:100%;background:#F6F1E8}
-@media print{#proto{display:none!important}}
 </style></head>
 <body>
-<div id="viewport"><div id="stage">
+<div id="bar"></div>
+<div id="stage">
 <section id="cover" data-transition="fade" style="background:#1E2B26;color:#F6F1E8;font-family:'Public Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;justify-content:center;gap:40px">
 <div style="position:absolute;left:0;top:0;width:24px;height:1080px;background:#B5482F"></div>
 <p style="font-size:26px;font-weight:600;letter-spacing:4px;text-transform:uppercase;color:#D9A441">Proposal to management · October 2026</p>
@@ -1052,11 +1062,18 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 <aside>Close on step 1. It is small, reversible, uses a kitchen we already have, and gives us real numbers to replace every planning assumption in this section.</aside>
 </section>
 
-</div></div>
-<button class="edge" id="navL" aria-label="Previous slide">‹</button><button class="edge" id="navR" aria-label="Next slide">›</button>
-<div id="notes" hidden></div>
-<nav id="bar" aria-label="Slide controls"><button id="prev" aria-label="Previous slide">‹</button><span id="num"></span><button id="next" aria-label="Next slide">›</button><select id="jump" aria-label="Go to slide"></select><button id="nbtn">Notes</button><button id="pbtn">Prototype</button><button id="fs">Full screen</button></nav>
-<div id="proto" hidden role="dialog" aria-label="Clickable prototype"><header><span>Clickable prototype · sample data</span><button id="pclose">Back to slides</button></header>
+</div>
+<div id="menu" role="menu" aria-label="Go to slide"></div>
+<div id="nav">
+  <button id="prev" type="button" title="Previous slide" aria-label="Previous slide">&#8592;</button>
+  <span id="count" aria-live="polite"></span>
+  <button id="next" type="button" title="Next slide" aria-label="Next slide">&#8594;</button>
+  <button id="toc" type="button" title="All slides" aria-label="All slides" aria-expanded="false">&#9776;</button>
+  <button id="pbtn" type="button" title="Open the clickable prototype" aria-label="Open the clickable prototype">Prototype</button>
+</div>
+<div id="hint">← → or the buttons · N for notes · F for full screen · P for prototype</div>
+<div id="notes"><h4>Speaker notes</h4><p id="notesBody"></p></div>
+<div id="proto" hidden role="dialog" aria-label="Clickable prototype"><header><span>Clickable prototype · sample data</span><button id="pclose" type="button">&#8592; Back to slides</button></header>
 <iframe id="pframe" title="Maya Restaurant System prototype" srcdoc="&lt;!doctype html&gt;&lt;html lang=&quot;en&quot;&gt;&lt;head&gt;&lt;meta charset=&quot;utf-8&quot;&gt;&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width,initial-scale=1&quot;&gt;&lt;/head&gt;&lt;body style=&quot;margin:0&quot;&gt;&lt;title&gt;Maya Restaurant System&lt;/title&gt;
 &lt;meta name=&quot;claude:viewport-fit-sides&quot; content=&quot;cover&quot;&gt;
 &lt;link rel=&quot;stylesheet&quot; href=&quot;https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&amp;family=Public+Sans:wght@400;500;600;700&amp;display=swap&quot;&gt;
@@ -1679,37 +1696,74 @@ const h=(location.hash||&#x27;&#x27;).slice(1); if([&#x27;pos&#x27;,&#x27;kds&#x
 render();
 &lt;/script&gt;
 &lt;/body&gt;&lt;/html&gt;"></iframe></div>
-<script>
-const P=document.getElementById('proto'),PF=document.getElementById('pframe');
-function openProto(screen){P.hidden=false;const run=()=>{try{PF.contentWindow.go(screen||'pos');}catch(e){}};const cw=PF.contentWindow;if(cw&&typeof cw.go==='function')run();else PF.addEventListener('load',run,{once:true});PF.focus();}
-function closeProto(){P.hidden=true;}
-document.getElementById('pclose').onclick=closeProto;
-document.getElementById('pbtn').onclick=()=>openProto('pos');
-document.addEventListener('click',e=>{const a=e.target.closest('[data-proto]');if(a){e.preventDefault();openProto(a.dataset.proto);}});
-addEventListener('keydown',e=>{if(!P.hidden&&e.key==='Escape'){closeProto();}},true);
-addEventListener('keydown',e=>{if(!P.hidden){e.stopImmediatePropagation();}},true);
+<script>var TITLES=["One system, from purchase to plate", "Foodics rings the sale. Everything behind the counter lives elsewhere.", "What a POS-only setup hides from us", "One record, from supplier to guest", "Six modules, one independent system", "Recipes set the cost of every plate", "Mexican Chicken Burrito, costed to the fils", "Every stock move is recorded where it happens", "The system knows what should be on the shelf", "Accounts built in, not bolted on", "The ledger fills itself as the day runs", "Everything the counter has today", "What only our own POS can do", "Maya and 10C on one till, with the real Maya menu", "Approvals, staff meals, and a sale that posts itself", "Every order, every channel, one kitchen screen", "Today versus our own system", "Built from scratch, on a proven model", "Any service with an API plugs straight in", "Every connection, and its status, on one page", "Every order tells us something. Today, someone else keeps it.", "Everything we capture, owned by Maya", "Turning orders into repeat customers", "Know each guest, then bring them back", "Decisions on facts, not feelings", "The day at Ardiya, at a glance", "Our own ordering portal and app", "Maya and 10C in the guest's pocket", "Four phases, no big-bang switch", "What could go wrong, and our answer", "What we need from management", "Chai & Chappati", "A tea counter Kuwait already understands", "Priced between the street and the premium caf\u00e9", "Five moments we sell into", "cc-menu", "Tea carries the traffic and the margin", "Rolls lift the average bill", "The add-on with every chai", "What goes into a karak and a tikka roll", "Every format pays back inside a year and a half", "Small fixed costs, quick break-even", "What it takes to open each format, in KD", "Start small, let the data choose the site", "The first Maya brand to launch on it from day one", "What could go wrong, and our answer", "What we need to start"];var SECTIONS=["Why change: the gap a POS-only setup leaves", "", "", "The proposed system and what each part does", "", "", "", "", "", "", "", "", "", "", "", "", "What owning the system gives Maya, and how it runs", "", "", "", "Data is the king: what we keep and every way we use it", "", "", "", "", "", "", "", "How we get there and what we need from management", "", "", "New concept: Chai & Chappati business plan", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""];
+(function(){
+  var P=document.getElementById('proto'),PF=document.getElementById('pframe');
+  window.deckBlocked=function(){return !P.hidden;};
+  function openProto(screen){P.hidden=false;var run=function(){try{PF.contentWindow.go(screen||'pos');}catch(e){}};
+    var cw=PF.contentWindow;if(cw&&typeof cw.go==='function')run();else PF.addEventListener('load',run,{once:true});PF.focus();}
+  function closeProto(){P.hidden=true;}
+  document.getElementById('pclose').addEventListener('click',closeProto);
+  document.addEventListener('click',function(e){var a=e.target.closest('[data-proto]');if(a){e.preventDefault();openProto(a.dataset.proto);}
+    else if(e.target.closest('#pbtn')){openProto('pos');}});
+  document.addEventListener('keydown',function(e){if(!P.hidden&&e.key==='Escape')closeProto();
+    else if(P.hidden&&(e.key==='p'||e.key==='P'))openProto('pos');});
+})();
 
-const S=[...document.querySelectorAll('#stage>section')];let i=0;
-const sel=document.getElementById('jump'),num=document.getElementById('num'),notes=document.getElementById('notes');
-S.forEach((s,k)=>{const t=(s.querySelector('h1,h2')||{}).textContent||s.id;const o=document.createElement('option');o.value=k;o.textContent=(k+1)+'. '+t.trim().slice(0,60);sel.appendChild(o);});
-function fit(){const st=document.getElementById('stage');const k=Math.min(innerWidth/1920,innerHeight/1080);st.style.transform='scale('+k+')';}
-function show(n){i=Math.max(0,Math.min(S.length-1,n));S.forEach((s,k)=>s.classList.toggle('on',k===i));num.textContent=(i+1)+' / '+S.length;document.getElementById('navL').disabled=i===0;document.getElementById('navR').disabled=i===S.length-1;sel.value=i;
-  const a=S[i].querySelector('aside');notes.textContent=a?a.textContent:'No notes for this slide.';try{history.replaceState(null,'','#'+(i+1));}catch(e){}}
-document.getElementById('prev').onclick=()=>show(i-1);document.getElementById('next').onclick=()=>show(i+1);
-document.getElementById('nbtn').onclick=()=>{notes.hidden=!notes.hidden;};
-document.getElementById('fs').onclick=()=>{try{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();}catch(e){}};
-sel.onchange=()=>show(+sel.value);
-addEventListener('keydown',e=>{if(e.target.tagName==='SELECT')return;
-  if(['ArrowRight','PageDown',' ','Enter'].includes(e.key)){e.preventDefault();show(i+1);}
-  else if(['ArrowLeft','PageUp','Backspace'].includes(e.key)){e.preventDefault();show(i-1);}
-  else if(e.key==='Home')show(0);else if(e.key==='End')show(S.length-1);
-  else if(e.key==='n'||e.key==='N')notes.hidden=!notes.hidden;
-  else if(e.key==='f'||e.key==='F')document.getElementById('fs').click();});
-let tx=null;addEventListener('touchstart',e=>{tx=e.touches[0].clientX;},{passive:true});
-addEventListener('touchend',e=>{if(tx==null)return;const d=e.changedTouches[0].clientX-tx;if(Math.abs(d)>50)show(i+(d<0?1:-1));tx=null;});
-document.getElementById('navL').onclick=()=>show(i-1);document.getElementById('navR').onclick=()=>show(i+1);
-document.getElementById('viewport').addEventListener('click',e=>{if(e.target.closest('a,button,select,[data-proto]'))return;show(i+(e.clientX<innerWidth/3?-1:1));});
-addEventListener('resize',fit);fit();
-const h=parseInt((location.hash||'').slice(1),10);show(isNaN(h)?0:h-1);
+(function(){
+  var slides=Array.prototype.slice.call(document.querySelectorAll('#stage > section'));
+  var stage=document.getElementById('stage'),bar=document.getElementById('bar'),count=document.getElementById('count');
+  var notes=document.getElementById('notes'),notesBody=document.getElementById('notesBody'),menu=document.getElementById('menu');
+  var prevBtn=document.getElementById('prev'),nextBtn=document.getElementById('next'),tocBtn=document.getElementById('toc');
+  var i=0;
+  slides.forEach(function(s,k){
+    if(SECTIONS[k]){var h=document.createElement('div');h.className='sec';h.textContent=SECTIONS[k];menu.appendChild(h);}
+    var b=document.createElement('button');b.type='button';b.setAttribute('role','menuitem');
+    b.innerHTML='<span class="num">'+(k+1)+'</span><span></span>';b.lastChild.textContent=TITLES[k]||s.id;
+    b.addEventListener('click',function(){show(k);closeMenu();});menu.appendChild(b);
+  });
+  var menuItems=Array.prototype.slice.call(menu.querySelectorAll('button'));
+  function closeMenu(){menu.classList.remove('open');tocBtn.setAttribute('aria-expanded','false');}
+  function fit(){var s=Math.min(window.innerWidth/1920,window.innerHeight/1080);stage.style.transform='translate(-50%, -50%) scale('+s+')';}
+  function show(n){
+    i=Math.max(0,Math.min(slides.length-1,n));
+    slides.forEach(function(s,k){s.classList.toggle('live',k===i);});
+    bar.style.width=((i+1)/slides.length*100)+'%';
+    count.textContent=(i+1)+' / '+slides.length;
+    var a=slides[i].querySelector('aside');notesBody.textContent=a?a.textContent:'No notes for this slide.';
+    prevBtn.disabled=(i===0);nextBtn.disabled=(i===slides.length-1);
+    menuItems.forEach(function(b,k){b.setAttribute('aria-current',k===i?'true':'false');});
+    try{if(history.replaceState)history.replaceState(null,'','#'+slides[i].id);}catch(e){}
+  }
+  window.deckShow=show;
+  function fromHash(){var id=(location.hash||'').replace('#','');var k=slides.findIndex(function(s){return s.id===id;});show(k>=0?k:0);}
+  document.addEventListener('keydown',function(e){
+    if(window.deckBlocked&&window.deckBlocked())return;
+    switch(e.key){
+      case 'ArrowRight':case 'PageDown':case ' ':show(i+1);e.preventDefault();break;
+      case 'ArrowLeft':case 'PageUp':show(i-1);e.preventDefault();break;
+      case 'Home':show(0);break;
+      case 'End':show(slides.length-1);break;
+      case 'n':case 'N':notes.classList.toggle('open');break;
+      case 'g':case 'G':tocBtn.click();break;
+      case 'f':case 'F':try{if(document.fullscreenElement){document.exitFullscreen();}else if(document.documentElement.requestFullscreen){document.documentElement.requestFullscreen();}}catch(err){}break;
+      case 'Escape':closeMenu();if(e.target.blur)e.target.blur();break;
+    }
+  });
+  prevBtn.addEventListener('click',function(){show(i-1);});
+  nextBtn.addEventListener('click',function(){show(i+1);});
+  tocBtn.addEventListener('click',function(){
+    var open=menu.classList.toggle('open');tocBtn.setAttribute('aria-expanded',open?'true':'false');
+    if(open){var c=menuItems[i];if(c&&c.scrollIntoView)c.scrollIntoView({block:'nearest'});}
+  });
+  // Clicking the slide itself still advances; the chrome, links and the prototype do not.
+  document.addEventListener('click',function(e){
+    if(e.target.closest('#nav')||e.target.closest('#menu')||e.target.closest('#notes')||e.target.closest('#proto')||
+       e.target.closest('a')||e.target.closest('[data-proto]')||e.target.closest('input'))return;
+    closeMenu();show(e.clientX<window.innerWidth/2?i-1:i+1);
+  });
+  window.addEventListener('resize',fit);window.addEventListener('hashchange',fromHash);
+  fit();fromHash();
+})();
 </script>
 </body></html>
