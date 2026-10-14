@@ -31,7 +31,12 @@ x-shape[kind="arrow-up"]{clip-path:polygon(30% 100%,30% 40%,0 40%,50% 0,100% 40%
 #bar select{background:transparent;color:inherit;border:none;font:inherit;max-width:280px}
 #bar select option{color:#111}
 #notes{position:fixed;left:50%;bottom:64px;transform:translateX(-50%);width:min(900px,92vw);max-height:30vh;overflow:auto;background:#FFFDF8;color:#1E2B26;padding:16px 20px;border-radius:12px;font:16px/1.5 'Public Sans',Arial,sans-serif;box-shadow:0 10px 40px rgba(0,0,0,.4);z-index:6}
-body.idle #bar{opacity:0}
+.edge{position:fixed;top:50%;transform:translateY(-50%);width:64px;height:110px;border:none;border-radius:14px;background:rgba(20,26,23,.6);color:#fff;font:400 48px/1 Arial,sans-serif;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:7}
+.edge:hover,.edge:focus-visible{background:rgba(181,72,47,.9);outline:none}
+.edge:disabled{opacity:.25;cursor:default}
+#navL{left:12px}#navR{right:12px}
+#bar{z-index:7}
+#bar button{font-size:16px}
 @media print{
  @page{size:1920px 1080px;margin:0}
  html,body{background:#fff}
@@ -1048,6 +1053,7 @@ body.idle #bar{opacity:0}
 </section>
 
 </div></div>
+<button class="edge" id="navL" aria-label="Previous slide">‹</button><button class="edge" id="navR" aria-label="Next slide">›</button>
 <div id="notes" hidden></div>
 <nav id="bar" aria-label="Slide controls"><button id="prev" aria-label="Previous slide">‹</button><span id="num"></span><button id="next" aria-label="Next slide">›</button><select id="jump" aria-label="Go to slide"></select><button id="nbtn">Notes</button><button id="pbtn">Prototype</button><button id="fs">Full screen</button></nav>
 <div id="proto" hidden role="dialog" aria-label="Clickable prototype"><header><span>Clickable prototype · sample data</span><button id="pclose">Back to slides</button></header>
@@ -1687,7 +1693,7 @@ const S=[...document.querySelectorAll('#stage>section')];let i=0;
 const sel=document.getElementById('jump'),num=document.getElementById('num'),notes=document.getElementById('notes');
 S.forEach((s,k)=>{const t=(s.querySelector('h1,h2')||{}).textContent||s.id;const o=document.createElement('option');o.value=k;o.textContent=(k+1)+'. '+t.trim().slice(0,60);sel.appendChild(o);});
 function fit(){const st=document.getElementById('stage');const k=Math.min(innerWidth/1920,innerHeight/1080);st.style.transform='scale('+k+')';}
-function show(n){i=Math.max(0,Math.min(S.length-1,n));S.forEach((s,k)=>s.classList.toggle('on',k===i));num.textContent=(i+1)+' / '+S.length;sel.value=i;
+function show(n){i=Math.max(0,Math.min(S.length-1,n));S.forEach((s,k)=>s.classList.toggle('on',k===i));num.textContent=(i+1)+' / '+S.length;document.getElementById('navL').disabled=i===0;document.getElementById('navR').disabled=i===S.length-1;sel.value=i;
   const a=S[i].querySelector('aside');notes.textContent=a?a.textContent:'No notes for this slide.';try{history.replaceState(null,'','#'+(i+1));}catch(e){}}
 document.getElementById('prev').onclick=()=>show(i-1);document.getElementById('next').onclick=()=>show(i+1);
 document.getElementById('nbtn').onclick=()=>{notes.hidden=!notes.hidden;};
@@ -1701,7 +1707,8 @@ addEventListener('keydown',e=>{if(e.target.tagName==='SELECT')return;
   else if(e.key==='f'||e.key==='F')document.getElementById('fs').click();});
 let tx=null;addEventListener('touchstart',e=>{tx=e.touches[0].clientX;},{passive:true});
 addEventListener('touchend',e=>{if(tx==null)return;const d=e.changedTouches[0].clientX-tx;if(Math.abs(d)>50)show(i+(d<0?1:-1));tx=null;});
-let idle;addEventListener('mousemove',()=>{document.body.classList.remove('idle');clearTimeout(idle);idle=setTimeout(()=>document.body.classList.add('idle'),2500);});
+document.getElementById('navL').onclick=()=>show(i-1);document.getElementById('navR').onclick=()=>show(i+1);
+document.getElementById('viewport').addEventListener('click',e=>{if(e.target.closest('a,button,select,[data-proto]'))return;show(i+(e.clientX<innerWidth/3?-1:1));});
 addEventListener('resize',fit);fit();
 const h=parseInt((location.hash||'').slice(1),10);show(isNaN(h)?0:h-1);
 </script>
