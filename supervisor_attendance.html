@@ -3,145 +3,313 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Maya HR — Attendance (22–31 Aug)</title>
+<title>Maya HR — Confirm Attendance</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
 <style>
-  body { background:#f2f4f7; font-family:'Segoe UI',Tahoma,sans-serif; }
-  .card-wrap { max-width:560px; margin:24px auto; }
-  .brand { text-align:center; margin-bottom:16px; }
-  .brand i { font-size:2.2rem; color:#0d6efd; }
-  .status-btn { flex:1; }
-  .status-btn.active-present { background:#198754; color:#fff; }
-  .status-btn.active-absent { background:#dc3545; color:#fff; }
-  .status-btn.active-dayoff { background:#0dcaf0; color:#000; }
-  #msg { min-height:24px; }
+  body { background:#f2f4f7; font-family:'Segoe UI',Tahoma,sans-serif; padding-bottom:88px; }
+  .wrap { max-width:860px; margin:16px auto; padding:0 10px; }
+  .brand i { font-size:2rem; color:#0d6efd; }
+  .day { border:1px solid #dde1e7; border-radius:10px; background:#fff; margin-bottom:10px; }
+  .day.done { border-color:#198754; background:#f2fbf5; }
+  .day.failed { border-color:#dc3545; background:#fdf3f4; }
+  .day-head { padding:10px 12px; display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+  .who { font-weight:600; font-size:1.05rem; }
+  .when { color:#5b6472; font-size:.92rem; }
+  .why { padding:0 12px 8px; color:#5b6472; font-size:.86rem; line-height:1.35; }
+  .ask { background:#fff6e5; border-left:4px solid #f0a020; }
+  .ask .why { color:#7a5200; }
+  .body { padding:0 12px 12px; }
+  .sbtn { flex:1; min-width:84px; }
+  .sbtn.on-p { background:#198754; color:#fff; border-color:#198754; }
+  .sbtn.on-a { background:#dc3545; color:#fff; border-color:#dc3545; }
+  .sbtn.on-d { background:#0dcaf0; color:#000; border-color:#0dcaf0; }
+  .times { display:none; gap:10px; margin-top:10px; }
+  .times.show { display:flex; }
+  .times > div { flex:1; }
+  .lbl { font-size:.78rem; color:#5b6472; margin-bottom:2px; }
+  .rowmsg { font-size:.84rem; margin-top:6px; min-height:18px; }
+  .bar { position:fixed; left:0; right:0; bottom:0; background:#fff; border-top:1px solid #dde1e7;
+         padding:10px 14px; box-shadow:0 -2px 10px rgba(0,0,0,.06); }
+  .bar .inner { max-width:860px; margin:0 auto; display:flex; gap:12px; align-items:center; }
+  .nextday { font-size:.76rem; color:#0d6efd; }
 </style>
 </head>
 <body>
-<div class="card-wrap">
-  <div class="brand"><i class="bi bi-building"></i><h4 class="mb-0">Maya HR Attendance</h4>
-    <div class="text-muted small">Backfill 22–31 August 2026 only</div></div>
-
-  <div class="card shadow-sm">
-    <div class="card-body">
-      <div class="mb-3">
-        <label class="form-label small mb-1">Supervisor</label>
-        <select id="supPick" class="form-select" onchange="onSupPick()"><option value="">— select your name —</option></select>
-      </div>
-      <div class="mb-3">
-        <label class="form-label small mb-1">Location</label>
-        <select id="loc" class="form-select"></select>
-      </div>
-      <div class="mb-3">
-        <label class="form-label small mb-1">Shift</label>
-        <select id="shift" class="form-select"></select>
-      </div>
-      <div class="mb-3">
-        <label class="form-label small mb-1">Employee</label>
-        <input id="empSearch" class="form-control mb-1" placeholder="Type to filter…" oninput="filterEmps()">
-        <select id="emp" class="form-select" size="5"></select>
-      </div>
-      <div class="mb-3">
-        <label class="form-label small mb-1">Date</label>
-        <input id="date" type="date" class="form-control" min="2026-08-22" max="2026-08-31" value="2026-08-22">
-      </div>
-      <div class="mb-3">
-        <label class="form-label small mb-1">Status</label>
-        <div class="d-flex gap-2">
-          <button type="button" class="btn btn-outline-success status-btn" data-s="Present" onclick="pick(this)">Present</button>
-          <button type="button" class="btn btn-outline-danger status-btn" data-s="Absent" onclick="pick(this)">Absent</button>
-          <button type="button" class="btn btn-outline-info status-btn" data-s="Day Off" onclick="pick(this)">Day Off</button>
-        </div>
-      </div>
-      <button id="submitBtn" class="btn btn-primary w-100" onclick="submitAttn()"><i class="bi bi-check2"></i> Submit</button>
-      <div id="msg" class="mt-2 small"></div>
-    </div>
+<div class="wrap">
+  <div class="brand text-center mb-3">
+    <i class="bi bi-clipboard-check"></i>
+    <h4 class="mb-0">Confirm Attendance</h4>
+    <div class="text-muted small" id="windowLabel">&nbsp;</div>
   </div>
-  <div class="text-center text-muted small mt-2">One entry per employee per day. Re-submitting updates the previous mark.</div>
+
+  <div class="card shadow-sm mb-3"><div class="card-body py-3">
+    <label class="form-label small mb-1">Who are you?</label>
+    <select id="supPick" class="form-select" onchange="onSupPick()">
+      <option value="">— select your name —</option>
+    </select>
+    <div id="intro" class="small text-muted mt-2">
+      Pick your name. You will see only the days at your branch that need an answer.
+    </div>
+  </div></div>
+
+  <div id="list"></div>
+  <div id="empty" class="text-center text-muted py-4" style="display:none">
+    Nothing to confirm for your branch. Thank you.
+  </div>
 </div>
 
-<script>
-// ⚙️ Set this to your Apps Script /exec URL.
-const EXEC_URL = 'https://script.google.com/macros/s/AKfycbyG5XLC79FnyLtSGGWunhJwU83SV0b0kz3y1FKdal-JBcTUM-X0ax134konYyTaKxYiiQ/exec';
-let EMPLOYEES = [], chosenStatus = '', SUP_MAP = {}, EMP_ALL = [];
+<div class="bar" id="bar" style="display:none"><div class="inner">
+  <button id="saveBtn" class="btn btn-primary flex-grow-1" onclick="submitAll()">
+    <i class="bi bi-check2-all"></i> Save all
+  </button>
+  <div id="tally" class="small text-muted"></div>
+</div></div>
 
-function toDd(iso){ if(!iso) return ''; const [y,m,d]=iso.split('-'); return d+'-'+m+'-'+y; }
+<script>
+// ============================================================================
+// SETTINGS — the only things to change each cycle.
+// ============================================================================
+const PERIOD   = { from:'2026-09-21', to:'2026-10-20' };
+const EXEC_URL = 'https://script.google.com/macros/s/AKfycbyG5XLC79FnyLtSGGWunhJwU83SV0b0kz3y1FKdal-JBcTUM-X0ax134konYyTaKxYiiQ/exec';
+
+// Backend methods, per API-SPEC.md. Change here if the handler names move.
+const M_STATUS = 'saveManualAttendance';   // empId, location, shift, date, status, by
+const M_PUNCH  = 'addAttendancePunch';     // empId, stage, date, time, location, by
+const M_REBUILD = 'buildAttendanceDaily';  // no params - recompiles the Attendance_Daily tab
+
+// buildAttendanceDaily rebuilds the whole tab, so it is called ONCE after the batch,
+// never per row. Give it room: a full rebuild is slow.
+const REBUILD_TIMEOUT_MS = 180000;
+
+// Supervisor names, so the picker reads properly even when the backend is unreachable.
+const SUP_NAMES = {
+  'MT-00028':'Keshab Alemagar',
+  'MT-00009':'Bibek Nepali',
+  'MT-00017':'Dipendra Thapa',
+  'MT-00039':'Nilam Tamang',
+  'MT-00027':'Kapil Koirala',
+  'MT-00056':'Suraj Kumal',
+  'MT-00031':'Lakpa Dorje Lama',
+  'MT-00052':'Suman Bishwakarma',
+  'MT-00032':'Laxman Bahadur Airi',
+  'MT-00036':'Mohamed Rizwan Mohamed Hussain'
+};
+
+// Supervisors by branch. Used only if getLocationSupervisors cannot be reached.
+const SUP_FALLBACK = [
+  { loc:'Ardiya',                  ids:['MT-00028'] },
+  { loc:'Jabriya',                 ids:['MT-00009'] },
+  { loc:'Kaifan',                  ids:['MT-00017','MT-00039'] },
+  { loc:'Khairan',                 ids:['MT-00027','MT-00056'] },
+  { loc:'Qurain',                  ids:['MT-00031'] },
+  { loc:'Mahboula',                ids:['MT-00052'] },
+  { loc:'Store Hawally',           ids:['MT-00032'] },
+  { loc:'Central Kitchen Hawally', ids:['MT-00036'] },
+  { loc:'Driver Location',         ids:[] }
+];
+
+// The days needing an answer, grouped by branch when rendered.
+const ROWS = [{"loc":"Ardiya","date":"21-09-2026","id":"MT-00001","name":"Aaitu Newar","shift":"Ardiya First Shift","status":"Present","ci":"12:41","co":"21:30","why":"Kiosk failed on 21 September - it never recorded anyone finishing. Finish time is his rostered shift end.","flag":""},{"loc":"Ardiya","date":"21-09-2026","id":"MT-00010","name":"Bikash Bikram Shah","shift":"Ardiya First Shift","status":"Present","ci":"12:41","co":"21:30","why":"Kiosk failed on 21 September - it never recorded anyone finishing. Finish time is his rostered shift end.","flag":""},{"loc":"Ardiya","date":"21-09-2026","id":"MT-00018","name":"Foudman Limbu","shift":"Ardiya First Shift","status":"Present","ci":"12:41","co":"21:30","why":"Kiosk failed on 21 September - it never recorded anyone finishing. Finish time is his rostered shift end.","flag":""},{"loc":"Ardiya","date":"21-09-2026","id":"MT-00043","name":"Rajan Shrestha","shift":"Ardiya Second Shift","status":"Present","ci":"19:04","co":"03:30","why":"Kiosk failed on 21 September - it never recorded anyone finishing. Finish time is his rostered shift end.","flag":""},{"loc":"Ardiya","date":"21-09-2026","id":"MT-00050","name":"Subas Pun Magar","shift":"Ardiya Second Shift","status":"Present","ci":"19:04","co":"03:30","why":"Kiosk failed on 21 September - it never recorded anyone finishing. Finish time is his rostered shift end.","flag":""},{"loc":"Ardiya","date":"21-09-2026","id":"MT-00051","name":"Sudeep Limbu","shift":"Ardiya First Shift","status":"Present","ci":"12:41","co":"21:30","why":"Kiosk failed on 21 September - it never recorded anyone finishing. Finish time is his rostered shift end.","flag":""},{"loc":"Ardiya","date":"02-10-2026","id":"MT-00028","name":"Keshab Alemagar","shift":"","status":"Present","ci":"12:35","co":"","why":"Started 12:35, which is the First shift time, but the day is written as Second shift. No other punch. Pick the shift and the finish time.","flag":"ASK"},{"loc":"Driver Location","date":"21-09-2026","id":"MT-00064","name":"Sayed Shahid Ullah Anowar","shift":"","status":"Present","ci":"","co":"23:45","why":"Started but never finished. Time shown is his own usual finishing time.","flag":""},{"loc":"Driver Location","date":"21-09-2026","id":"MT-00049","name":"Shakil Ahmad","shift":"","status":"Present","ci":"","co":"22:08","why":"Started but never finished. Time shown is his own usual finishing time.","flag":""},{"loc":"Driver Location","date":"23-09-2026","id":"MT-00064","name":"Sayed Shahid Ullah Anowar","shift":"","status":"Present","ci":"","co":"23:45","why":"Started but never finished. Time shown is his own usual finishing time.","flag":""},{"loc":"Driver Location","date":"24-09-2026","id":"MT-00008","name":"Bahar Ullah Shariat Ullah","shift":"","status":"Present","ci":"","co":"","why":"Transport Supervisor - he does not use the kiosk. Auto-present covered him until 23-09 and then stopped.","flag":""},{"loc":"Driver Location","date":"25-09-2026","id":"MT-00008","name":"Bahar Ullah Shariat Ullah","shift":"","status":"Present","ci":"","co":"","why":"Transport Supervisor - he does not use the kiosk. Auto-present covered him until 23-09 and then stopped.","flag":""},{"loc":"Driver Location","date":"26-09-2026","id":"MT-00008","name":"Bahar Ullah Shariat Ullah","shift":"","status":"Present","ci":"","co":"","why":"Transport Supervisor - he does not use the kiosk. Auto-present covered him until 23-09 and then stopped.","flag":""},{"loc":"Driver Location","date":"26-09-2026","id":"MT-00034","name":"Mehdi Hasan Shahab Ullah","shift":"","status":"Present","ci":"17:06","co":"","why":"He finished at 11:33, then started again at 17:06 and never finished. The day is currently zero hours.","flag":"ASK"},{"loc":"Driver Location","date":"26-09-2026","id":"MT-00064","name":"Sayed Shahid Ullah Anowar","shift":"","status":"Present","ci":"","co":"23:45","why":"Started but never finished. Time shown is his own usual finishing time.","flag":""},{"loc":"Driver Location","date":"27-09-2026","id":"MT-00008","name":"Bahar Ullah Shariat Ullah","shift":"","status":"Present","ci":"","co":"","why":"Transport Supervisor - he does not use the kiosk. Auto-present covered him until 23-09 and then stopped.","flag":""},{"loc":"Driver Location","date":"27-09-2026","id":"MT-00049","name":"Shakil Ahmad","shift":"","status":"Present","ci":"","co":"00:10","why":"Started but never finished. Time shown is his own usual finishing time. Finishes the next morning.","flag":""},{"loc":"Driver Location","date":"28-09-2026","id":"MT-00008","name":"Bahar Ullah Shariat Ullah","shift":"","status":"Present","ci":"","co":"","why":"Transport Supervisor - he does not use the kiosk. Auto-present covered him until 23-09 and then stopped.","flag":""},{"loc":"Driver Location","date":"29-09-2026","id":"MT-00008","name":"Bahar Ullah Shariat Ullah","shift":"","status":"Present","ci":"","co":"","why":"Transport Supervisor - he does not use the kiosk. Auto-present covered him until 23-09 and then stopped.","flag":""},{"loc":"Driver Location","date":"30-09-2026","id":"MT-00008","name":"Bahar Ullah Shariat Ullah","shift":"","status":"Present","ci":"","co":"","why":"Transport Supervisor - he does not use the kiosk. Auto-present covered him until 23-09 and then stopped.","flag":""},{"loc":"Driver Location","date":"30-09-2026","id":"MT-00049","name":"Shakil Ahmad","shift":"","status":"Present","ci":"","co":"22:08","why":"Started but never finished. Time shown is his own usual finishing time.","flag":""},{"loc":"Driver Location","date":"01-10-2026","id":"MT-00008","name":"Bahar Ullah Shariat Ullah","shift":"","status":"Present","ci":"","co":"","why":"Transport Supervisor - he does not use the kiosk. Auto-present covered him until 23-09 and then stopped.","flag":""},{"loc":"Driver Location","date":"01-10-2026","id":"MT-00049","name":"Shakil Ahmad","shift":"","status":"Present","ci":"","co":"22:08","why":"Started but never finished. Time shown is his own usual finishing time.","flag":""},{"loc":"Driver Location","date":"02-10-2026","id":"MT-00008","name":"Bahar Ullah Shariat Ullah","shift":"","status":"Present","ci":"","co":"","why":"Transport Supervisor - he does not use the kiosk. Auto-present covered him until 23-09 and then stopped.","flag":""},{"loc":"Driver Location","date":"02-10-2026","id":"MT-00034","name":"Mehdi Hasan Shahab Ullah","shift":"","status":"Present","ci":"","co":"04:38","why":"Started but never finished. Time shown is his own usual finishing time. Finishes the next morning.","flag":""},{"loc":"Driver Location","date":"02-10-2026","id":"MT-00049","name":"Shakil Ahmad","shift":"","status":"Present","ci":"","co":"22:08","why":"Started but never finished. Time shown is his own usual finishing time.","flag":""},{"loc":"Driver Location","date":"03-10-2026","id":"MT-00008","name":"Bahar Ullah Shariat Ullah","shift":"","status":"Present","ci":"","co":"","why":"Transport Supervisor - he does not use the kiosk. Auto-present covered him until 23-09 and then stopped.","flag":""},{"loc":"Driver Location","date":"03-10-2026","id":"MT-00034","name":"Mehdi Hasan Shahab Ullah","shift":"","status":"Present","ci":"","co":"04:38","why":"Started but never finished. Time shown is his own usual finishing time. Finishes the next morning.","flag":""},{"loc":"Driver Location","date":"03-10-2026","id":"MT-00049","name":"Shakil Ahmad","shift":"","status":"Present","ci":"","co":"22:08","why":"Started but never finished. Time shown is his own usual finishing time.","flag":""},{"loc":"Driver Location","date":"04-10-2026","id":"MT-00008","name":"Bahar Ullah Shariat Ullah","shift":"","status":"Present","ci":"","co":"","why":"Transport Supervisor - he does not use the kiosk. Auto-present covered him until 23-09 and then stopped.","flag":""},{"loc":"Driver Location","date":"05-10-2026","id":"MT-00008","name":"Bahar Ullah Shariat Ullah","shift":"","status":"Present","ci":"","co":"","why":"Transport Supervisor - he does not use the kiosk. Auto-present covered him until 23-09 and then stopped.","flag":""},{"loc":"Driver Location","date":"05-10-2026","id":"MT-00034","name":"Mehdi Hasan Shahab Ullah","shift":"","status":"Present","ci":"","co":"04:38","why":"Started but never finished. Time shown is his own usual finishing time. Finishes the next morning.","flag":""},{"loc":"Driver Location","date":"05-10-2026","id":"MT-00049","name":"Shakil Ahmad","shift":"","status":"Present","ci":"","co":"22:08","why":"Started but never finished. Time shown is his own usual finishing time.","flag":""},{"loc":"Driver Location","date":"06-10-2026","id":"MT-00008","name":"Bahar Ullah Shariat Ullah","shift":"","status":"Present","ci":"","co":"","why":"Transport Supervisor - he does not use the kiosk. Auto-present covered him until 23-09 and then stopped.","flag":""},{"loc":"Driver Location","date":"06-10-2026","id":"MT-00049","name":"Shakil Ahmad","shift":"","status":"Present","ci":"","co":"22:08","why":"Started but never finished. Time shown is his own usual finishing time.","flag":""},{"loc":"Driver Location","date":"07-10-2026","id":"MT-00008","name":"Bahar Ullah Shariat Ullah","shift":"","status":"Present","ci":"","co":"","why":"Transport Supervisor - he does not use the kiosk. Auto-present covered him until 23-09 and then stopped.","flag":""},{"loc":"Driver Location","date":"07-10-2026","id":"MT-00034","name":"Mehdi Hasan Shahab Ullah","shift":"","status":"Present","ci":"","co":"04:38","why":"Started but never finished. Time shown is his own usual finishing time. Finishes the next morning.","flag":""},{"loc":"Driver Location","date":"07-10-2026","id":"MT-00049","name":"Shakil Ahmad","shift":"","status":"Present","ci":"","co":"00:10","why":"Started but never finished. Time shown is his own usual finishing time. Finishes the next morning.","flag":""},{"loc":"Driver Location","date":"08-10-2026","id":"MT-00008","name":"Bahar Ullah Shariat Ullah","shift":"","status":"Present","ci":"","co":"","why":"Transport Supervisor - he does not use the kiosk. Auto-present covered him until 23-09 and then stopped.","flag":""},{"loc":"Driver Location","date":"09-10-2026","id":"MT-00008","name":"Bahar Ullah Shariat Ullah","shift":"","status":"Present","ci":"","co":"","why":"Transport Supervisor - he does not use the kiosk. Auto-present covered him until 23-09 and then stopped.","flag":""},{"loc":"Driver Location","date":"09-10-2026","id":"MT-00034","name":"Mehdi Hasan Shahab Ullah","shift":"","status":"Present","ci":"","co":"04:38","why":"Started but never finished. Time shown is his own usual finishing time. Finishes the next morning.","flag":""},{"loc":"Driver Location","date":"10-10-2026","id":"MT-00008","name":"Bahar Ullah Shariat Ullah","shift":"","status":"Present","ci":"","co":"","why":"Transport Supervisor - he does not use the kiosk. Auto-present covered him until 23-09 and then stopped.","flag":""},{"loc":"Driver Location","date":"10-10-2026","id":"MT-00034","name":"Mehdi Hasan Shahab Ullah","shift":"","status":"Present","ci":"","co":"04:38","why":"Started but never finished. Time shown is his own usual finishing time. Finishes the next morning.","flag":""},{"loc":"Driver Location","date":"10-10-2026","id":"MT-00049","name":"Shakil Ahmad","shift":"","status":"Present","ci":"","co":"15:07","why":"Started but never finished. Time shown is his own usual finishing time. Finishes the next morning.","flag":""},{"loc":"Driver Location","date":"11-10-2026","id":"MT-00008","name":"Bahar Ullah Shariat Ullah","shift":"","status":"Present","ci":"","co":"","why":"Transport Supervisor - he does not use the kiosk. Auto-present covered him until 23-09 and then stopped.","flag":""},{"loc":"Driver Location","date":"12-10-2026","id":"MT-00008","name":"Bahar Ullah Shariat Ullah","shift":"","status":"Present","ci":"","co":"","why":"Transport Supervisor - he does not use the kiosk. Auto-present covered him until 23-09 and then stopped.","flag":""},{"loc":"Driver Location","date":"12-10-2026","id":"MT-00034","name":"Mehdi Hasan Shahab Ullah","shift":"","status":"Present","ci":"","co":"04:38","why":"Started but never finished. Time shown is his own usual finishing time. Finishes the next morning.","flag":""},{"loc":"Driver Location","date":"12-10-2026","id":"MT-00049","name":"Shakil Ahmad","shift":"","status":"Present","ci":"","co":"15:07","why":"Started but never finished. Time shown is his own usual finishing time. Finishes the next morning.","flag":""},{"loc":"Driver Location","date":"13-10-2026","id":"MT-00008","name":"Bahar Ullah Shariat Ullah","shift":"","status":"Present","ci":"","co":"","why":"Transport Supervisor - he does not use the kiosk. Auto-present covered him until 23-09 and then stopped.","flag":""},{"loc":"Driver Location","date":"13-10-2026","id":"MT-00034","name":"Mehdi Hasan Shahab Ullah","shift":"","status":"Present","ci":"","co":"04:38","why":"Started but never finished. Time shown is his own usual finishing time. Finishes the next morning.","flag":""},{"loc":"Driver Location","date":"14-10-2026","id":"MT-00008","name":"Bahar Ullah Shariat Ullah","shift":"","status":"Present","ci":"","co":"","why":"Transport Supervisor - he does not use the kiosk. Auto-present covered him until 23-09 and then stopped.","flag":""},{"loc":"Driver Location","date":"14-10-2026","id":"MT-00034","name":"Mehdi Hasan Shahab Ullah","shift":"","status":"Present","ci":"","co":"04:38","why":"Started but never finished. Time shown is his own usual finishing time. Finishes the next morning.","flag":""},{"loc":"Driver Location","date":"14-10-2026","id":"MT-00049","name":"Shakil Ahmad","shift":"","status":"Present","ci":"","co":"15:07","why":"Started but never finished. Time shown is his own usual finishing time. Finishes the next morning.","flag":""},{"loc":"Driver Location","date":"15-10-2026","id":"MT-00008","name":"Bahar Ullah Shariat Ullah","shift":"","status":"Present","ci":"","co":"","why":"Transport Supervisor - he does not use the kiosk. Auto-present covered him until 23-09 and then stopped.","flag":""},{"loc":"Driver Location","date":"15-10-2026","id":"MT-00049","name":"Shakil Ahmad","shift":"","status":"Present","ci":"","co":"15:07","why":"Started but never finished. Time shown is his own usual finishing time. Finishes the next morning.","flag":""},{"loc":"Driver Location","date":"16-10-2026","id":"MT-00008","name":"Bahar Ullah Shariat Ullah","shift":"","status":"Present","ci":"","co":"","why":"Transport Supervisor - he does not use the kiosk. Auto-present covered him until 23-09 and then stopped.","flag":""},{"loc":"Driver Location","date":"16-10-2026","id":"MT-00034","name":"Mehdi Hasan Shahab Ullah","shift":"","status":"Present","ci":"","co":"04:38","why":"Started but never finished. Time shown is his own usual finishing time. Finishes the next morning.","flag":""},{"loc":"Driver Location","date":"16-10-2026","id":"MT-00049","name":"Shakil Ahmad","shift":"","status":"Present","ci":"","co":"15:07","why":"Started but never finished. Time shown is his own usual finishing time. Finishes the next morning.","flag":""},{"loc":"Driver Location","date":"17-10-2026","id":"MT-00008","name":"Bahar Ullah Shariat Ullah","shift":"","status":"Present","ci":"","co":"","why":"Transport Supervisor - he does not use the kiosk. Auto-present covered him until 23-09 and then stopped.","flag":""},{"loc":"Driver Location","date":"17-10-2026","id":"MT-00034","name":"Mehdi Hasan Shahab Ullah","shift":"","status":"Present","ci":"","co":"04:38","why":"Started but never finished. Time shown is his own usual finishing time. Finishes the next morning.","flag":""},{"loc":"Driver Location","date":"17-10-2026","id":"MT-00049","name":"Shakil Ahmad","shift":"","status":"Present","ci":"","co":"15:07","why":"Started but never finished. Time shown is his own usual finishing time. Finishes the next morning.","flag":""},{"loc":"Driver Location","date":"18-10-2026","id":"MT-00008","name":"Bahar Ullah Shariat Ullah","shift":"","status":"Present","ci":"","co":"","why":"Transport Supervisor - he does not use the kiosk. Auto-present covered him until 23-09 and then stopped.","flag":""},{"loc":"Driver Location","date":"19-10-2026","id":"MT-00008","name":"Bahar Ullah Shariat Ullah","shift":"","status":"Present","ci":"","co":"","why":"Transport Supervisor - he does not use the kiosk. Auto-present covered him until 23-09 and then stopped.","flag":""},{"loc":"Driver Location","date":"20-10-2026","id":"MT-00008","name":"Bahar Ullah Shariat Ullah","shift":"","status":"Present","ci":"","co":"","why":"Transport Supervisor - he does not use the kiosk. Auto-present covered him until 23-09 and then stopped.","flag":""},{"loc":"Jabriya","date":"21-09-2026","id":"MT-00002","name":"Ajay Gurung","shift":"Jabriya Second Shift","status":"Present","ci":"18:49","co":"03:30","why":"Kiosk failed on 21 September - it never recorded anyone finishing. Finish time is his rostered shift end.","flag":""},{"loc":"Jabriya","date":"21-09-2026","id":"MT-00024","name":"Jit Bahadur Thakali","shift":"Jabriya Second Shift","status":"Present","ci":"18:43","co":"03:30","why":"Kiosk failed on 21 September - it never recorded anyone finishing. Finish time is his rostered shift end.","flag":""},{"loc":"Jabriya","date":"21-09-2026","id":"MT-00033","name":"Manish Gurung","shift":"Jabriya First Shift","status":"Present","ci":"12:27","co":"21:30","why":"Kiosk failed on 21 September - it never recorded anyone finishing. Finish time is his rostered shift end.","flag":""},{"loc":"Jabriya","date":"21-09-2026","id":"MT-00061","name":"Prakash Budha","shift":"Jabriya Second Shift","status":"Present","ci":"18:44","co":"03:30","why":"Kiosk failed on 21 September - it never recorded anyone finishing. Finish time is his rostered shift end.","flag":""},{"loc":"Jabriya","date":"21-09-2026","id":"MT-00052","name":"Suman Bishwakarma","shift":"Jabriya First Shift","status":"Present","ci":"12:27","co":"21:30","why":"Kiosk failed on 21 September - it never recorded anyone finishing. Finish time is his rostered shift end.","flag":""},{"loc":"Jabriya","date":"21-09-2026","id":"MT-00059","name":"Yogendra Oli","shift":"Jabriya Second Shift","status":"Present","ci":"18:49","co":"03:30","why":"Kiosk failed on 21 September - it never recorded anyone finishing. Finish time is his rostered shift end.","flag":""},{"loc":"Jabriya","date":"23-09-2026","id":"MT-00002","name":"Ajay Gurung","shift":"Jabriya First Shift","status":"","ci":"","co":"","why":"Marked 'No Roster' but the roster has him on First shift. Was he off, absent, or did he work?","flag":"ASK"},{"loc":"Jabriya","date":"23-09-2026","id":"MT-00059","name":"Yogendra Oli","shift":"Jabriya Second Shift","status":"","ci":"","co":"","why":"Marked 'No Roster' but the roster has him on Second shift. Was he off, absent, or did he work?","flag":"ASK"},{"loc":"Jabriya","date":"25-09-2026","id":"MT-00042","name":"Puran Kumar Thapa","shift":"Jabriya Second Shift","status":"Present","ci":"18:30","co":"03:30","why":"The 03:47 punch was a mistake, one minute after he finished the 24th. His real start was never recorded.","flag":"ASK"},{"loc":"Kaifan","date":"21-09-2026","id":"MT-00015","name":"Dhirendra Khatri","shift":"Kaifan Second Shift","status":"Present","ci":"17:35","co":"02:30","why":"Kiosk failed on 21 September - it never recorded anyone finishing. Finish time is his rostered shift end.","flag":""},{"loc":"Kaifan","date":"21-09-2026","id":"MT-00040","name":"Nishan Rai","shift":"Kaifan First Shift","status":"Present","ci":"11:30","co":"20:30","why":"Kiosk failed on 21 September - it never recorded anyone finishing. Finish time is his rostered shift end.","flag":""},{"loc":"Kaifan","date":"21-09-2026","id":"MT-00044","name":"Ram Bahadur Sirmal","shift":"Kaifan Second Shift","status":"Present","ci":"17:35","co":"02:30","why":"Kiosk failed on 21 September - it never recorded anyone finishing. Finish time is his rostered shift end.","flag":""},{"loc":"Khairan","date":"21-09-2026","id":"MT-00041","name":"Pujan Bhattarai","shift":"Khairan Second Shift","status":"Present","ci":"13:52","co":"02:00","why":"Kiosk failed on 21 September - it never recorded anyone finishing. Finish time is his rostered shift end.","flag":"ASK"},{"loc":"Khairan","date":"21-09-2026","id":"MT-00045","name":"Ram Bahadur Thing","shift":"Khairan First Shift","status":"Present","ci":"13:53","co":"23:30","why":"Kiosk failed on 21 September - it never recorded anyone finishing. Finish time is his rostered shift end.","flag":""},{"loc":"Mahboula","date":"17-10-2026","id":"MT-00058","name":"Uttam Chaudhary","shift":"Qurain Second Shift","status":"Present","ci":"13:34","co":"02:02","why":"Mobile kiosk reset to Check In instead of Break In at 22:14. He starts 13:33-13:39 every working day.","flag":"CHECK"},{"loc":"Store Hawally","date":"13-10-2026","id":"MT-00063","name":"Kiran Bhujel","shift":"Store Hawally Second Shift","status":"","ci":"","co":"","why":"Marked 'No Roster' but the roster has him on Second shift. No punches at all.","flag":"ASK"},{"loc":"Store Hawally","date":"15-10-2026","id":"MT-00063","name":"Kiran Bhujel","shift":"Store Hawally Second Shift","status":"Present","ci":"08:53","co":"18:00","why":"He started 08:53 and never finished. His other 08:5x days all close 18:01-18:25.","flag":""}];
+// ============================================================================
+
+let SUP_MAP = {}, MY = null, state = [];
+
+function fmtDate(iso){ const [y,m,d]=iso.split('-'); return d+'-'+m+'-'+y; }
+function toIso(dd){ const [d,m,y]=dd.split('-'); return y+'-'+m+'-'+d; }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
 async function load(){
+  document.getElementById('windowLabel').textContent =
+    fmtDate(PERIOD.from) + ' to ' + fmtDate(PERIOD.to);
+  let opts = [];
   try{
-    const res = await fetch(EXEC_URL + '?method=getManualAttnEmployees&_=' + Date.now(), { cache:'no-store' });
-    const d = await res.json();
-    if(!d.success) throw new Error(d.error||'load failed');
-    EMPLOYEES = d.employees||[]; EMP_ALL = EMPLOYEES.slice();
-    document.getElementById('loc').innerHTML = (d.locations||[]).map(l=>'<option>'+l+'</option>').join('');
-    document.getElementById('shift').innerHTML = '<option value="">— select —</option>' + (d.shifts||[]).map(s=>'<option>'+s+'</option>').join('');
-    renderEmps(EMPLOYEES);
-    // Supervisors + their locations
-    const sr = await fetch(EXEC_URL + '?method=getLocationSupervisors&_=' + Date.now(), { cache:'no-store' });
-    const sd = await sr.json();
-    if(sd.success){
-      const supOpts = [];
-      (sd.data||[]).forEach(loc=>{
+    const r = await fetch(EXEC_URL + '?method=getLocationSupervisors&_=' + Date.now(), { cache:'no-store' });
+    const d = await r.json();
+    if(d && d.success){
+      (d.data||[]).forEach(loc=>{
         (loc.supervisors||[]).forEach(s=>{
           SUP_MAP[s.id] = { name:s.name, location:loc.location };
-          supOpts.push('<option value="'+s.id+'">'+s.name+' — '+loc.location+'</option>');
+          opts.push('<option value="'+s.id+'">'+esc(s.name)+' — '+esc(loc.location)+'</option>');
         });
       });
-      document.getElementById('supPick').innerHTML = '<option value="">— select your name —</option>' + supOpts.join('');
     }
-  }catch(err){ document.getElementById('msg').innerHTML = '<span class="text-danger">Could not load: '+err.message+'</span>'; }
+  }catch(e){ /* fall through to the built-in list */ }
+  if(!opts.length){
+    SUP_FALLBACK.forEach(b=>b.ids.forEach(id=>{
+      const nm = SUP_NAMES[id] || (ROWS.find(x=>x.id===id)||{}).name || id;
+      SUP_MAP[id] = { name:nm, location:b.loc };
+      opts.push('<option value="'+id+'">'+esc(nm)+' — '+esc(b.loc)+'</option>');
+    }));
+  }
+  document.getElementById('supPick').innerHTML =
+    '<option value="">— select your name —</option>' + opts.join('');
 }
-async function onSupPick(){
+
+function onSupPick(){
   const id = document.getElementById('supPick').value;
-  const info = SUP_MAP[id];
-  if(!info){ EMPLOYEES = EMP_ALL.slice(); renderEmps(EMPLOYEES); return; }
-  // Lock location to the supervisor's location and filter employees to it.
-  const locSel = document.getElementById('loc');
-  for(const o of locSel.options){ if(o.value===info.location){ locSel.value=info.location; break; } }
+  MY = SUP_MAP[id] || null;
+  document.getElementById('intro').style.display = MY ? 'none' : '';
+  render();
+}
+
+function render(){
+  const list = document.getElementById('list');
+  const mine = MY ? ROWS.filter(r => r.loc === MY.location) : [];
+  state = mine.map(r => ({ ...r, status: r.status || '', sent:false, failed:false }));
+  document.getElementById('empty').style.display = (MY && !mine.length) ? '' : 'none';
+  document.getElementById('bar').style.display   = mine.length ? '' : 'none';
+  list.innerHTML = state.map((r,i)=>{
+    const nextDay = r.co && r.ci && r.co < r.ci;
+    return '<div class="day'+(r.flag==='ASK'?' ask':'')+'" id="d'+i+'">'
+      + '<div class="day-head">'
+      +   '<span class="who">'+esc(r.name)+'</span>'
+      +   '<span class="when">'+esc(r.date)+(r.shift?' &middot; '+esc(r.shift):'')+'</span>'
+      +   (r.flag==='ASK'?'<span class="badge text-bg-warning ms-auto">needs your decision</span>':'')
+      +   (r.flag==='CHECK'?'<span class="badge text-bg-secondary ms-auto">please check</span>':'')
+      + '</div>'
+      + '<div class="why">'+esc(r.why)+'</div>'
+      + '<div class="body">'
+      +   '<div class="d-flex gap-2">'
+      +     '<button type="button" class="btn btn-outline-success sbtn" data-s="Present" onclick="pick('+i+',this)">Present</button>'
+      +     '<button type="button" class="btn btn-outline-danger  sbtn" data-s="Absent"  onclick="pick('+i+',this)">Absent</button>'
+      +     '<button type="button" class="btn btn-outline-info    sbtn" data-s="Day Off" onclick="pick('+i+',this)">Day Off</button>'
+      +   '</div>'
+      +   '<div class="times" id="t'+i+'">'
+      +     '<div><div class="lbl">Started</div>'
+      +       '<input type="time" class="form-control" id="ci'+i+'" value="'+esc(r.ci)+'" onchange="sync('+i+')"></div>'
+      +     '<div><div class="lbl">Finished '
+      +       '<span class="nextday" id="nd'+i+'">'+(nextDay?'(next morning)':'')+'</span></div>'
+      +       '<input type="time" class="form-control" id="co'+i+'" value="'+esc(r.co)+'" onchange="sync('+i+')"></div>'
+      +   '</div>'
+      +   '<div class="rowmsg" id="m'+i+'"></div>'
+      + '</div></div>';
+  }).join('');
+  state.forEach((r,i)=>{ if(r.status) applyPick(i, r.status); });
+  tally();
+}
+
+function pick(i, btn){ applyPick(i, btn.getAttribute('data-s')); tally(); }
+
+function applyPick(i, s){
+  state[i].status = s;
+  const card = document.getElementById('d'+i);
+  card.querySelectorAll('.sbtn').forEach(b=>{
+    b.className = 'btn btn-outline-' +
+      (b.getAttribute('data-s')==='Present' ? 'success' :
+       b.getAttribute('data-s')==='Absent'  ? 'danger'  : 'info') + ' sbtn';
+    if(b.getAttribute('data-s')===s)
+      b.classList.add(s==='Present'?'on-p':s==='Absent'?'on-a':'on-d');
+  });
+  document.getElementById('t'+i).classList.toggle('show', s==='Present');
+}
+
+function sync(i){
+  state[i].ci = document.getElementById('ci'+i).value;
+  state[i].co = document.getElementById('co'+i).value;
+  const nd = state[i].co && state[i].ci && state[i].co < state[i].ci;
+  document.getElementById('nd'+i).textContent = nd ? '(next morning)' : '';
+  tally();
+}
+
+function tally(){
+  const ready = state.filter(r=>r.status && !r.sent).length;
+  const done  = state.filter(r=>r.sent).length;
+  const blank = state.filter(r=>!r.status).length;
+  document.getElementById('tally').textContent =
+    done   ? done+' saved' + (ready?', '+ready+' to go':'')
+  : blank  ? state.length+' days — '+blank+' still need an answer'
+           : state.length+' days filled in — check them, then save';
+}
+
+async function callGet(method, timeoutMs){
+  const ctl = new AbortController();
+  const t = setTimeout(()=>ctl.abort(), timeoutMs||60000);
   try{
-    const r = await fetch(EXEC_URL + '?method=getEmployeesByLocation&location='+encodeURIComponent(info.location)+'&_='+Date.now(), { cache:'no-store' });
-    const d = await r.json();
-    EMPLOYEES = (d.success && d.employees && d.employees.length) ? d.employees : EMP_ALL.slice();
-    renderEmps(EMPLOYEES);
-  }catch(e){ EMPLOYEES = EMP_ALL.slice(); renderEmps(EMPLOYEES); }
-}
-function renderEmps(list){
-  document.getElementById('emp').innerHTML = list.map(e=>'<option value="'+e.id+'">'+e.name+' ('+e.id+')</option>').join('');
-}
-function filterEmps(){
-  const q = document.getElementById('empSearch').value.toLowerCase();
-  renderEmps(EMPLOYEES.filter(e => (e.name+' '+e.id).toLowerCase().includes(q)));
-}
-function pick(btn){
-  chosenStatus = btn.getAttribute('data-s');
-  document.querySelectorAll('.status-btn').forEach(b=>b.className='btn btn-outline-'+(b.getAttribute('data-s')==='Present'?'success':b.getAttribute('data-s')==='Absent'?'danger':'info')+' status-btn');
-  btn.classList.add(chosenStatus==='Present'?'active-present':chosenStatus==='Absent'?'active-absent':'active-dayoff');
-}
-async function submitAttn(){
-  const msg = document.getElementById('msg');
-  const empId = document.getElementById('emp').value;
-  const location = document.getElementById('loc').value;
-  const shift = document.getElementById('shift').value;
-  const date = document.getElementById('date').value;
-  const supId = document.getElementById('supPick').value;
-  const by = supId && SUP_MAP[supId] ? (SUP_MAP[supId].name + ' (' + supId + ')') : '';
-  if(!by){ msg.innerHTML='<span class="text-danger">Select your name (supervisor).</span>'; return; }
-  if(!empId){ msg.innerHTML='<span class="text-danger">Pick an employee.</span>'; return; }
-  if(!chosenStatus){ msg.innerHTML='<span class="text-danger">Pick a status.</span>'; return; }
-  const btn = document.getElementById('submitBtn'); btn.disabled=true; btn.innerHTML='Saving…';
-  try{
-    const res = await fetch(EXEC_URL + '?method=saveManualAttendance', {
-      method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({ empId:empId, location:location, shift:shift, date:toDd(date), status:chosenStatus, by:by })
-    });
+    const res = await fetch(EXEC_URL + '?method=' + method + '&_=' + Date.now(),
+                            { cache:'no-store', signal:ctl.signal });
     const d = await res.json();
-    if(!d.success) throw new Error(d.error||'save failed');
-    msg.innerHTML = '<span class="text-success"><i class="bi bi-check-circle"></i> '+d.message+'</span>';
-    chosenStatus=''; document.querySelectorAll('.status-btn').forEach(b=>b.className='btn btn-outline-'+(b.getAttribute('data-s')==='Present'?'success':b.getAttribute('data-s')==='Absent'?'danger':'info')+' status-btn');
-  }catch(err){ msg.innerHTML='<span class="text-danger">'+err.message+'</span>'; }
-  finally{ btn.disabled=false; btn.innerHTML='<i class="bi bi-check2"></i> Submit'; }
+    if(!d.success) throw new Error(d.error || (method+' failed'));
+    return d;
+  } finally { clearTimeout(t); }
 }
+
+async function post(method, payload){
+  const res = await fetch(EXEC_URL + '?method=' + method, {
+    method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify(payload)
+  });
+  const d = await res.json();
+  if(!d.success) throw new Error(d.error || (method+' failed'));
+  return d;
+}
+
+async function submitAll(){
+  const id = document.getElementById('supPick').value;
+  if(!id){ alert('Select your name first.'); return; }
+  const by = SUP_MAP[id].name + ' (' + id + ')';
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true; btn.innerHTML = 'Saving…';
+
+  for(let i=0;i<state.length;i++){
+    const r = state[i];
+    if(!r.status || r.sent) continue;
+    const msg = document.getElementById('m'+i);
+    const card = document.getElementById('d'+i);
+    msg.innerHTML = '<span class="text-muted">saving…</span>';
+    try{
+      if(r.status==='Present' && (!r.ci || !r.co))
+        throw new Error('Enter both the start and the finish time.');
+
+      await post(M_STATUS, { empId:r.id, location:r.loc, shift:r.shift||'',
+                             date:r.date, status:r.status, by:by });
+
+      if(r.status==='Present'){
+        // the finish may land on the next calendar day
+        let coDate = r.date;
+        if(r.co < r.ci){
+          const d = new Date(toIso(r.date)); d.setDate(d.getDate()+1);
+          coDate = fmtDate(d.toISOString().slice(0,10));
+        }
+        await post(M_PUNCH, { empId:r.id, stage:'Check In',  date:r.date,  time:r.ci, location:r.loc, by:by });
+        await post(M_PUNCH, { empId:r.id, stage:'Check Out', date:coDate, time:r.co, location:r.loc, by:by });
+      }
+      r.sent = true; r.failed = false;
+      card.classList.remove('failed'); card.classList.add('done');
+      msg.innerHTML = '<span class="text-success"><i class="bi bi-check-circle"></i> saved</span>';
+    }catch(err){
+      r.failed = true;
+      card.classList.remove('done'); card.classList.add('failed');
+      msg.innerHTML = '<span class="text-danger">'+esc(err.message)+' — not saved, try again</span>';
+    }
+    tally();
+  }
+  const saved = state.filter(r=>r.sent).length;
+  const left  = state.filter(r=>r.status && !r.sent).length;
+  const note  = document.getElementById('tally');
+
+  // Rebuild the daily sheet so the entries show up straight away.
+  // Only if something actually saved, and only once for the whole batch.
+  if(saved){
+    btn.innerHTML = 'Updating the sheet…';
+    note.innerHTML = '<span class="text-muted">'+saved+' saved. Updating the attendance sheet…</span>';
+    try{
+      await callGet(M_REBUILD, REBUILD_TIMEOUT_MS);
+      note.innerHTML = '<span class="text-success">'+saved+' saved and the attendance sheet is updated.</span>';
+    }catch(err){
+      // The punches ARE written. Only the rebuild failed - say so plainly,
+      // so nobody re-enters days that are already in.
+      note.innerHTML = '<span class="text-danger"><b>Your '+saved+' entries are saved.</b> '
+        + 'The attendance sheet could not be refreshed just now ('+esc(err.name==='AbortError'?'it took too long':err.message)+'). '
+        + 'Do not enter them again — tell HR to refresh it.</span>';
+    }
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = left ? '<i class="bi bi-check2-all"></i> Save all'
+                       : '<i class="bi bi-check2-all"></i> All saved';
+}
+
 load();
 </script>
 </body>
